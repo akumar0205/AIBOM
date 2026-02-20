@@ -248,8 +248,9 @@ class AIBOMVisitor(ast.NodeVisitor):
 
 
 def find_python_files(target: Path) -> Iterable[Path]:
+    ignored_dirs = {".venv", "venv", "env", "__pycache__"}
     for py_file in target.rglob("*.py"):
-        if ".venv" in py_file.parts or "__pycache__" in py_file.parts:
+        if any(part in ignored_dirs for part in py_file.parts):
             continue
         yield py_file
 
