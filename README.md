@@ -38,6 +38,38 @@ It scans all `.py` files recursively and extracts:
 - Python 3.8+
 - No external dependencies required for core functionality.
 
+## Run locally with a Python virtual environment
+
+Using a virtual environment keeps your local Python packages isolated from system/global installs.
+
+### macOS/Linux
+
+```bash
+git clone <your-fork-or-this-repo-url>
+cd AIBOM
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+### Windows (PowerShell)
+
+```powershell
+git clone <your-fork-or-this-repo-url>
+cd AIBOM
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+When done, leave the virtual environment with:
+
+```bash
+deactivate
+```
+
 ## Usage
 
 ### Basic
