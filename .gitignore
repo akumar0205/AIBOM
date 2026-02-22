@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+.aibom/
+.pytest_cache/

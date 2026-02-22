@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/aibom_v1.json",
+  "title": "AIBOM v1",
+  "type": "object",
+  "required": ["schema_version", "metadata", "models", "datasets", "tools", "frameworks", "risk_findings"],
+  "properties": {
+    "schema_version": {"type": "string"},
+    "metadata": {
+      "type": "object",
+      "required": ["generated_at", "git_sha", "artifact_sha256"],
+      "properties": {
+        "generated_at": {"type": "string"},
+        "git_sha": {"type": "string"},
+        "artifact_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "models": {"type": "array", "items": {"type": "object", "required": ["type", "model", "source_file"]}},
+    "datasets": {"type": "array", "items": {"type": "object", "required": ["type", "source_file"]}},
+    "tools": {"type": "array", "items": {"type": "object", "required": ["name", "source_file"]}},
+    "frameworks": {"type": "array", "items": {"type": "object", "required": ["name"]}},
+    "prompts": {"type": "array", "items": {"type": "object", "required": ["id", "source_file"]}},
+    "risk_findings": {"type": "array", "items": {"type": "object", "required": ["id", "category", "owasp_llm", "heuristic"]}}
+  }
+}
