@@ -46,6 +46,18 @@ def test_golden_fixture_validates_against_schema() -> None:
     validate_aibom(golden)
 
 
+def test_validation_fixtures_cover_valid_and_invalid_cases() -> None:
+    fixtures_dir = Path(__file__).parent / "fixtures" / "validation"
+    valid_doc = json.loads((fixtures_dir / "valid_aibom.json").read_text(encoding="utf-8"))
+    invalid_doc = json.loads((fixtures_dir / "invalid_aibom.json").read_text(encoding="utf-8"))
+
+    validate_aibom(valid_doc)
+    with pytest.raises(AIBOMValidationError) as exc:
+        validate_aibom(invalid_doc)
+
+    assert "/metadata/artifact_sha256" in str(exc.value)
+
+
 def test_cli_validate_command_success_and_failure(tmp_path: Path) -> None:
     valid_doc = generate_aibom(_fixture_project())
     valid_path = tmp_path / "valid.json"
