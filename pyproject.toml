@@ -7,7 +7,7 @@ name = "aibom"
 version = "1.0.0"
 description = "Living AIBOM generator"
 requires-python = ">=3.9"
-dependencies = []
+dependencies = ["jsonschema==4.23.0"]
 
 [project.scripts]
 aibom = "aibom.cli:main"
