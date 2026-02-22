@@ -1,0 +1,56 @@
+{
+  "datasets": [
+    {
+      "source_file": "app.py",
+      "type": "FAISS.from_texts"
+    }
+  ],
+  "frameworks": [
+    {
+      "name": "langchain"
+    }
+  ],
+  "metadata": {
+    "artifact_sha256": "DYNAMIC",
+    "generated_at": "DYNAMIC",
+    "git_sha": "DYNAMIC"
+  },
+  "models": [
+    {
+      "model": "gpt-4o-mini",
+      "source_file": "app.py",
+      "type": "ChatOpenAI"
+    }
+  ],
+  "prompts": [
+    {
+      "id": "app.py:9",
+      "source_file": "app.py"
+    }
+  ],
+  "risk_findings": [
+    {
+      "category": "prompt injection surface",
+      "heuristic": "true",
+      "id": "prompt-injection-surface",
+      "owasp_llm": "LLM01 Prompt Injection",
+      "rationale": "Prompt templates detected; review source trust boundaries.",
+      "severity": "medium"
+    },
+    {
+      "category": "third-party dependency",
+      "heuristic": "true",
+      "id": "third-party:ChatOpenAI:app.py",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "rationale": "External model provider detected.",
+      "severity": "medium"
+    }
+  ],
+  "schema_version": "1.0",
+  "tools": [
+    {
+      "name": "initialize_agent",
+      "source_file": "app.py"
+    }
+  ]
+}

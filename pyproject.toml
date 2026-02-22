@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aibom"
+version = "1.0.0"
+description = "Living AIBOM generator"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+aibom = "aibom.cli:main"
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
