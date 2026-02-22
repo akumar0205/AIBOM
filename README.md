@@ -45,12 +45,14 @@ aibom generate . -o AI_BOM.json --include-prompts
 aibom generate . -o AI_BOM.json --audit-mode --bundle-out evidence.zip
 ```
 
-
-Validate an existing AIBOM JSON against the bundled schema:
+### Validation
 
 ```bash
+aibom generate --audit-mode --out AI_BOM.json
 aibom validate AI_BOM.json
 ```
+
+`aibom generate` fails closed before writing output if schema validation fails. Validation errors include JSON-pointer-like paths to the failing field (for example `/metadata/generated_at`).
 
 ### Standards Output
 
