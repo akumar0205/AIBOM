@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
+
+import pytest
 
 from aibom.analyzer import generate_aibom
 from aibom.bundle import create_bundle
 from aibom.diffing import diff_aibom
 from aibom.exporters import export_spdx
-from aibom.validation import validate_aibom
+from aibom.validation import AIBOMValidationError, validate_aibom
 
 
 def _fixture_project() -> Path:
@@ -22,6 +25,53 @@ def test_generate_matches_golden_structure() -> None:
     for k in ["generated_at", "git_sha", "artifact_sha256"]:
         doc["metadata"][k] = "DYNAMIC"
     assert doc == golden
+
+
+def test_generated_aibom_validates_against_schema() -> None:
+    doc = generate_aibom(_fixture_project())
+    validate_aibom(doc)
+
+
+def test_validation_fails_for_missing_required_field() -> None:
+    doc = generate_aibom(_fixture_project())
+    del doc["metadata"]["artifact_sha256"]
+    with pytest.raises(AIBOMValidationError) as exc:
+        validate_aibom(doc)
+    assert "/metadata" in str(exc.value)
+
+
+def test_golden_fixture_validates_against_schema() -> None:
+    golden = json.loads((Path(__file__).parent / "fixtures" / "golden_aibom.json").read_text())
+    golden["metadata"]["artifact_sha256"] = "0" * 64
+    validate_aibom(golden)
+
+
+def test_cli_validate_command_success_and_failure(tmp_path: Path) -> None:
+    valid_doc = generate_aibom(_fixture_project())
+    valid_path = tmp_path / "valid.json"
+    valid_path.write_text(json.dumps(valid_doc), encoding="utf-8")
+
+    ok = subprocess.run(
+        [sys.executable, "-m", "aibom.cli", "validate", str(valid_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert ok.returncode == 0
+    assert "Validation passed" in ok.stdout
+
+    invalid_doc = dict(valid_doc)
+    invalid_doc.pop("models", None)
+    invalid_path = tmp_path / "invalid.json"
+    invalid_path.write_text(json.dumps(invalid_doc), encoding="utf-8")
+    bad = subprocess.run(
+        [sys.executable, "-m", "aibom.cli", "validate", str(invalid_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert bad.returncode != 0
+    assert "/" in bad.stderr
 
 
 def test_export_spdx_deterministic() -> None:
@@ -49,5 +99,5 @@ def test_bundle_contains_manifest(tmp_path: Path) -> None:
 
 
 def test_cli_version() -> None:
-    proc = subprocess.run(["aibom", "--version"], capture_output=True, text=True, check=True)
+    proc = subprocess.run([sys.executable, "-m", "aibom.cli", "--version"], capture_output=True, text=True, check=True)
     assert "aibom" in proc.stdout

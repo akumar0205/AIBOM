@@ -11,7 +11,7 @@ from aibom.bundle import create_bundle
 from aibom.diffing import diff_aibom, gate_failures
 from aibom.exporters import export_cyclonedx, export_spdx
 from aibom.storage import load_json, persist_run
-from aibom.validation import validate_aibom
+from aibom.validation import AIBOMValidationError, validate_aibom
 
 
 COMPLIANCE_STARTER = """# Starter Compliance Mapping\n\nThis mapping is a starter reference only and not legal advice.\n"""
@@ -37,6 +37,14 @@ def cmd_generate(args: argparse.Namespace) -> int:
             create_bundle(out, Path(args.bundle_out).resolve(), baseline if baseline.exists() else None, COMPLIANCE_STARTER)
     return 0
 
+
+
+
+def cmd_validate(args: argparse.Namespace) -> int:
+    src = load_json(Path(args.input))
+    validate_aibom(src)
+    print(f"Validation passed: {args.input}")
+    return 0
 
 def cmd_export(args: argparse.Namespace) -> int:
     src = load_json(Path(args.input))
@@ -87,6 +95,10 @@ def build_parser() -> argparse.ArgumentParser:
     gen.add_argument("--bundle-out")
     gen.set_defaults(func=cmd_generate)
 
+    v = sub.add_parser("validate")
+    v.add_argument("input")
+    v.set_defaults(func=cmd_validate)
+
     ex = sub.add_parser("export")
     ex.add_argument("--input", required=True)
     ex.add_argument("--format", choices=["spdx-json", "cyclonedx-json"], default="spdx-json")
@@ -116,7 +128,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
-    return args.func(args)
+    try:
+        return args.func(args)
+    except AIBOMValidationError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

@@ -18,6 +18,7 @@ aibom --help
 
 Commands:
 - `aibom generate`
+- `aibom validate`
 - `aibom export`
 - `aibom diff`
 - `aibom bundle`
@@ -29,6 +30,7 @@ Commands:
 
 ```bash
 aibom generate . -o AI_BOM.json
+# generation fails fast if JSON Schema validation fails
 ```
 
 Optional prompt-content collection (default is metadata-only):
@@ -41,6 +43,13 @@ aibom generate . -o AI_BOM.json --include-prompts
 
 ```bash
 aibom generate . -o AI_BOM.json --audit-mode --bundle-out evidence.zip
+```
+
+
+Validate an existing AIBOM JSON against the bundled schema:
+
+```bash
+aibom validate AI_BOM.json
 ```
 
 ### Standards Output
