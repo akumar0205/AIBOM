@@ -11,7 +11,7 @@ from aibom.bundle import create_bundle
 from aibom.diffing import diff_aibom, gate_failures
 from aibom.exporters import export_cyclonedx, export_spdx
 from aibom.storage import load_json, persist_run
-from aibom.validation import AIBOMValidationError, validate_aibom
+from aibom.validation import AIBOMValidationException, validate_aibom
 
 
 COMPLIANCE_STARTER = """# Starter Compliance Mapping\n\nThis mapping is a starter reference only and not legal advice.\n"""
@@ -25,7 +25,12 @@ def cmd_generate(args: argparse.Namespace) -> int:
     target = Path(args.target).resolve()
     out = Path(args.output).resolve()
     aibom = generate_aibom(target, include_prompts=args.include_prompts)
-    validate_aibom(aibom)
+    try:
+        validate_aibom(aibom)
+    except AIBOMValidationException as exc:
+        print(f"ERROR: Schema validation failed at {exc.pointer}: {exc.message}", file=sys.stderr)
+        return 2
+
     _write_json(out, aibom)
     persist_run(target, aibom)
 
@@ -42,8 +47,12 @@ def cmd_generate(args: argparse.Namespace) -> int:
 
 def cmd_validate(args: argparse.Namespace) -> int:
     src = load_json(Path(args.input))
-    validate_aibom(src)
-    print(f"Validation passed: {args.input}")
+    try:
+        validate_aibom(src)
+    except AIBOMValidationException as exc:
+        print(f"ERROR: Schema validation failed at {exc.pointer}: {exc.message}", file=sys.stderr)
+        return 2
+    print("OK: AIBOM validates against schema")
     return 0
 
 def cmd_export(args: argparse.Namespace) -> int:
@@ -130,9 +139,9 @@ def main() -> int:
     args = parser.parse_args()
     try:
         return args.func(args)
-    except AIBOMValidationError as exc:
-        print(str(exc), file=sys.stderr)
-        return 1
+    except AIBOMValidationException as exc:
+        print(f"ERROR: Schema validation failed at {exc.pointer}: {exc.message}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":
