@@ -45,7 +45,13 @@ class AIBOMVisitor(ast.NodeVisitor):
         name = self._name_of(node.func)
         leaf = name.split(".")[-1]
         if leaf in MODEL_CLASS_HINTS:
-            self.models.append({"type": leaf, "model": self._arg_or_kw(node, "model", "model_name"), "source_file": str(self.file_path)})
+            self.models.append(
+                {
+                    "type": leaf,
+                    "model": self._arg_or_kw(node, "model", "model_name"),
+                    "source_file": str(self.file_path),
+                }
+            )
         if leaf in TOOL_HINTS or "agent" in leaf.lower():
             self.tools.append({"name": leaf, "source_file": str(self.file_path)})
         if any(part in VECTORSTORE_HINTS for part in name.split(".")):
@@ -68,9 +74,17 @@ class AIBOMVisitor(ast.NodeVisitor):
 
     def _arg_or_kw(self, node: ast.Call, *keys: str, default: str = "unknown") -> str:
         for kw in node.keywords:
-            if kw.arg in keys and isinstance(kw.value, ast.Constant) and isinstance(kw.value.value, str):
+            if (
+                kw.arg in keys
+                and isinstance(kw.value, ast.Constant)
+                and isinstance(kw.value.value, str)
+            ):
                 return kw.value.value
-        if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
+        if (
+            node.args
+            and isinstance(node.args[0], ast.Constant)
+            and isinstance(node.args[0].value, str)
+        ):
             return node.args[0].value
         return default
 

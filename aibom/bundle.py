@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -14,7 +13,9 @@ def build_manifest(files: dict[str, bytes]) -> dict[str, str]:
     return {name: sha256_bytes(content) for name, content in sorted(files.items())}
 
 
-def create_bundle(aibom_path: Path, out_zip: Path, baseline_path: Path | None = None, compliance_md: str = "") -> Path:
+def create_bundle(
+    aibom_path: Path, out_zip: Path, baseline_path: Path | None = None, compliance_md: str = ""
+) -> Path:
     aibom = load_json(aibom_path)
     files: dict[str, bytes] = {}
     files["AIBOM.json"] = stable_json(aibom).encode("utf-8")

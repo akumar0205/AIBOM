@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import platform
 import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 def stable_json(data: Any) -> str:
@@ -28,9 +31,15 @@ def utc_now() -> str:
 
 def git_sha(cwd: Path) -> str:
     try:
-        out = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=str(cwd), text=True).strip()
+        out = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=str(cwd),
+            text=True,
+            stderr=subprocess.PIPE,
+        ).strip()
         return out
-    except Exception:
+    except (subprocess.SubprocessError, OSError) as e:
+        logger.warning("Failed to get git SHA in %s: %s", cwd, e)
         return "unknown"
 
 
