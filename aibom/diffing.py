@@ -13,12 +13,13 @@ def diff_aibom(old: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
     for sec, k in sections.items():
         old_i = _index(old.get(sec, []), k)
         new_i = _index(new.get(sec, []), k)
-        added = sorted([new_i[x] for x in new_i.keys() - old_i.keys()], key=lambda x: str(x))
-        removed = sorted([old_i[x] for x in old_i.keys() - new_i.keys()], key=lambda x: str(x))
-        changed = sorted(
-            [{"before": old_i[x], "after": new_i[x]} for x in new_i.keys() & old_i.keys() if old_i[x] != new_i[x]],
-            key=lambda x: str(x),
-        )
+        added = [new_i[x] for x in sorted(new_i.keys() - old_i.keys())]
+        removed = [old_i[x] for x in sorted(old_i.keys() - new_i.keys())]
+        changed = [
+            {"before": old_i[x], "after": new_i[x]}
+            for x in sorted(new_i.keys() & old_i.keys())
+            if old_i[x] != new_i[x]
+        ]
         out["added"][sec] = added
         out["removed"][sec] = removed
         out["changed"][sec] = changed
