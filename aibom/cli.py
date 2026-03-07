@@ -13,7 +13,6 @@ from aibom.exporters import export_cyclonedx, export_spdx
 from aibom.storage import load_json, persist_run
 from aibom.validation import AIBOMValidationException, validate_aibom
 
-
 COMPLIANCE_STARTER = """# Starter Compliance Mapping\n\nThis mapping is a starter reference only and not legal advice.\n"""
 
 
@@ -39,10 +38,13 @@ def cmd_generate(args: argparse.Namespace) -> int:
         _write_json(spdx_out, export_spdx(aibom))
         if args.bundle_out:
             baseline = target / ".aibom" / "baseline.json"
-            create_bundle(out, Path(args.bundle_out).resolve(), baseline if baseline.exists() else None, COMPLIANCE_STARTER)
+            create_bundle(
+                out,
+                Path(args.bundle_out).resolve(),
+                baseline if baseline.exists() else None,
+                COMPLIANCE_STARTER,
+            )
     return 0
-
-
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
@@ -54,6 +56,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
         return 2
     print("OK: AIBOM validates against schema")
     return 0
+
 
 def cmd_export(args: argparse.Namespace) -> int:
     src = load_json(Path(args.input))

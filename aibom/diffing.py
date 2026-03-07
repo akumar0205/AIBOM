@@ -16,7 +16,11 @@ def diff_aibom(old: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
         added = sorted([new_i[x] for x in new_i.keys() - old_i.keys()], key=lambda x: str(x))
         removed = sorted([old_i[x] for x in old_i.keys() - new_i.keys()], key=lambda x: str(x))
         changed = sorted(
-            [{"before": old_i[x], "after": new_i[x]} for x in new_i.keys() & old_i.keys() if old_i[x] != new_i[x]],
+            [
+                {"before": old_i[x], "after": new_i[x]}
+                for x in new_i.keys() & old_i.keys()
+                if old_i[x] != new_i[x]
+            ],
             key=lambda x: str(x),
         )
         out["added"][sec] = added
