@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import tempfile
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from aibom.diffing import diff_aibom
@@ -73,6 +76,113 @@ def _cert_metadata(cert_path: Path) -> dict[str, str]:
     }
 
 
+def _parse_openssl_time(value: str) -> datetime:
+    return datetime.strptime(value, "%b %d %H:%M:%S %Y %Z").replace(tzinfo=timezone.utc)
+
+
+def _certificate_sans(cert_path: Path) -> list[str]:
+    ext = _openssl(["x509", "-in", str(cert_path), "-noout", "-ext", "subjectAltName"]).stdout
+    return re.findall(r"DNS:([^,\n]+)", ext)
+
+
+def _verify_chain(
+    signing_cert: Path,
+    ca_bundle: Path | None,
+    trusted_roots: list[Path] | None,
+    crl_file: Path | None,
+    revocation_policy: str,
+) -> None:
+    if not ca_bundle and not trusted_roots:
+        return
+
+    args = ["verify"]
+    if ca_bundle:
+        args += ["-CAfile", str(ca_bundle)]
+    if trusted_roots:
+        roots = tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".pem", delete=False)
+        with roots:
+            for root in trusted_roots:
+                roots.write(root.read_text(encoding="utf-8"))
+                roots.write("\n")
+        args += ["-CAfile", roots.name]
+    if revocation_policy == "crl":
+        if not crl_file:
+            raise ValueError("CRL revocation policy requires a CRL file")
+        args += ["-crl_check", "-CRLfile", str(crl_file)]
+
+    args.append(str(signing_cert))
+    try:
+        _openssl(args)
+    finally:
+        if trusted_roots:
+            Path(roots.name).unlink(missing_ok=True)
+
+
+def _enforce_validity_window(signing_cert: Path) -> None:
+    metadata = _cert_metadata(signing_cert)
+    not_before = _parse_openssl_time(metadata["not_before"])
+    not_after = _parse_openssl_time(metadata["not_after"])
+    now = datetime.now(timezone.utc)
+    if now < not_before or now > not_after:
+        raise ValueError("Signing certificate is outside its validity window")
+
+
+def _match_allowlist(signing_cert: Path, allowlist_policy: dict[str, Any] | None) -> dict[str, Any]:
+    cert = _cert_metadata(signing_cert)
+    cert_fingerprint = cert.get("sha256_fingerprint", "")
+    cert_subject = cert.get("subject", "")
+    cert_sans = _certificate_sans(signing_cert)
+
+    if not allowlist_policy:
+        return {"status": "skipped", "reason": "no allowlist policy provided"}
+
+    fingerprints = set(allowlist_policy.get("sha256_fingerprints") or [])
+    subjects = set(allowlist_policy.get("subjects") or [])
+    san_dns = set(allowlist_policy.get("san_dns") or [])
+
+    matches = {
+        "sha256_fingerprint": bool(fingerprints and cert_fingerprint in fingerprints),
+        "subject": bool(subjects and cert_subject in subjects),
+        "san_dns": bool(san_dns and any(name in san_dns for name in cert_sans)),
+    }
+
+    if any(matches.values()):
+        return {
+            "status": "passed",
+            "matches": matches,
+            "certificate": {
+                "subject": cert_subject,
+                "sha256_fingerprint": cert_fingerprint,
+                "san_dns": cert_sans,
+            },
+        }
+
+    raise ValueError("Signer certificate is not authorized by allowlist policy")
+
+
+def _evaluate_revocation(
+    signing_cert: Path,
+    revocation_policy: str,
+    revocation_hook: Callable[[Path], tuple[bool, str] | bool] | None = None,
+) -> dict[str, Any]:
+    if revocation_policy == "none":
+        return {"status": "skipped", "reason": "revocation policy disabled"}
+    if revocation_policy == "crl":
+        return {"status": "passed", "mechanism": "crl"}
+    if revocation_policy == "ocsp":
+        if revocation_hook:
+            hook_result = revocation_hook(signing_cert)
+            if isinstance(hook_result, tuple):
+                allowed, detail = hook_result
+            else:
+                allowed, detail = bool(hook_result), "hook returned boolean"
+            if not allowed:
+                raise ValueError(f"Revocation hook rejected certificate: {detail}")
+            return {"status": "passed", "mechanism": "ocsp", "detail": detail}
+        return {"status": "skipped", "reason": "ocsp policy selected without hook"}
+    return {"status": "skipped", "reason": "unknown revocation policy"}
+
+
 def sign_bundle(
     bundle_path: Path,
     signing_key: Path,
@@ -112,6 +222,10 @@ def sign_bundle(
             "algorithm": "RSA-SHA256",
         },
         "certificate": _cert_metadata(signing_cert),
+        "policy_evaluation": {
+            "status": "not_evaluated",
+            "checks": {},
+        },
     }
     provenance_path.write_text(stable_json(provenance), encoding="utf-8")
     return signature_path, provenance_path
@@ -122,7 +236,24 @@ def verify_bundle_signature(
     signature_path: Path,
     signing_cert: Path,
     provenance_path: Path | None = None,
+    ca_bundle: Path | None = None,
+    trusted_roots: list[Path] | None = None,
+    revocation_policy: str = "none",
+    crl_file: Path | None = None,
+    allowlist_policy: dict[str, Any] | None = None,
+    revocation_hook: Callable[[Path], tuple[bool, str] | bool] | None = None,
 ) -> None:
+    _enforce_validity_window(signing_cert)
+    _verify_chain(signing_cert, ca_bundle, trusted_roots, crl_file, revocation_policy)
+
+    policy_checks: dict[str, Any] = {
+        "certificate_validity": {"status": "passed"},
+        "certificate_chain": {
+            "status": "passed" if (ca_bundle or trusted_roots) else "skipped",
+            "reason": "no trust anchors provided" if not (ca_bundle or trusted_roots) else None,
+        },
+    }
+
     with tempfile.NamedTemporaryFile(
         "w", encoding="utf-8", suffix=".pem", delete=False
     ) as pubkey_file:
@@ -162,3 +293,26 @@ def verify_bundle_signature(
             raise ValueError(
                 "Provenance certificate fingerprint does not match provided certificate"
             )
+
+    policy_checks["signer_allowlist"] = _match_allowlist(signing_cert, allowlist_policy)
+    policy_checks["revocation"] = _evaluate_revocation(
+        signing_cert,
+        revocation_policy,
+        revocation_hook=revocation_hook,
+    )
+
+    if provenance_path:
+        provenance = (
+            json.loads(provenance_path.read_text(encoding="utf-8"))
+            if provenance_path.exists()
+            else {
+                "attestation_type": "aibom-bundle-signature/v1",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+        provenance["policy_evaluation"] = {
+            "status": "passed",
+            "evaluated_at": datetime.now(timezone.utc).isoformat(),
+            "checks": policy_checks,
+        }
+        provenance_path.write_text(stable_json(provenance), encoding="utf-8")
