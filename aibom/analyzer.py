@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import ast
+import json
+import re
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from aibom.risk.heuristics import generate_risk_findings
 from aibom.utils import git_sha, sha256_bytes, stable_json, utc_now
@@ -18,6 +21,49 @@ MODEL_CLASS_HINTS = {"OpenAI", "ChatOpenAI", "HuggingFaceHub", "Ollama", "ChatAn
 TOOL_HINTS = {"initialize_agent", "load_tools", "Tool", "AgentExecutor"}
 VECTORSTORE_HINTS = {"FAISS", "Chroma", "Pinecone"}
 PROMPT_HINTS = {"PromptTemplate", "ChatPromptTemplate"}
+CONFIG_GLOBS = ("*.yaml", "*.yml", "*.json", ".env")
+CONFIG_KEY_HINTS = {
+    "model": "model configuration",
+    "model_name": "model configuration",
+    "provider": "provider configuration",
+    "openai_api_key": "provider credential",
+    "anthropic_api_key": "provider credential",
+    "huggingfacehub_api_token": "provider credential",
+    "azure_openai_api_key": "provider credential",
+}
+RUNTIME_MANIFEST_FILES = {
+    "requirements.txt",
+    "poetry.lock",
+    "Pipfile.lock",
+    "package-lock.json",
+    "Dockerfile",
+    "docker-compose.yml",
+    "docker-compose.yaml",
+}
+
+
+@dataclass
+class ScanResult:
+    models: list[dict[str, Any]] = field(default_factory=list)
+    datasets: list[dict[str, Any]] = field(default_factory=list)
+    tools: list[dict[str, Any]] = field(default_factory=list)
+    prompts: list[dict[str, Any]] = field(default_factory=list)
+    frameworks: set[str] = field(default_factory=set)
+    scan_findings: list[dict[str, Any]] = field(default_factory=list)
+
+
+@dataclass
+class ScanContext:
+    target_dir: Path
+    include_prompts: bool
+    include_runtime_manifests: bool
+
+
+class Detector(Protocol):
+    source_type: str
+
+    def scan(self, context: ScanContext) -> ScanResult:
+        ...
 
 
 class AIBOMVisitor(ast.NodeVisitor):
@@ -80,6 +126,135 @@ class AIBOMVisitor(ast.NodeVisitor):
                 self.imported_frameworks.add(fw)
 
 
+class PythonAstDetector:
+    source_type = "python"
+
+    def scan(self, context: ScanContext) -> ScanResult:
+        result = ScanResult()
+        for py_file in find_python_files(context.target_dir):
+            try:
+                tree = ast.parse(py_file.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            rel = py_file.relative_to(context.target_dir)
+            visitor = AIBOMVisitor(rel, include_prompts=context.include_prompts)
+            visitor.visit(tree)
+            result.models.extend(visitor.models)
+            result.datasets.extend(visitor.datasets)
+            result.tools.extend(visitor.tools)
+            result.prompts.extend(visitor.prompts)
+            result.frameworks.update(visitor.imported_frameworks)
+
+            for model in visitor.models:
+                result.scan_findings.append(
+                    _finding(
+                        finding_id=f"python-model:{model['type']}:{model['source_file']}",
+                        category="model invocation",
+                        source_type=self.source_type,
+                        source_file=model["source_file"],
+                        severity="medium",
+                        confidence="high",
+                        evidence=f"Model class {model['type']} detected in Python source.",
+                    )
+                )
+        return result
+
+
+class ConfigFileDetector:
+    source_type = "config"
+
+    def scan(self, context: ScanContext) -> ScanResult:
+        result = ScanResult()
+        candidates = _config_candidates(context.target_dir)
+        for file_path in candidates:
+            rel = file_path.relative_to(context.target_dir)
+            text = _safe_read_text(file_path)
+            if not text:
+                continue
+
+            kv_pairs = _extract_key_values(file_path, text)
+            for key, value in kv_pairs:
+                normalized = key.lower()
+                if normalized not in CONFIG_KEY_HINTS:
+                    continue
+
+                descriptor = CONFIG_KEY_HINTS[normalized]
+                severity = "high" if "credential" in descriptor else "medium"
+                confidence = "high" if normalized in {"model", "model_name", "provider"} else "medium"
+                result.scan_findings.append(
+                    _finding(
+                        finding_id=f"config:{normalized}:{rel}",
+                        category=descriptor,
+                        source_type=self.source_type,
+                        source_file=str(rel),
+                        severity=severity,
+                        confidence=confidence,
+                        evidence=f"{key}={value[:80]}" if value else key,
+                    )
+                )
+
+                if normalized in {"model", "model_name"} and value:
+                    result.models.append(
+                        {
+                            "type": "ConfigModelHint",
+                            "model": value,
+                            "source_file": str(rel),
+                            "source_type": self.source_type,
+                            "confidence": "medium",
+                        }
+                    )
+                if normalized == "provider" and value:
+                    result.frameworks.add(value.lower())
+        return result
+
+
+class RuntimeManifestDetector:
+    source_type = "runtime_manifest"
+
+    def scan(self, context: ScanContext) -> ScanResult:
+        if not context.include_runtime_manifests:
+            return ScanResult()
+
+        result = ScanResult()
+        for file_path in _runtime_manifest_candidates(context.target_dir):
+            rel = file_path.relative_to(context.target_dir)
+            text = _safe_read_text(file_path)
+            if not text:
+                continue
+
+            deps = _extract_dependencies(file_path.name, text)
+            if deps:
+                result.scan_findings.append(
+                    _finding(
+                        finding_id=f"runtime-deps:{rel}",
+                        category="dependency graph",
+                        source_type=self.source_type,
+                        source_file=str(rel),
+                        severity="medium",
+                        confidence="medium",
+                        evidence=f"Detected dependencies: {', '.join(sorted(deps)[:10])}",
+                    )
+                )
+                for dep in deps:
+                    for fw, aliases in FRAMEWORK_ALIASES.items():
+                        if dep.lower() in aliases:
+                            result.frameworks.add(fw)
+
+            if file_path.name.lower().startswith("docker") or "compose" in file_path.name.lower():
+                result.scan_findings.append(
+                    _finding(
+                        finding_id=f"runtime-container:{rel}",
+                        category="container metadata",
+                        source_type=self.source_type,
+                        source_file=str(rel),
+                        severity="low",
+                        confidence="high",
+                        evidence="Container runtime metadata discovered.",
+                    )
+                )
+        return result
+
+
 def _dedupe(items: list[dict[str, Any]], keys: list[str]) -> list[dict[str, Any]]:
     seen: set[tuple[str, ...]] = set()
     out: list[dict[str, Any]] = []
@@ -99,25 +274,33 @@ def find_python_files(target: Path) -> list[Path]:
     )
 
 
-def generate_aibom(target_dir: Path, include_prompts: bool = False) -> dict[str, Any]:
+def generate_aibom(
+    target_dir: Path,
+    include_prompts: bool = False,
+    include_runtime_manifests: bool = False,
+) -> dict[str, Any]:
+    context = ScanContext(
+        target_dir=target_dir,
+        include_prompts=include_prompts,
+        include_runtime_manifests=include_runtime_manifests,
+    )
+    detectors: list[Detector] = [PythonAstDetector(), ConfigFileDetector(), RuntimeManifestDetector()]
+
     models: list[dict[str, Any]] = []
     datasets: list[dict[str, Any]] = []
     tools: list[dict[str, Any]] = []
     prompts: list[dict[str, Any]] = []
     frameworks: set[str] = set()
+    scan_findings: list[dict[str, Any]] = []
 
-    for py_file in find_python_files(target_dir):
-        try:
-            tree = ast.parse(py_file.read_text(encoding="utf-8"))
-        except Exception:
-            continue
-        visitor = AIBOMVisitor(py_file.relative_to(target_dir), include_prompts=include_prompts)
-        visitor.visit(tree)
-        models.extend(visitor.models)
-        datasets.extend(visitor.datasets)
-        tools.extend(visitor.tools)
-        prompts.extend(visitor.prompts)
-        frameworks.update(visitor.imported_frameworks)
+    for detector in detectors:
+        partial = detector.scan(context)
+        models.extend(partial.models)
+        datasets.extend(partial.datasets)
+        tools.extend(partial.tools)
+        prompts.extend(partial.prompts)
+        frameworks.update(partial.frameworks)
+        scan_findings.extend(partial.scan_findings)
 
     doc: dict[str, Any] = {
         "schema_version": "1.0",
@@ -130,8 +313,122 @@ def generate_aibom(target_dir: Path, include_prompts: bool = False) -> dict[str,
         "tools": _dedupe(tools, ["name", "source_file"]),
         "frameworks": [{"name": f} for f in sorted(frameworks)],
         "prompts": _dedupe(prompts, ["id"]),
+        "scan_findings": _dedupe(scan_findings, ["id"]),
+        "source_types": [
+            {"name": "python", "default_severity": "medium", "default_confidence": "high"},
+            {"name": "config", "default_severity": "medium", "default_confidence": "medium"},
+            {
+                "name": "runtime_manifest",
+                "default_severity": "medium",
+                "default_confidence": "medium",
+            },
+        ],
     }
     doc["risk_findings"] = generate_risk_findings(doc)
     artifact_hash = sha256_bytes(stable_json(doc).encode("utf-8"))
     doc["metadata"]["artifact_sha256"] = artifact_hash
     return doc
+
+
+def _config_candidates(target: Path) -> list[Path]:
+    ignored = {".venv", "venv", "__pycache__", ".git"}
+    out: set[Path] = set()
+    for pattern in CONFIG_GLOBS:
+        out.update(p for p in target.rglob(pattern) if not any(part in ignored for part in p.parts))
+    return sorted(out)
+
+
+def _runtime_manifest_candidates(target: Path) -> list[Path]:
+    ignored = {".venv", "venv", "__pycache__", ".git"}
+    out: list[Path] = []
+    for p in target.rglob("*"):
+        if not p.is_file() or any(part in ignored for part in p.parts):
+            continue
+        if p.name in RUNTIME_MANIFEST_FILES:
+            out.append(p)
+    return sorted(out)
+
+
+def _safe_read_text(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except Exception:
+        return ""
+
+
+def _extract_key_values(path: Path, text: str) -> list[tuple[str, str]]:
+    suffix = path.suffix.lower()
+    if path.name == ".env":
+        pairs: list[tuple[str, str]] = []
+        for line in text.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            pairs.append((k.strip(), v.strip().strip('"').strip("'")))
+        return pairs
+
+    if suffix == ".json":
+        try:
+            data = json.loads(text)
+        except Exception:
+            return []
+        return [(k, str(v)) for k, v in _flatten_dict(data)]
+
+    # yaml/yml naive line parser avoids requiring PyYAML
+    pairs = []
+    for line in text.splitlines():
+        m = re.match(r"^\s*([A-Za-z0-9_\-]+)\s*:\s*(.+?)\s*$", line)
+        if m:
+            pairs.append((m.group(1), m.group(2).strip().strip('"').strip("'")))
+    return pairs
+
+
+def _flatten_dict(data: Any, prefix: str = "") -> list[tuple[str, Any]]:
+    if isinstance(data, dict):
+        out: list[tuple[str, Any]] = []
+        for key, value in data.items():
+            out.extend(_flatten_dict(value, f"{prefix}.{key}" if prefix else str(key)))
+        return out
+    return [(prefix.split(".")[-1], data)]
+
+
+def _extract_dependencies(filename: str, text: str) -> set[str]:
+    deps: set[str] = set()
+    if filename == "requirements.txt":
+        for line in text.splitlines():
+            pkg = line.strip().split("==")[0].split(">=")[0]
+            if pkg and not pkg.startswith("#"):
+                deps.add(pkg.lower())
+    elif filename == "poetry.lock":
+        deps.update(m.group(1).lower() for m in re.finditer(r'name = "([^"]+)"', text))
+    elif filename in {"Pipfile.lock", "package-lock.json"}:
+        try:
+            data = json.loads(text)
+        except Exception:
+            return deps
+        if filename == "Pipfile.lock":
+            deps.update((data.get("default") or {}).keys())
+        else:
+            deps.update((data.get("dependencies") or {}).keys())
+    return deps
+
+
+def _finding(
+    finding_id: str,
+    category: str,
+    source_type: str,
+    source_file: str,
+    severity: str,
+    confidence: str,
+    evidence: str,
+) -> dict[str, str]:
+    return {
+        "id": finding_id,
+        "category": category,
+        "source_type": source_type,
+        "source_file": source_file,
+        "severity": severity,
+        "confidence": confidence,
+        "evidence": evidence,
+    }

@@ -24,7 +24,11 @@ def _write_json(path: Path, data: dict) -> None:
 def cmd_generate(args: argparse.Namespace) -> int:
     target = Path(args.target).resolve()
     out = Path(args.output).resolve()
-    aibom = generate_aibom(target, include_prompts=args.include_prompts)
+    aibom = generate_aibom(
+        target,
+        include_prompts=args.include_prompts,
+        include_runtime_manifests=args.include_runtime_manifests,
+    )
     try:
         validate_aibom(aibom)
     except AIBOMValidationException as exc:
@@ -145,6 +149,7 @@ def build_parser() -> argparse.ArgumentParser:
     gen.add_argument("target", nargs="?", default=".")
     gen.add_argument("-o", "--output", default="AI_BOM.json")
     gen.add_argument("--include-prompts", action="store_true")
+    gen.add_argument("--include-runtime-manifests", action="store_true")
     gen.add_argument("--audit-mode", action="store_true")
     gen.add_argument("--bundle-out")
     gen.set_defaults(func=cmd_generate)

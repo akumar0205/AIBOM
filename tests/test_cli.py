@@ -21,7 +21,7 @@ def _fixture_project() -> Path:
 
 
 def test_generate_matches_golden_structure() -> None:
-    doc = generate_aibom(_fixture_project())
+    doc = generate_aibom(_fixture_project(), include_runtime_manifests=True)
     validate_aibom(doc)
     golden = json.loads((Path(__file__).parent / "fixtures" / "golden_aibom.json").read_text())
     for k in ["generated_at", "git_sha", "artifact_sha256"]:
@@ -32,6 +32,28 @@ def test_generate_matches_golden_structure() -> None:
 def test_generated_aibom_validates_against_schema() -> None:
     doc = generate_aibom(_fixture_project())
     validate_aibom(doc)
+
+
+def test_config_detector_finds_model_provider_and_keys() -> None:
+    doc = generate_aibom(_fixture_project())
+
+    assert any(
+        model["type"] == "ConfigModelHint" and model["source_file"] == "settings.yaml"
+        for model in doc["models"]
+    )
+    assert {f["source_type"] for f in doc["scan_findings"]} >= {"python", "config"}
+    assert any(
+        f["category"] == "provider credential" and f["source_file"] == ".env"
+        for f in doc["scan_findings"]
+    )
+
+
+def test_runtime_manifest_ingestion_is_opt_in() -> None:
+    base = generate_aibom(_fixture_project())
+    runtime = generate_aibom(_fixture_project(), include_runtime_manifests=True)
+
+    assert not any(f["source_type"] == "runtime_manifest" for f in base["scan_findings"])
+    assert any(f["source_type"] == "runtime_manifest" for f in runtime["scan_findings"])
 
 
 def test_validation_fails_for_missing_required_field() -> None:
@@ -109,6 +131,7 @@ def test_generate_fails_closed_before_writing_output(
             target=str(_fixture_project()),
             output=str(output_path),
             include_prompts=False,
+            include_runtime_manifests=False,
             audit_mode=False,
             bundle_out=None,
         )
