@@ -48,6 +48,27 @@ def test_config_detector_finds_model_provider_and_keys() -> None:
     )
 
 
+def test_secret_evidence_is_redacted_for_all_policies() -> None:
+    for policy in ("strict", "default", "off"):
+        doc = generate_aibom(_fixture_project(), redaction_policy=policy)
+        evidence = "\n".join(f["evidence"] for f in doc["scan_findings"] if f["source_type"] == "config")
+        assert "sk-test-value" not in evidence
+        assert "anth-test" not in evidence
+        assert "[masked:" in evidence
+        assert "hash:" in evidence
+
+
+def test_strict_redaction_masks_non_secret_config_values() -> None:
+    strict = generate_aibom(_fixture_project(), redaction_policy="strict")
+    default = generate_aibom(_fixture_project(), redaction_policy="default")
+
+    strict_evidence = {f["id"]: f["evidence"] for f in strict["scan_findings"] if f["source_type"] == "config"}
+    default_evidence = {f["id"]: f["evidence"] for f in default["scan_findings"] if f["source_type"] == "config"}
+
+    assert "[masked:" in strict_evidence["config:model:settings.yaml"]
+    assert default_evidence["config:model:settings.yaml"] == "model=gpt-4.1-mini"
+
+
 def test_runtime_manifest_ingestion_is_opt_in() -> None:
     base = generate_aibom(_fixture_project())
     runtime = generate_aibom(_fixture_project(), include_runtime_manifests=True)
@@ -82,6 +103,49 @@ def test_validation_fixtures_cover_valid_and_invalid_cases() -> None:
         validate_aibom(invalid_doc)
 
     assert "/metadata/" in str(exc.value)
+
+
+def test_cli_prompt_inclusion_requires_acknowledgement(tmp_path: Path) -> None:
+    output_path = tmp_path / "aibom.json"
+    cmd = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "generate",
+            str(_fixture_project()),
+            "-o",
+            str(output_path),
+            "--include-prompts",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert cmd.returncode == 2
+    assert "requires --acknowledge-prompt-exposure-risk" in cmd.stderr
+
+
+def test_cli_prompt_inclusion_warns_with_acknowledgement(tmp_path: Path) -> None:
+    output_path = tmp_path / "aibom.json"
+    cmd = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "generate",
+            str(_fixture_project()),
+            "-o",
+            str(output_path),
+            "--include-prompts",
+            "--acknowledge-prompt-exposure-risk",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert cmd.returncode == 0
+    assert "WARNING: Including prompts may expose sensitive" in cmd.stderr
 
 
 def test_cli_validate_command_success_and_failure(tmp_path: Path) -> None:
@@ -131,7 +195,9 @@ def test_generate_fails_closed_before_writing_output(
             target=str(_fixture_project()),
             output=str(output_path),
             include_prompts=False,
+            acknowledge_prompt_exposure_risk=False,
             include_runtime_manifests=False,
+            redaction_policy="strict",
             audit_mode=False,
             bundle_out=None,
         )

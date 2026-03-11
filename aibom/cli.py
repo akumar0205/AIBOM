@@ -35,10 +35,24 @@ def _parse_allowlist(args: argparse.Namespace) -> dict[str, list[str]] | None:
 def cmd_generate(args: argparse.Namespace) -> int:
     target = Path(args.target).resolve()
     out = Path(args.output).resolve()
+    if args.include_prompts and not args.acknowledge_prompt_exposure_risk:
+        print(
+            "ERROR: --include-prompts is high risk and requires --acknowledge-prompt-exposure-risk.",
+            file=sys.stderr,
+        )
+        return 2
+
+    if args.include_prompts:
+        print(
+            "WARNING: Including prompts may expose sensitive business logic or secrets in templates.",
+            file=sys.stderr,
+        )
+
     aibom = generate_aibom(
         target,
         include_prompts=args.include_prompts,
         include_runtime_manifests=args.include_runtime_manifests,
+        redaction_policy=args.redaction_policy,
     )
     try:
         validate_aibom(aibom)
@@ -166,7 +180,18 @@ def build_parser() -> argparse.ArgumentParser:
     gen.add_argument("target", nargs="?", default=".")
     gen.add_argument("-o", "--output", default="AI_BOM.json")
     gen.add_argument("--include-prompts", action="store_true")
+    gen.add_argument(
+        "--acknowledge-prompt-exposure-risk",
+        action="store_true",
+        help="Required acknowledgement for --include-prompts high-risk data exposure.",
+    )
     gen.add_argument("--include-runtime-manifests", action="store_true")
+    gen.add_argument(
+        "--redaction-policy",
+        choices=["strict", "default", "off"],
+        default="strict",
+        help="Evidence redaction policy for scan findings (SOC default: strict).",
+    )
     gen.add_argument("--audit-mode", action="store_true")
     gen.add_argument("--bundle-out")
     gen.set_defaults(func=cmd_generate)

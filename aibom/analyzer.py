@@ -31,6 +31,13 @@ CONFIG_KEY_HINTS = {
     "huggingfacehub_api_token": "provider credential",
     "azure_openai_api_key": "provider credential",
 }
+REDUCTION_POLICIES = {"strict", "default", "off"}
+SENSITIVE_CONFIG_KEYS = {
+    "openai_api_key",
+    "anthropic_api_key",
+    "huggingfacehub_api_token",
+    "azure_openai_api_key",
+}
 RUNTIME_MANIFEST_FILES = {
     "requirements.txt",
     "poetry.lock",
@@ -57,6 +64,7 @@ class ScanContext:
     target_dir: Path
     include_prompts: bool
     include_runtime_manifests: bool
+    redaction_policy: str = "strict"
 
 
 class Detector(Protocol):
@@ -189,7 +197,7 @@ class ConfigFileDetector:
                         source_file=str(rel),
                         severity=severity,
                         confidence=confidence,
-                        evidence=f"{key}={value[:80]}" if value else key,
+                        evidence=_config_evidence(key, value, normalized, context.redaction_policy),
                     )
                 )
 
@@ -278,11 +286,18 @@ def generate_aibom(
     target_dir: Path,
     include_prompts: bool = False,
     include_runtime_manifests: bool = False,
+    redaction_policy: str = "strict",
 ) -> dict[str, Any]:
+    normalized_policy = redaction_policy.lower()
+    if normalized_policy not in REDUCTION_POLICIES:
+        msg = f"Unsupported redaction policy: {redaction_policy}"
+        raise ValueError(msg)
+
     context = ScanContext(
         target_dir=target_dir,
         include_prompts=include_prompts,
         include_runtime_manifests=include_runtime_manifests,
+        redaction_policy=normalized_policy,
     )
     detectors: list[Detector] = [PythonAstDetector(), ConfigFileDetector(), RuntimeManifestDetector()]
 
@@ -432,3 +447,25 @@ def _finding(
         "confidence": confidence,
         "evidence": evidence,
     }
+
+
+def _config_evidence(key: str, value: str, normalized_key: str, redaction_policy: str) -> str:
+    if not value:
+        return key
+
+    if normalized_key in SENSITIVE_CONFIG_KEYS:
+        return _masked_and_hashed_value(key, value)
+
+    if redaction_policy == "strict":
+        return _masked_and_hashed_value(key, value)
+
+    return f"{key}={value[:80]}"
+
+
+def _masked_and_hashed_value(key: str, value: str) -> str:
+    digest = sha256_bytes(value.encode("utf-8"))[:12]
+    if len(value) <= 4:
+        masked = "*" * len(value)
+    else:
+        masked = f"{value[:2]}{'*' * max(len(value) - 4, 1)}{value[-2:]}"
+    return f"{key}=[masked:{masked} hash:{digest}]"

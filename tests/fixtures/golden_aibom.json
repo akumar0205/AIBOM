@@ -81,7 +81,7 @@
     {
       "category": "model configuration",
       "confidence": "high",
-      "evidence": "model=gpt-4.1-mini",
+      "evidence": "model=[masked:gp********ni hash:13a647d426a0]",
       "id": "config:model:settings.yaml",
       "severity": "medium",
       "source_file": "settings.yaml",
@@ -99,7 +99,7 @@
     {
       "category": "provider configuration",
       "confidence": "high",
-      "evidence": "provider=openai",
+      "evidence": "provider=[masked:op**ai hash:7d3194f79e64]",
       "id": "config:provider:settings.yaml",
       "severity": "medium",
       "source_file": "settings.yaml",
@@ -108,7 +108,7 @@
     {
       "category": "provider credential",
       "confidence": "medium",
-      "evidence": "ANTHROPIC_API_KEY=anth-test",
+      "evidence": "ANTHROPIC_API_KEY=[masked:an*****st hash:25e2f144a82b]",
       "id": "config:anthropic_api_key:.env",
       "severity": "high",
       "source_file": ".env",
@@ -117,7 +117,7 @@
     {
       "category": "provider credential",
       "confidence": "medium",
-      "evidence": "OPENAI_API_KEY=sk-test-value",
+      "evidence": "OPENAI_API_KEY=[masked:sk*********ue hash:928d882b4239]",
       "id": "config:openai_api_key:.env",
       "severity": "high",
       "source_file": ".env",

@@ -35,3 +35,26 @@ When a CVE affecting a direct or transitive dependency is rated **critical** (CV
 4. **Validation gates:** run `pip install --require-hashes -r requirements.lock`, `pip-audit -r requirements.lock --strict`, unit tests, and license policy checks.
 5. **Approvals and deployment:** require Security approval, merge with priority, and deploy at the next emergency window.
 6. **Post-incident evidence:** attach CVE reference, lockfile diff, CI artifacts, and deployment timestamp to the change record.
+
+
+## Data handling tiers for scan evidence
+
+Use `aibom generate` redaction controls to match your SOC data handling policy:
+
+- **Tier 1 (Strict, SOC default):** `--redaction-policy strict`
+  - All config evidence values are masked+hashed in `scan_findings.evidence`.
+  - Raw credentials and non-secret config values are never persisted in evidence output.
+- **Tier 2 (Default):** `--redaction-policy default`
+  - Credential-like values (API keys/tokens) are always masked+hashed.
+  - Non-secret config values (for example `provider` or `model`) may appear in plain text for triage.
+- **Tier 3 (Off):** `--redaction-policy off`
+  - Credential-like values remain masked+hashed (hard safety floor).
+  - Other config values are unredacted to maximize debugging detail.
+
+### Prompt extraction risk controls
+
+`--include-prompts` is high risk because prompt templates can include proprietary logic, PII, or secrets.
+
+- You must explicitly pass `--acknowledge-prompt-exposure-risk` to enable prompt collection.
+- The CLI emits a warning on stderr when prompt collection is enabled.
+- Recommended SOC posture: do not enable prompt collection in shared CI artifacts unless required by an approved exception.
