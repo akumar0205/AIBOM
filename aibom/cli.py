@@ -21,6 +21,17 @@ def _write_json(path: Path, data: dict) -> None:
     path.write_text(json.dumps(data, indent=2, sort_keys=True), encoding="utf-8")
 
 
+def _parse_allowlist(args: argparse.Namespace) -> dict[str, list[str]] | None:
+    policy: dict[str, list[str]] = {}
+    if args.allow_subject:
+        policy["subjects"] = list(args.allow_subject)
+    if args.allow_san_dns:
+        policy["san_dns"] = list(args.allow_san_dns)
+    if args.allow_fingerprint:
+        policy["sha256_fingerprints"] = list(args.allow_fingerprint)
+    return policy or None
+
+
 def cmd_generate(args: argparse.Namespace) -> int:
     target = Path(args.target).resolve()
     out = Path(args.output).resolve()
@@ -111,11 +122,17 @@ def cmd_attest(args: argparse.Namespace) -> int:
         if not args.signature:
             print("ERROR: attest --verify requires --signature", file=sys.stderr)
             return 2
+        trusted_roots = [Path(root) for root in (args.trusted_root or [])]
         verify_bundle_signature(
             bundle,
             Path(args.signature),
             cert,
             Path(args.provenance) if args.provenance else None,
+            ca_bundle=Path(args.ca_bundle) if args.ca_bundle else None,
+            trusted_roots=trusted_roots,
+            revocation_policy=args.revocation_policy,
+            crl_file=Path(args.crl_file) if args.crl_file else None,
+            allowlist_policy=_parse_allowlist(args),
         )
         return 0
 
@@ -189,6 +206,13 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--signature")
     a.add_argument("--provenance")
     a.add_argument("--verify", action="store_true")
+    a.add_argument("--ca-bundle")
+    a.add_argument("--trusted-root", action="append")
+    a.add_argument("--revocation-policy", choices=["none", "crl", "ocsp"], default="none")
+    a.add_argument("--crl-file")
+    a.add_argument("--allow-subject", action="append")
+    a.add_argument("--allow-san-dns", action="append")
+    a.add_argument("--allow-fingerprint", action="append")
     a.set_defaults(func=cmd_attest)
 
     r = sub.add_parser("risk")

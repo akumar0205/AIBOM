@@ -8,6 +8,7 @@
    - Verify detached signature:
      - `openssl x509 -in signing.crt -pubkey -noout > signing.pub`
      - `openssl dgst -sha256 -verify signing.pub -signature evidence.zip.sig evidence.zip`
-   - Verify provenance metadata hashes:
-     - `python -m aibom.cli attest --bundle evidence.zip --signature evidence.zip.sig --provenance provenance.json --signing-cert signing.crt --verify`
-   - Confirm provenance certificate fingerprint matches approved signer policy.
+   - Verify provenance metadata hashes + policy checks:
+     - `python -m aibom.cli attest --bundle evidence.zip --signature evidence.zip.sig --provenance provenance.json --signing-cert signing.crt --verify --ca-bundle ca.pem --allow-fingerprint "SHA256 Fingerprint=..." --revocation-policy none`
+   - If your policy requires CRL validation, use `--revocation-policy crl --crl-file issuer.crl`.
+   - Confirm `provenance.json` contains `policy_evaluation.checks` with passed chain/validity/allowlist checks.

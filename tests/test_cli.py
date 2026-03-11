@@ -205,6 +205,81 @@ def _create_signing_material(tmp_path: Path) -> tuple[Path, Path]:
     return key, cert
 
 
+
+
+def _create_ca_and_leaf(tmp_path: Path) -> tuple[Path, Path, Path]:
+    ca_key = tmp_path / "ca.key"
+    ca_cert = tmp_path / "ca.crt"
+    leaf_key = tmp_path / "leaf.key"
+    leaf_csr = tmp_path / "leaf.csr"
+    leaf_cert = tmp_path / "leaf.crt"
+    ext_file = tmp_path / "leaf.ext"
+
+    subprocess.run(
+        [
+            "openssl",
+            "req",
+            "-x509",
+            "-newkey",
+            "rsa:2048",
+            "-keyout",
+            str(ca_key),
+            "-out",
+            str(ca_cert),
+            "-days",
+            "1",
+            "-nodes",
+            "-subj",
+            "/CN=Test Root CA",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        [
+            "openssl",
+            "req",
+            "-newkey",
+            "rsa:2048",
+            "-keyout",
+            str(leaf_key),
+            "-out",
+            str(leaf_csr),
+            "-nodes",
+            "-subj",
+            "/CN=aibom-leaf",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    ext_file.write_text("subjectAltName=DNS:aibom.example\n")
+    subprocess.run(
+        [
+            "openssl",
+            "x509",
+            "-req",
+            "-in",
+            str(leaf_csr),
+            "-CA",
+            str(ca_cert),
+            "-CAkey",
+            str(ca_key),
+            "-CAcreateserial",
+            "-out",
+            str(leaf_cert),
+            "-days",
+            "1",
+            "-extfile",
+            str(ext_file),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return leaf_key, leaf_cert, ca_cert
+
 def test_bundle_sign_and_attest_verify(tmp_path: Path) -> None:
     doc = generate_aibom(_fixture_project())
     aibom_path = tmp_path / "aibom.json"
@@ -294,3 +369,118 @@ def test_attest_writes_adjacent_artifacts(tmp_path: Path) -> None:
     verify_bundle_signature(bundle_path, sig, cert, provenance)
     with zipfile.ZipFile(bundle_path) as zf:
         assert "MANIFEST.json" in zf.namelist()
+
+
+def test_attest_verify_policy_checks_and_provenance(tmp_path: Path) -> None:
+    doc = generate_aibom(_fixture_project())
+    aibom_path = tmp_path / "aibom.json"
+    aibom_path.write_text(json.dumps(doc), encoding="utf-8")
+    bundle_path = tmp_path / "evidence.zip"
+    create_bundle(aibom_path, bundle_path, compliance_md="# map")
+    key, cert, ca_cert = _create_ca_and_leaf(tmp_path)
+    provenance = tmp_path / "provenance.json"
+
+    sign_cmd = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "attest",
+            "--bundle",
+            str(bundle_path),
+            "--signing-key",
+            str(key),
+            "--signing-cert",
+            str(cert),
+            "--provenance",
+            str(provenance),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert sign_cmd.returncode == 0
+
+    sig = tmp_path / "evidence.zip.sig"
+    verify_cmd = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "attest",
+            "--bundle",
+            str(bundle_path),
+            "--signature",
+            str(sig),
+            "--provenance",
+            str(provenance),
+            "--signing-cert",
+            str(cert),
+            "--verify",
+            "--ca-bundle",
+            str(ca_cert),
+            "--allow-subject",
+            "CN = aibom-leaf",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert verify_cmd.returncode == 0
+
+    prov = json.loads(provenance.read_text(encoding="utf-8"))
+    assert prov["policy_evaluation"]["status"] == "passed"
+    assert prov["policy_evaluation"]["checks"]["certificate_validity"]["status"] == "passed"
+    assert prov["policy_evaluation"]["checks"]["certificate_chain"]["status"] == "passed"
+    assert prov["policy_evaluation"]["checks"]["signer_allowlist"]["status"] == "passed"
+
+
+def test_attest_verify_rejects_unauthorized_signer(tmp_path: Path) -> None:
+    doc = generate_aibom(_fixture_project())
+    aibom_path = tmp_path / "aibom.json"
+    aibom_path.write_text(json.dumps(doc), encoding="utf-8")
+    bundle_path = tmp_path / "evidence.zip"
+    create_bundle(aibom_path, bundle_path, compliance_md="# map")
+    key, cert = _create_signing_material(tmp_path)
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "attest",
+            "--bundle",
+            str(bundle_path),
+            "--signing-key",
+            str(key),
+            "--signing-cert",
+            str(cert),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    sig = tmp_path / "evidence.zip.sig"
+    verify_cmd = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "attest",
+            "--bundle",
+            str(bundle_path),
+            "--signature",
+            str(sig),
+            "--signing-cert",
+            str(cert),
+            "--verify",
+            "--allow-subject",
+            "subject=CN=does-not-match",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert verify_cmd.returncode != 0
+    assert "not authorized" in verify_cmd.stderr
