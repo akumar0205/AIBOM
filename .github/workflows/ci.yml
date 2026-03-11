@@ -17,3 +17,8 @@ jobs:
       - run: ruff check .
       - run: black --check .
       - run: pytest -q
+      - run: |
+          openssl req -x509 -newkey rsa:2048 -keyout signing.key -out signing.crt -days 1 -nodes -subj "/CN=aibom-ci"
+      - run: aibom generate . --audit-mode --bundle-out evidence.zip
+      - run: aibom attest --bundle evidence.zip --signing-key signing.key --signing-cert signing.crt --signature evidence.zip.sig --provenance provenance.json
+      - run: aibom attest --bundle evidence.zip --signature evidence.zip.sig --provenance provenance.json --signing-cert signing.crt --verify

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from aibom import __version__
 from aibom.analyzer import generate_aibom
-from aibom.bundle import create_bundle
+from aibom.bundle import create_bundle, sign_bundle, verify_bundle_signature
 from aibom.diffing import diff_aibom, gate_failures
 from aibom.exporters import export_cyclonedx, export_spdx
 from aibom.storage import load_json, persist_run
@@ -39,10 +39,13 @@ def cmd_generate(args: argparse.Namespace) -> int:
         _write_json(spdx_out, export_spdx(aibom))
         if args.bundle_out:
             baseline = target / ".aibom" / "baseline.json"
-            create_bundle(out, Path(args.bundle_out).resolve(), baseline if baseline.exists() else None, COMPLIANCE_STARTER)
+            create_bundle(
+                out,
+                Path(args.bundle_out).resolve(),
+                baseline if baseline.exists() else None,
+                COMPLIANCE_STARTER,
+            )
     return 0
-
-
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
@@ -54,6 +57,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
         return 2
     print("OK: AIBOM validates against schema")
     return 0
+
 
 def cmd_export(args: argparse.Namespace) -> int:
     src = load_json(Path(args.input))
@@ -80,7 +84,48 @@ def cmd_diff(args: argparse.Namespace) -> int:
 
 def cmd_bundle(args: argparse.Namespace) -> int:
     baseline = Path(args.baseline) if args.baseline else None
-    create_bundle(Path(args.input), Path(args.out), baseline, COMPLIANCE_STARTER)
+    bundle_path = create_bundle(Path(args.input), Path(args.out), baseline, COMPLIANCE_STARTER)
+    if args.sign:
+        if not args.signing_key or not args.signing_cert:
+            print("ERROR: --sign requires --signing-key and --signing-cert", file=sys.stderr)
+            return 2
+        sign_bundle(
+            bundle_path,
+            Path(args.signing_key),
+            Path(args.signing_cert),
+            Path(args.signature_out) if args.signature_out else None,
+            Path(args.provenance_out) if args.provenance_out else None,
+        )
+    return 0
+
+
+def cmd_attest(args: argparse.Namespace) -> int:
+    bundle = Path(args.bundle)
+    cert = Path(args.signing_cert)
+
+    if args.verify:
+        if not args.signature:
+            print("ERROR: attest --verify requires --signature", file=sys.stderr)
+            return 2
+        verify_bundle_signature(
+            bundle,
+            Path(args.signature),
+            cert,
+            Path(args.provenance) if args.provenance else None,
+        )
+        return 0
+
+    if not args.signing_key:
+        print("ERROR: attest signing requires --signing-key", file=sys.stderr)
+        return 2
+
+    sign_bundle(
+        bundle,
+        Path(args.signing_key),
+        cert,
+        Path(args.signature) if args.signature else None,
+        Path(args.provenance) if args.provenance else None,
+    )
     return 0
 
 
@@ -125,7 +170,21 @@ def build_parser() -> argparse.ArgumentParser:
     b.add_argument("--input", required=True)
     b.add_argument("--out", required=True)
     b.add_argument("--baseline")
+    b.add_argument("--sign", action="store_true")
+    b.add_argument("--signing-key")
+    b.add_argument("--signing-cert")
+    b.add_argument("--signature-out")
+    b.add_argument("--provenance-out")
     b.set_defaults(func=cmd_bundle)
+
+    a = sub.add_parser("attest")
+    a.add_argument("--bundle", required=True)
+    a.add_argument("--signing-cert", required=True)
+    a.add_argument("--signing-key")
+    a.add_argument("--signature")
+    a.add_argument("--provenance")
+    a.add_argument("--verify", action="store_true")
+    a.set_defaults(func=cmd_attest)
 
     r = sub.add_parser("risk")
     r.add_argument("--input", required=True)
