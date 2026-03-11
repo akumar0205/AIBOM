@@ -1,0 +1,155 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: aibom-generate
+  labels:
+    app.kubernetes.io/name: aibom
+    app.kubernetes.io/component: generator
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: aibom
+        app.kubernetes.io/component: generator
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: generator
+          image: ghcr.io/example-org/aibom-cli:1.0.0
+          imagePullPolicy: IfNotPresent
+          command: ["aibom", "generate"]
+          args:
+            - "$(AIBOM_TARGET_PATH)"
+            - "--output"
+            - "$(AIBOM_OUTPUT_PATH)"
+            - "--audit-mode"
+            - "--include-runtime-manifests"
+            - "--bundle-out"
+            - "$(AIBOM_BUNDLE_PATH)"
+          env:
+            - name: AIBOM_TARGET_PATH
+              value: "/workspace/source"
+            - name: AIBOM_OUTPUT_PATH
+              value: "/workspace/out/aibom.json"
+            - name: AIBOM_BUNDLE_PATH
+              value: "/workspace/out/aibom.bundle.json"
+            - name: AIBOM_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: aibom-config
+                  key: AIBOM_ENV
+            - name: AIBOM_GIT_SHA
+              valueFrom:
+                configMapKeyRef:
+                  name: aibom-config
+                  key: AIBOM_GIT_SHA
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: aibom-secrets
+                  key: GITHUB_TOKEN
+                  optional: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 1
+              memory: 512Mi
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      volumes:
+        - name: workspace
+          emptyDir: {}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: aibom-generate-nightly
+  labels:
+    app.kubernetes.io/name: aibom
+    app.kubernetes.io/component: generator
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: aibom
+            app.kubernetes.io/component: generator
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: generator
+              image: ghcr.io/example-org/aibom-cli:1.0.0
+              imagePullPolicy: IfNotPresent
+              command: ["aibom", "generate"]
+              args:
+                - "$(AIBOM_TARGET_PATH)"
+                - "--output"
+                - "$(AIBOM_OUTPUT_PATH)"
+                - "--audit-mode"
+                - "--include-runtime-manifests"
+              env:
+                - name: AIBOM_TARGET_PATH
+                  value: "/workspace/source"
+                - name: AIBOM_OUTPUT_PATH
+                  value: "/workspace/out/nightly-aibom.json"
+                - name: AIBOM_ENV
+                  valueFrom:
+                    configMapKeyRef:
+                      name: aibom-config
+                      key: AIBOM_ENV
+                - name: GITHUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: aibom-secrets
+                      key: GITHUB_TOKEN
+                      optional: true
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 1
+                  memory: 512Mi
+              volumeMounts:
+                - name: workspace
+                  mountPath: /workspace
+          volumes:
+            - name: workspace
+              emptyDir: {}
