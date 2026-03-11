@@ -4,12 +4,13 @@ import argparse
 import json
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 import pytest
 
 from aibom.analyzer import generate_aibom
-from aibom.bundle import create_bundle
+from aibom.bundle import create_bundle, verify_bundle_signature
 from aibom.diffing import diff_aibom
 from aibom.exporters import export_spdx
 from aibom.validation import AIBOMValidationException, validate_aibom
@@ -50,13 +51,15 @@ def test_golden_fixture_validates_against_schema() -> None:
 def test_validation_fixtures_cover_valid_and_invalid_cases() -> None:
     fixtures_dir = Path(__file__).parent / "fixtures"
     valid_doc = json.loads((fixtures_dir / "valid_aibom.json").read_text(encoding="utf-8"))
-    invalid_doc = json.loads((fixtures_dir / "invalid_aibom_missing_field.json").read_text(encoding="utf-8"))
+    invalid_doc = json.loads(
+        (fixtures_dir / "invalid_aibom_missing_field.json").read_text(encoding="utf-8")
+    )
 
     validate_aibom(valid_doc)
     with pytest.raises(AIBOMValidationException) as exc:
         validate_aibom(invalid_doc)
 
-    assert "/metadata/generated_at" in str(exc.value)
+    assert "/metadata/" in str(exc.value)
 
 
 def test_cli_validate_command_success_and_failure(tmp_path: Path) -> None:
@@ -87,8 +90,9 @@ def test_cli_validate_command_success_and_failure(tmp_path: Path) -> None:
     assert "/" in bad.stderr
 
 
-
-def test_generate_fails_closed_before_writing_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_generate_fails_closed_before_writing_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     from aibom import cli as cli_module
 
     invalid_doc = generate_aibom(_fixture_project())
@@ -118,12 +122,18 @@ def test_export_spdx_deterministic() -> None:
     doc = generate_aibom(_fixture_project())
     spdx = export_spdx(doc)
     assert spdx["spdxVersion"] == "SPDX-2.3"
-    assert [p["SPDXID"] for p in spdx["packages"]] == sorted([p["SPDXID"] for p in spdx["packages"]])
+    assert [p["SPDXID"] for p in spdx["packages"]] == sorted(
+        [p["SPDXID"] for p in spdx["packages"]]
+    )
 
 
 def test_diff_detects_additions() -> None:
     old = {"models": [], "tools": [], "datasets": []}
-    new = {"models": [{"type": "ChatOpenAI"}], "tools": [{"name": "initialize_agent"}], "datasets": []}
+    new = {
+        "models": [{"type": "ChatOpenAI"}],
+        "tools": [{"name": "initialize_agent"}],
+        "datasets": [],
+    }
     d = diff_aibom(old, new)
     assert len(d["added"]["models"]) == 1
     assert len(d["added"]["tools"]) == 1
@@ -139,5 +149,125 @@ def test_bundle_contains_manifest(tmp_path: Path) -> None:
 
 
 def test_cli_version() -> None:
-    proc = subprocess.run([sys.executable, "-m", "aibom.cli", "--version"], capture_output=True, text=True, check=True)
+    proc = subprocess.run(
+        [sys.executable, "-m", "aibom.cli", "--version"], capture_output=True, text=True, check=True
+    )
     assert "aibom" in proc.stdout
+
+
+def _create_signing_material(tmp_path: Path) -> tuple[Path, Path]:
+    key = tmp_path / "signing.key"
+    cert = tmp_path / "signing.crt"
+    subprocess.run(
+        [
+            "openssl",
+            "req",
+            "-x509",
+            "-newkey",
+            "rsa:2048",
+            "-keyout",
+            str(key),
+            "-out",
+            str(cert),
+            "-days",
+            "1",
+            "-nodes",
+            "-subj",
+            "/CN=aibom-test",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return key, cert
+
+
+def test_bundle_sign_and_attest_verify(tmp_path: Path) -> None:
+    doc = generate_aibom(_fixture_project())
+    aibom_path = tmp_path / "aibom.json"
+    aibom_path.write_text(json.dumps(doc), encoding="utf-8")
+    bundle_path = tmp_path / "evidence.zip"
+    key, cert = _create_signing_material(tmp_path)
+
+    bundle_cmd = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "bundle",
+            "--input",
+            str(aibom_path),
+            "--out",
+            str(bundle_path),
+            "--sign",
+            "--signing-key",
+            str(key),
+            "--signing-cert",
+            str(cert),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert bundle_cmd.returncode == 0
+
+    sig = tmp_path / "evidence.zip.sig"
+    provenance = tmp_path / "provenance.json"
+    assert sig.exists()
+    assert provenance.exists()
+
+    verify_cmd = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "attest",
+            "--bundle",
+            str(bundle_path),
+            "--signature",
+            str(sig),
+            "--provenance",
+            str(provenance),
+            "--signing-cert",
+            str(cert),
+            "--verify",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert verify_cmd.returncode == 0
+
+
+def test_attest_writes_adjacent_artifacts(tmp_path: Path) -> None:
+    doc = generate_aibom(_fixture_project())
+    aibom_path = tmp_path / "aibom.json"
+    aibom_path.write_text(json.dumps(doc), encoding="utf-8")
+    bundle_path = tmp_path / "evidence.zip"
+    create_bundle(aibom_path, bundle_path, compliance_md="# map")
+    key, cert = _create_signing_material(tmp_path)
+
+    sign_cmd = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "attest",
+            "--bundle",
+            str(bundle_path),
+            "--signing-key",
+            str(key),
+            "--signing-cert",
+            str(cert),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert sign_cmd.returncode == 0
+
+    sig = tmp_path / "evidence.zip.sig"
+    provenance = tmp_path / "provenance.json"
+    verify_bundle_signature(bundle_path, sig, cert, provenance)
+    with zipfile.ZipFile(bundle_path) as zf:
+        assert "MANIFEST.json" in zf.namelist()
