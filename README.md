@@ -105,6 +105,10 @@ See [`docs/SOC_DEPLOYMENT_GUIDE.md`](docs/SOC_DEPLOYMENT_GUIDE.md) for CI/CD int
 
 See [`docs/COMPLIANCE_MAPPING.md`](docs/COMPLIANCE_MAPPING.md). This is a starter mapping only, not legal advice.
 
+## Example outputs for known repositories
+
+See [`examples/github_repo_samples/README.md`](examples/github_repo_samples/README.md) for sample output files and a script that scans smaller well-known GitHub AI repositories, with direct links to each scanned repo.
+
 ## LangChain demo
 
 See [`examples/langchain_demo/README.md`](examples/langchain_demo/README.md).
