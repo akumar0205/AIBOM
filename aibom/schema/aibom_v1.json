@@ -4,13 +4,15 @@
   "title": "AIBOM v1",
   "type": "object",
   "required": [
-    "schema_version",
+    "coverage_summary",
+    "datasets",
+    "frameworks",
     "metadata",
     "models",
-    "datasets",
+    "risk_findings",
+    "schema_version",
     "tools",
-    "frameworks",
-    "risk_findings"
+    "unsupported_artifacts"
   ],
   "properties": {
     "schema_version": {
@@ -120,6 +122,42 @@
           "name",
           "default_severity",
           "default_confidence"
+        ]
+      }
+    },
+    "coverage_summary": {
+      "type": "object",
+      "required": [
+        "detectors",
+        "unsupported_total"
+      ],
+      "properties": {
+        "detectors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "source_type",
+              "artifacts_seen",
+              "artifacts_scanned",
+              "default_confidence"
+            ]
+          }
+        },
+        "unsupported_total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "unsupported_artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "artifact_type",
+          "reason"
         ]
       }
     }

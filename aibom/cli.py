@@ -60,6 +60,16 @@ def cmd_generate(args: argparse.Namespace) -> int:
         print(f"ERROR: Schema validation failed at {exc.pointer}: {exc.message}", file=sys.stderr)
         return 2
 
+    if args.fail_on_unsupported_threshold is not None:
+        unsupported = len(aibom.get("unsupported_artifacts", []))
+        if unsupported > args.fail_on_unsupported_threshold:
+            print(
+                "ERROR: Unsupported artifact threshold exceeded "
+                f"({unsupported} > {args.fail_on_unsupported_threshold}).",
+                file=sys.stderr,
+            )
+            return 2
+
     _write_json(out, aibom)
     persist_run(target, aibom)
 
@@ -194,6 +204,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     gen.add_argument("--audit-mode", action="store_true")
     gen.add_argument("--bundle-out")
+    gen.add_argument(
+        "--fail-on-unsupported-threshold",
+        type=int,
+        help="Fail generation if unsupported artifact count is greater than this threshold.",
+    )
     gen.set_defaults(func=cmd_generate)
 
     v = sub.add_parser("validate")
