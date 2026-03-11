@@ -57,6 +57,7 @@ class ScanResult:
     prompts: list[dict[str, Any]] = field(default_factory=list)
     frameworks: set[str] = field(default_factory=set)
     scan_findings: list[dict[str, Any]] = field(default_factory=list)
+    coverage: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -139,11 +140,14 @@ class PythonAstDetector:
 
     def scan(self, context: ScanContext) -> ScanResult:
         result = ScanResult()
-        for py_file in find_python_files(context.target_dir):
+        candidates = find_python_files(context.target_dir)
+        scanned = 0
+        for py_file in candidates:
             try:
                 tree = ast.parse(py_file.read_text(encoding="utf-8"))
             except Exception:
                 continue
+            scanned += 1
             rel = py_file.relative_to(context.target_dir)
             visitor = AIBOMVisitor(rel, include_prompts=context.include_prompts)
             visitor.visit(tree)
@@ -165,6 +169,53 @@ class PythonAstDetector:
                         evidence=f"Model class {model['type']} detected in Python source.",
                     )
                 )
+        result.coverage = {
+            "source_type": self.source_type,
+            "artifacts_seen": len(candidates),
+            "artifacts_scanned": scanned,
+            "default_confidence": "high",
+        }
+        return result
+
+
+class NotebookDetector:
+    source_type = "jupyter_notebook"
+
+    def scan(self, context: ScanContext) -> ScanResult:
+        result = ScanResult()
+        candidates = sorted(context.target_dir.rglob("*.ipynb"))
+        scanned = 0
+        for notebook in candidates:
+            try:
+                payload = json.loads(notebook.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+            scanned += 1
+            rel = notebook.relative_to(context.target_dir)
+            cells = payload.get("cells", [])
+            for idx, cell in enumerate(cells):
+                if cell.get("cell_type") != "code":
+                    continue
+                src = "".join(cell.get("source", []))
+                if not src.strip():
+                    continue
+                try:
+                    tree = ast.parse(src)
+                except Exception:
+                    continue
+                visitor = AIBOMVisitor(Path(f"{rel}#cell-{idx}"), include_prompts=context.include_prompts)
+                visitor.visit(tree)
+                result.models.extend(visitor.models)
+                result.datasets.extend(visitor.datasets)
+                result.tools.extend(visitor.tools)
+                result.prompts.extend(visitor.prompts)
+                result.frameworks.update(visitor.imported_frameworks)
+        result.coverage = {
+            "source_type": self.source_type,
+            "artifacts_seen": len(candidates),
+            "artifacts_scanned": scanned,
+            "default_confidence": "medium",
+        }
         return result
 
 
@@ -174,11 +225,13 @@ class ConfigFileDetector:
     def scan(self, context: ScanContext) -> ScanResult:
         result = ScanResult()
         candidates = _config_candidates(context.target_dir)
+        scanned = 0
         for file_path in candidates:
             rel = file_path.relative_to(context.target_dir)
             text = _safe_read_text(file_path)
             if not text:
                 continue
+            scanned += 1
 
             kv_pairs = _extract_key_values(file_path, text)
             for key, value in kv_pairs:
@@ -213,6 +266,12 @@ class ConfigFileDetector:
                     )
                 if normalized == "provider" and value:
                     result.frameworks.add(value.lower())
+        result.coverage = {
+            "source_type": self.source_type,
+            "artifacts_seen": len(candidates),
+            "artifacts_scanned": scanned,
+            "default_confidence": "medium",
+        }
         return result
 
 
@@ -221,14 +280,24 @@ class RuntimeManifestDetector:
 
     def scan(self, context: ScanContext) -> ScanResult:
         if not context.include_runtime_manifests:
-            return ScanResult()
+            result = ScanResult()
+            result.coverage = {
+                "source_type": self.source_type,
+                "artifacts_seen": 0,
+                "artifacts_scanned": 0,
+                "default_confidence": "medium",
+            }
+            return result
 
         result = ScanResult()
-        for file_path in _runtime_manifest_candidates(context.target_dir):
+        candidates = _runtime_manifest_candidates(context.target_dir)
+        scanned = 0
+        for file_path in candidates:
             rel = file_path.relative_to(context.target_dir)
             text = _safe_read_text(file_path)
             if not text:
                 continue
+            scanned += 1
 
             deps = _extract_dependencies(file_path.name, text)
             if deps:
@@ -260,6 +329,51 @@ class RuntimeManifestDetector:
                         evidence="Container runtime metadata discovered.",
                     )
                 )
+        result.coverage = {
+            "source_type": self.source_type,
+            "artifacts_seen": len(candidates),
+            "artifacts_scanned": scanned,
+            "default_confidence": "medium",
+        }
+        return result
+
+
+class JSTSPackageManifestDetector:
+    source_type = "js_ts_manifest"
+
+    def scan(self, context: ScanContext) -> ScanResult:
+        result = ScanResult()
+        candidates = _js_ts_manifest_candidates(context.target_dir)
+        scanned = 0
+        for manifest in candidates:
+            rel = manifest.relative_to(context.target_dir)
+            text = _safe_read_text(manifest)
+            if not text:
+                continue
+            scanned += 1
+            deps = _extract_js_ts_dependencies(manifest.name, text)
+            if deps:
+                result.scan_findings.append(
+                    _finding(
+                        finding_id=f"js-ts-deps:{rel}",
+                        category="dependency graph",
+                        source_type=self.source_type,
+                        source_file=str(rel),
+                        severity="medium",
+                        confidence="medium",
+                        evidence=f"Detected JS/TS dependencies: {', '.join(sorted(deps)[:10])}",
+                    )
+                )
+                for dep in deps:
+                    for fw, aliases in FRAMEWORK_ALIASES.items():
+                        if dep.lower() in aliases:
+                            result.frameworks.add(fw)
+        result.coverage = {
+            "source_type": self.source_type,
+            "artifacts_seen": len(candidates),
+            "artifacts_scanned": scanned,
+            "default_confidence": "medium",
+        }
         return result
 
 
@@ -275,7 +389,7 @@ def _dedupe(items: list[dict[str, Any]], keys: list[str]) -> list[dict[str, Any]
 
 
 def find_python_files(target: Path) -> list[Path]:
-    ignored = {".venv", "venv", "__pycache__", ".git"}
+    ignored = {".venv", "venv", "__pycache__", ".git", ".aibom"}
     return sorted(
         [p for p in target.rglob("*.py") if not any(part in ignored for part in p.parts)],
         key=lambda p: str(p),
@@ -287,6 +401,7 @@ def generate_aibom(
     include_prompts: bool = False,
     include_runtime_manifests: bool = False,
     redaction_policy: str = "strict",
+    extra_detectors: list[Detector] | None = None,
 ) -> dict[str, Any]:
     normalized_policy = redaction_policy.lower()
     if normalized_policy not in REDUCTION_POLICIES:
@@ -299,7 +414,14 @@ def generate_aibom(
         include_runtime_manifests=include_runtime_manifests,
         redaction_policy=normalized_policy,
     )
-    detectors: list[Detector] = [PythonAstDetector(), ConfigFileDetector(), RuntimeManifestDetector()]
+    detectors: list[Detector] = [
+        PythonAstDetector(),
+        NotebookDetector(),
+        ConfigFileDetector(),
+        RuntimeManifestDetector(),
+        JSTSPackageManifestDetector(),
+    ]
+    detectors.extend(extra_detectors or [])
 
     models: list[dict[str, Any]] = []
     datasets: list[dict[str, Any]] = []
@@ -307,6 +429,7 @@ def generate_aibom(
     prompts: list[dict[str, Any]] = []
     frameworks: set[str] = set()
     scan_findings: list[dict[str, Any]] = []
+    coverage_summary: list[dict[str, Any]] = []
 
     for detector in detectors:
         partial = detector.scan(context)
@@ -316,6 +439,10 @@ def generate_aibom(
         prompts.extend(partial.prompts)
         frameworks.update(partial.frameworks)
         scan_findings.extend(partial.scan_findings)
+        if partial.coverage:
+            coverage_summary.append(partial.coverage)
+
+    unsupported_artifacts = _unsupported_artifacts(context.target_dir)
 
     doc: dict[str, Any] = {
         "schema_version": "1.0",
@@ -329,11 +456,26 @@ def generate_aibom(
         "frameworks": [{"name": f} for f in sorted(frameworks)],
         "prompts": _dedupe(prompts, ["id"]),
         "scan_findings": _dedupe(scan_findings, ["id"]),
+        "coverage_summary": {
+            "detectors": sorted(coverage_summary, key=lambda x: x.get("source_type", "")),
+            "unsupported_total": len(unsupported_artifacts),
+        },
+        "unsupported_artifacts": unsupported_artifacts,
         "source_types": [
             {"name": "python", "default_severity": "medium", "default_confidence": "high"},
+            {
+                "name": "jupyter_notebook",
+                "default_severity": "medium",
+                "default_confidence": "medium",
+            },
             {"name": "config", "default_severity": "medium", "default_confidence": "medium"},
             {
                 "name": "runtime_manifest",
+                "default_severity": "medium",
+                "default_confidence": "medium",
+            },
+            {
+                "name": "js_ts_manifest",
                 "default_severity": "medium",
                 "default_confidence": "medium",
             },
@@ -346,7 +488,7 @@ def generate_aibom(
 
 
 def _config_candidates(target: Path) -> list[Path]:
-    ignored = {".venv", "venv", "__pycache__", ".git"}
+    ignored = {".venv", "venv", "__pycache__", ".git", ".aibom"}
     out: set[Path] = set()
     for pattern in CONFIG_GLOBS:
         out.update(p for p in target.rglob(pattern) if not any(part in ignored for part in p.parts))
@@ -354,12 +496,24 @@ def _config_candidates(target: Path) -> list[Path]:
 
 
 def _runtime_manifest_candidates(target: Path) -> list[Path]:
-    ignored = {".venv", "venv", "__pycache__", ".git"}
+    ignored = {".venv", "venv", "__pycache__", ".git", ".aibom"}
     out: list[Path] = []
     for p in target.rglob("*"):
         if not p.is_file() or any(part in ignored for part in p.parts):
             continue
         if p.name in RUNTIME_MANIFEST_FILES:
+            out.append(p)
+    return sorted(out)
+
+
+def _js_ts_manifest_candidates(target: Path) -> list[Path]:
+    ignored = {".venv", "venv", "__pycache__", ".git", ".aibom"}
+    names = {"package.json", "package-lock.json", "yarn.lock", "pnpm-lock.yaml"}
+    out: list[Path] = []
+    for p in target.rglob("*"):
+        if not p.is_file() or any(part in ignored for part in p.parts):
+            continue
+        if p.name in names:
             out.append(p)
     return sorted(out)
 
@@ -427,6 +581,40 @@ def _extract_dependencies(filename: str, text: str) -> set[str]:
         else:
             deps.update((data.get("dependencies") or {}).keys())
     return deps
+
+
+def _extract_js_ts_dependencies(filename: str, text: str) -> set[str]:
+    deps: set[str] = set()
+    if filename in {"package.json", "package-lock.json"}:
+        try:
+            data = json.loads(text)
+        except Exception:
+            return deps
+        for key in ("dependencies", "devDependencies", "peerDependencies"):
+            deps.update((data.get(key) or {}).keys())
+    if filename == "yarn.lock":
+        deps.update(m.group(1).split("@")[0] for m in re.finditer(r"^([^\s:@][^:\n]*?)@", text, re.M))
+    if filename == "pnpm-lock.yaml":
+        deps.update(m.group(1).split("/")[-1] for m in re.finditer(r"^\s*/([^:@]+)", text, re.M))
+    return {d.lower() for d in deps if d}
+
+
+def _unsupported_artifacts(target: Path) -> list[dict[str, str]]:
+    ignored = {".venv", "venv", "__pycache__", ".git", ".aibom"}
+    unsupported_ext = {".js", ".jsx", ".ts", ".tsx", ".toml"}
+    out: list[dict[str, str]] = []
+    for p in sorted(target.rglob("*")):
+        if not p.is_file() or any(part in ignored for part in p.parts):
+            continue
+        if p.suffix.lower() in unsupported_ext:
+            out.append(
+                {
+                    "path": str(p.relative_to(target)),
+                    "artifact_type": p.suffix.lower(),
+                    "reason": "No enabled detector covers this source artifact type.",
+                }
+            )
+    return out
 
 
 def _finding(

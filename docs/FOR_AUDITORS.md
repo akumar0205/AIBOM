@@ -4,7 +4,12 @@
 2. Recompute SHA256 hashes for each file in evidence zip and compare to `MANIFEST.json`.
 3. Confirm `ENVIRONMENT.json` and `metadata.git_sha` align with CI run.
 4. Review `DIFF.json` for inventory drift and gate failures.
-5. Validate detached signature and provenance chain:
+5. Review AIBOM detector coverage metadata:
+   - `coverage_summary.detectors[*].artifacts_seen` vs `artifacts_scanned` indicates parsing/coverage success.
+   - `coverage_summary.detectors[*].default_confidence` provides baseline confidence semantics per detector.
+   - `unsupported_artifacts` lists files with no active detector support, and `coverage_summary.unsupported_total` summarizes count.
+   - If CI policy enforces unsupported thresholds, confirm generation failed/passed according to configured limit.
+6. Validate detached signature and provenance chain:
    - Verify detached signature:
      - `openssl x509 -in signing.crt -pubkey -noout > signing.pub`
      - `openssl dgst -sha256 -verify signing.pub -signature evidence.zip.sig evidence.zip`

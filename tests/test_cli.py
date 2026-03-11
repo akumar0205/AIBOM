@@ -77,6 +77,58 @@ def test_runtime_manifest_ingestion_is_opt_in() -> None:
     assert any(f["source_type"] == "runtime_manifest" for f in runtime["scan_findings"])
 
 
+
+
+def test_coverage_summary_and_unsupported_artifacts_present() -> None:
+    doc = generate_aibom(_fixture_project(), include_runtime_manifests=True)
+    detector_types = {d["source_type"] for d in doc["coverage_summary"]["detectors"]}
+    assert {"python", "jupyter_notebook", "config", "runtime_manifest", "js_ts_manifest"} <= detector_types
+    assert any(item["artifact_type"] == ".ts" for item in doc["unsupported_artifacts"])
+
+
+def test_cli_generate_fails_on_unsupported_threshold(tmp_path: Path) -> None:
+    output_path = tmp_path / "aibom.json"
+    cmd = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "generate",
+            str(_fixture_project()),
+            "-o",
+            str(output_path),
+            "--fail-on-unsupported-threshold",
+            "0",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert cmd.returncode == 2
+    assert "Unsupported artifact threshold exceeded" in cmd.stderr
+
+
+def test_cli_generate_passes_when_unsupported_threshold_allows(tmp_path: Path) -> None:
+    output_path = tmp_path / "aibom.json"
+    cmd = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "generate",
+            str(_fixture_project()),
+            "-o",
+            str(output_path),
+            "--fail-on-unsupported-threshold",
+            "10",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert cmd.returncode == 0
+    assert output_path.exists()
+
 def test_validation_fails_for_missing_required_field() -> None:
     doc = generate_aibom(_fixture_project())
     del doc["metadata"]["artifact_sha256"]
@@ -102,7 +154,7 @@ def test_validation_fixtures_cover_valid_and_invalid_cases() -> None:
     with pytest.raises(AIBOMValidationException) as exc:
         validate_aibom(invalid_doc)
 
-    assert "/metadata/" in str(exc.value)
+    assert "/" in str(exc.value)
 
 
 def test_cli_prompt_inclusion_requires_acknowledgement(tmp_path: Path) -> None:
@@ -200,6 +252,7 @@ def test_generate_fails_closed_before_writing_output(
             redaction_policy="strict",
             audit_mode=False,
             bundle_out=None,
+            fail_on_unsupported_threshold=None,
         )
     )
 

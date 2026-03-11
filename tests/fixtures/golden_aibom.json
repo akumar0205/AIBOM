@@ -1,4 +1,39 @@
 {
+  "coverage_summary": {
+    "detectors": [
+      {
+        "artifacts_scanned": 3,
+        "artifacts_seen": 3,
+        "default_confidence": "medium",
+        "source_type": "config"
+      },
+      {
+        "artifacts_scanned": 1,
+        "artifacts_seen": 1,
+        "default_confidence": "medium",
+        "source_type": "js_ts_manifest"
+      },
+      {
+        "artifacts_scanned": 1,
+        "artifacts_seen": 1,
+        "default_confidence": "medium",
+        "source_type": "jupyter_notebook"
+      },
+      {
+        "artifacts_scanned": 1,
+        "artifacts_seen": 1,
+        "default_confidence": "high",
+        "source_type": "python"
+      },
+      {
+        "artifacts_scanned": 2,
+        "artifacts_seen": 2,
+        "default_confidence": "medium",
+        "source_type": "runtime_manifest"
+      }
+    ],
+    "unsupported_total": 1
+  },
   "datasets": [
     {
       "source_file": "app.py",
@@ -33,6 +68,11 @@
       "model": "gpt-4o-mini",
       "source_file": "app.py",
       "type": "ChatOpenAI"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "source_file": "demo.ipynb#cell-0",
+      "type": "ChatOpenAI"
     }
   ],
   "prompts": [
@@ -57,6 +97,14 @@
       "owasp_llm": "LLM07 Insecure Plugin Design",
       "rationale": "External model provider detected.",
       "severity": "medium"
+    },
+    {
+      "category": "third-party dependency",
+      "heuristic": "true",
+      "id": "third-party:ChatOpenAI:demo.ipynb#cell-0",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "rationale": "External model provider detected.",
+      "severity": "medium"
     }
   ],
   "scan_findings": [
@@ -68,6 +116,15 @@
       "severity": "low",
       "source_file": "Dockerfile",
       "source_type": "runtime_manifest"
+    },
+    {
+      "category": "dependency graph",
+      "confidence": "medium",
+      "evidence": "Detected JS/TS dependencies: langchain, openai",
+      "id": "js-ts-deps:package.json",
+      "severity": "medium",
+      "source_file": "package.json",
+      "source_type": "js_ts_manifest"
     },
     {
       "category": "dependency graph",
@@ -134,18 +191,35 @@
     {
       "default_confidence": "medium",
       "default_severity": "medium",
+      "name": "jupyter_notebook"
+    },
+    {
+      "default_confidence": "medium",
+      "default_severity": "medium",
       "name": "config"
     },
     {
       "default_confidence": "medium",
       "default_severity": "medium",
       "name": "runtime_manifest"
+    },
+    {
+      "default_confidence": "medium",
+      "default_severity": "medium",
+      "name": "js_ts_manifest"
     }
   ],
   "tools": [
     {
       "name": "initialize_agent",
       "source_file": "app.py"
+    }
+  ],
+  "unsupported_artifacts": [
+    {
+      "artifact_type": ".ts",
+      "path": "script.ts",
+      "reason": "No enabled detector covers this source artifact type."
     }
   ]
 }
