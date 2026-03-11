@@ -1,13 +1,24 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=65.0,<76", "wheel>=0.38,<1"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "aibom"
 version = "1.0.0"
 description = "Living AIBOM generator"
+readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.9"
 dependencies = ["jsonschema==4.23.0"]
+
+[project.optional-dependencies]
+dev = [
+  "black==24.10.0",
+  "pip-audit==2.7.3",
+  "pip-licenses==4.4.0",
+  "pytest==8.3.4",
+  "ruff==0.8.4",
+]
 
 [project.scripts]
 aibom = "aibom.cli:main"
