@@ -22,3 +22,16 @@ The CI pipeline must fail the build when any of the following occur:
 2. `pip-audit -r requirements.lock --strict` reports any unresolved vulnerability.
 3. `pip-licenses` detects disallowed licenses (`GPL`, `LGPL`, `AGPL`) or any package outside the allowlist.
 4. Standard quality/supply-chain checks (lint, tests, attestation signing/verification) fail.
+
+
+## Emergency CVE response runbook
+
+When a CVE affecting a direct or transitive dependency is rated **critical** (CVSS >= 9.0), execute this emergency process:
+
+1. **Trigger window:** start remediation within 24 hours of advisory publication and complete lockfile refresh within 48 hours.
+2. **Hotfix branch:** create a dedicated branch that changes only dependency inputs (`pyproject.toml`, `requirements-dev.in`) and `requirements.lock`.
+3. **Regenerate lockfile with hashes:**
+   - `pip-compile --generate-hashes --output-file=requirements.lock pyproject.toml requirements-dev.in`
+4. **Validation gates:** run `pip install --require-hashes -r requirements.lock`, `pip-audit -r requirements.lock --strict`, unit tests, and license policy checks.
+5. **Approvals and deployment:** require Security approval, merge with priority, and deploy at the next emergency window.
+6. **Post-incident evidence:** attach CVE reference, lockfile diff, CI artifacts, and deployment timestamp to the change record.
