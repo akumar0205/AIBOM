@@ -3,22 +3,60 @@ on:
   pull_request:
   push:
     branches: ["**"]
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      LICENSE_POLICY_DENY: "GPL;LGPL;AGPL"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.3.0
         with:
           python-version: "3.11"
-      - run: python -m pip install --upgrade pip
-      - run: pip install -e .
-      - run: pip install -r requirements.txt
-      - run: ruff check .
-      - run: black --check .
-      - run: pytest -q
-      - run: |
+
+      - name: Install pinned build tooling
+        run: python -m pip install --upgrade pip pip-tools==7.4.1
+
+      - name: Compile hash-locked dependency set
+        run: |
+          pip-compile --generate-hashes --output-file=requirements.lock pyproject.toml requirements-dev.in
+
+      - name: Install hash-locked dependencies
+        run: pip install --require-hashes -r requirements.lock
+
+      - name: Install package without dependency resolution
+        run: pip install --no-deps -e .
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Format check
+        run: black --check .
+
+      - name: Unit tests
+        run: pytest -q
+
+      - name: Vulnerability audit (fail on any finding)
+        run: pip-audit -r requirements.lock --strict
+
+      - name: License policy audit (fail on copyleft/unknown)
+        run: |
+          pip-licenses --from=mixed --allow-only "MIT License;BSD License;Apache Software License;Python Software Foundation License;ISC License;Mozilla Public License 2.0 (MPL 2.0)" --fail-on "$LICENSE_POLICY_DENY"
+
+      - name: Create ephemeral signing cert
+        run: |
           openssl req -x509 -newkey rsa:2048 -keyout signing.key -out signing.crt -days 1 -nodes -subj "/CN=aibom-ci"
-      - run: aibom generate . --audit-mode --bundle-out evidence.zip
-      - run: aibom attest --bundle evidence.zip --signing-key signing.key --signing-cert signing.crt --signature evidence.zip.sig --provenance provenance.json
-      - run: aibom attest --bundle evidence.zip --signature evidence.zip.sig --provenance provenance.json --signing-cert signing.crt --verify
+
+      - name: Generate evidence bundle
+        run: aibom generate . --audit-mode --bundle-out evidence.zip
+
+      - name: Sign evidence bundle
+        run: aibom attest --bundle evidence.zip --signing-key signing.key --signing-cert signing.crt --signature evidence.zip.sig --provenance provenance.json
+
+      - name: Verify evidence bundle signature
+        run: aibom attest --bundle evidence.zip --signature evidence.zip.sig --provenance provenance.json --signing-cert signing.crt --verify
