@@ -1,0 +1,102 @@
+name: Security CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  security-ci:
+    runs-on: ubuntu-latest
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PIP_NO_COLOR: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.3.0
+        with:
+          python-version: "3.11"
+
+      - name: Install lockfile tooling
+        run: python -m pip install --upgrade pip pip-tools==7.4.1
+
+      - name: Build hash-locked lockfile
+        run: |
+          pip-compile --generate-hashes --output-file=requirements.lock pyproject.toml requirements-dev.in
+
+      - name: Install hash-locked dependencies
+        run: pip install --require-hashes -r requirements.lock
+
+      - name: Install AIBOM CLI without dependency resolution
+        run: pip install --no-deps -e .
+
+      - name: Lint (ruff)
+        run: ruff check . | tee reports-ruff.txt
+
+      - name: Format check (black)
+        run: black --check . | tee reports-black.txt
+
+      - name: Unit tests (pytest)
+        run: pytest -q | tee reports-pytest.txt
+
+      - name: Vulnerability audit (strict)
+        run: pip-audit -r requirements.lock --strict --format json --output reports-pip-audit.json
+
+      - name: License policy check
+        run: |
+          pip-licenses --format=json --with-license-file --output-file reports-licenses.json
+          python scripts/check_license_policy.py reports-licenses.json
+
+      - name: Generate AIBOM + evidence bundle
+        run: aibom generate . --audit-mode --bundle-out evidence.zip -o AI_BOM.json
+
+      - name: Build baseline candidate
+        run: aibom generate . -o new_aibom.json
+
+      - name: Drift gate (fail on violations)
+        run: |
+          if [ ! -f .aibom/baseline.json ]; then
+            echo "Missing required baseline file: .aibom/baseline.json"
+            exit 1
+          fi
+          aibom diff .aibom/baseline.json new_aibom.json --fail-on new-model,new-tool,new-external-provider | tee reports-drift.txt
+
+      - name: Create ephemeral signing cert
+        run: |
+          openssl req -x509 -newkey rsa:2048 -keyout signing.key -out signing.crt -days 1 -nodes -subj "/CN=aibom-security-ci"
+
+      - name: Sign evidence bundle
+        run: |
+          aibom attest --bundle evidence.zip --signing-key signing.key --signing-cert signing.crt --signature evidence.zip.sig --provenance provenance.json
+
+      - name: Verify signature + provenance attestations
+        run: |
+          aibom attest --bundle evidence.zip --signature evidence.zip.sig --provenance provenance.json --signing-cert signing.crt --verify
+
+      - name: Upload immutable artifacts
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+        with:
+          name: security-ci-artifacts-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          overwrite: false
+          retention-days: 90
+          path: |
+            AI_BOM.json
+            evidence.zip
+            evidence.zip.sig
+            provenance.json
+            requirements.lock
+            reports-ruff.txt
+            reports-black.txt
+            reports-pytest.txt
+            reports-pip-audit.json
+            reports-licenses.json
+            reports-drift.txt
