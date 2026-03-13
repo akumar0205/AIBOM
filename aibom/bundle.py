@@ -13,7 +13,13 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from aibom.diffing import diff_aibom
 from aibom.exporters import export_spdx
 from aibom.storage import load_json
-from aibom.utils import environment_capture, sha256_bytes, stable_json
+from aibom.utils import (
+    environment_capture,
+    sha256_bytes,
+    stable_json,
+    validate_safe_path,
+    PathSecurityError,
+)
 
 
 def build_manifest(files: dict[str, bytes]) -> dict[str, str]:
@@ -46,11 +52,13 @@ def _openssl(args: list[str]) -> subprocess.CompletedProcess[str]:
 
 
 def _cert_metadata(cert_path: Path) -> dict[str, str]:
+    # Validate certificate path before passing to openssl
+    safe_cert_path = validate_safe_path(cert_path, must_exist=True, must_be_file=True)
     lines = _openssl(
         [
             "x509",
             "-in",
-            str(cert_path),
+            str(safe_cert_path),
             "-noout",
             "-subject",
             "-issuer",
@@ -81,7 +89,11 @@ def _parse_openssl_time(value: str) -> datetime:
 
 
 def _certificate_sans(cert_path: Path) -> list[str]:
-    ext = _openssl(["x509", "-in", str(cert_path), "-noout", "-ext", "subjectAltName"]).stdout
+    # Validate certificate path before passing to openssl
+    safe_cert_path = validate_safe_path(cert_path, must_exist=True, must_be_file=True)
+    ext = _openssl(
+        ["x509", "-in", str(safe_cert_path), "-noout", "-ext", "subjectAltName"]
+    ).stdout
     return re.findall(r"DNS:([^,\n]+)", ext)
 
 
@@ -92,25 +104,34 @@ def _verify_chain(
     crl_file: Path | None,
     revocation_policy: str,
 ) -> None:
+    # Validate signing certificate path
+    safe_signing_cert = validate_safe_path(signing_cert, must_exist=True, must_be_file=True)
+    
     if not ca_bundle and not trusted_roots:
         return
 
     args = ["verify"]
     if ca_bundle:
-        args += ["-CAfile", str(ca_bundle)]
+        safe_ca_bundle = validate_safe_path(ca_bundle, must_exist=True, must_be_file=True)
+        args += ["-CAfile", str(safe_ca_bundle)]
     if trusted_roots:
+        # Validate all trusted root paths before writing to temp file
+        safe_roots = []
+        for root in trusted_roots:
+            safe_roots.append(validate_safe_path(root, must_exist=True, must_be_file=True))
         roots = tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".pem", delete=False)
         with roots:
-            for root in trusted_roots:
+            for root in safe_roots:
                 roots.write(root.read_text(encoding="utf-8"))
                 roots.write("\n")
         args += ["-CAfile", roots.name]
     if revocation_policy == "crl":
         if not crl_file:
             raise ValueError("CRL revocation policy requires a CRL file")
-        args += ["-crl_check", "-CRLfile", str(crl_file)]
+        safe_crl_file = validate_safe_path(crl_file, must_exist=True, must_be_file=True)
+        args += ["-crl_check", "-CRLfile", str(safe_crl_file)]
 
-    args.append(str(signing_cert))
+    args.append(str(safe_signing_cert))
     try:
         _openssl(args)
     finally:
@@ -190,6 +211,11 @@ def sign_bundle(
     signature_path: Path | None = None,
     provenance_path: Path | None = None,
 ) -> tuple[Path, Path]:
+    # Validate all input paths before use
+    safe_bundle_path = validate_safe_path(bundle_path, must_exist=True, must_be_file=True)
+    safe_signing_key = validate_safe_path(signing_key, must_exist=True, must_be_file=True)
+    safe_signing_cert = validate_safe_path(signing_cert, must_exist=True, must_be_file=True)
+    
     signature_path = signature_path or bundle_path.with_suffix(bundle_path.suffix + ".sig")
     provenance_path = provenance_path or bundle_path.with_name("provenance.json")
 
@@ -199,10 +225,10 @@ def sign_bundle(
             "dgst",
             "-sha256",
             "-sign",
-            str(signing_key),
+            str(safe_signing_key),
             "-out",
             str(signature_path),
-            str(bundle_path),
+            str(safe_bundle_path),
         ],
         check=True,
         capture_output=True,
@@ -213,8 +239,8 @@ def sign_bundle(
         "attestation_type": "aibom-bundle-signature/v1",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "bundle": {
-            "path": bundle_path.name,
-            "sha256": sha256_bytes(bundle_path.read_bytes()),
+            "path": safe_bundle_path.name,
+            "sha256": sha256_bytes(safe_bundle_path.read_bytes()),
         },
         "signature": {
             "path": signature_path.name,
@@ -243,21 +269,45 @@ def verify_bundle_signature(
     allowlist_policy: dict[str, Any] | None = None,
     revocation_hook: Callable[[Path], tuple[bool, str] | bool] | None = None,
 ) -> None:
-    _enforce_validity_window(signing_cert)
-    _verify_chain(signing_cert, ca_bundle, trusted_roots, crl_file, revocation_policy)
+    # Validate all input paths before use
+    safe_bundle_path = validate_safe_path(bundle_path, must_exist=True, must_be_file=True)
+    safe_signature_path = validate_safe_path(signature_path, must_exist=True, must_be_file=True)
+    safe_signing_cert = validate_safe_path(signing_cert, must_exist=True, must_be_file=True)
+    
+    # Validate optional paths
+    safe_ca_bundle: Path | None = None
+    safe_crl_file: Path | None = None
+    safe_trusted_roots: list[Path] | None = None
+    safe_provenance_path: Path | None = None
+    
+    if ca_bundle is not None:
+        safe_ca_bundle = validate_safe_path(ca_bundle, must_exist=True, must_be_file=True)
+    if crl_file is not None:
+        safe_crl_file = validate_safe_path(crl_file, must_exist=True, must_be_file=True)
+    if trusted_roots is not None:
+        safe_trusted_roots = [
+            validate_safe_path(p, must_exist=True, must_be_file=True) for p in trusted_roots
+        ]
+    if provenance_path is not None and provenance_path.exists():
+        safe_provenance_path = validate_safe_path(provenance_path, must_exist=True, must_be_file=True)
+    
+    _enforce_validity_window(safe_signing_cert)
+    _verify_chain(safe_signing_cert, safe_ca_bundle, safe_trusted_roots, safe_crl_file, revocation_policy)
 
     policy_checks: dict[str, Any] = {
         "certificate_validity": {"status": "passed"},
         "certificate_chain": {
-            "status": "passed" if (ca_bundle or trusted_roots) else "skipped",
-            "reason": "no trust anchors provided" if not (ca_bundle or trusted_roots) else None,
+            "status": "passed" if (safe_ca_bundle or safe_trusted_roots) else "skipped",
+            "reason": "no trust anchors provided" if not (safe_ca_bundle or safe_trusted_roots) else None,
         },
     }
 
     with tempfile.NamedTemporaryFile(
         "w", encoding="utf-8", suffix=".pem", delete=False
     ) as pubkey_file:
-        pubkey_file.write(_openssl(["x509", "-in", str(signing_cert), "-pubkey", "-noout"]).stdout)
+        pubkey_file.write(
+            _openssl(["x509", "-in", str(safe_signing_cert), "-pubkey", "-noout"]).stdout
+        )
         pubkey_path = Path(pubkey_file.name)
     try:
         subprocess.run(
@@ -268,8 +318,8 @@ def verify_bundle_signature(
                 "-verify",
                 str(pubkey_path),
                 "-signature",
-                str(signature_path),
-                str(bundle_path),
+                str(safe_signature_path),
+                str(safe_bundle_path),
             ],
             check=True,
             capture_output=True,
@@ -278,41 +328,41 @@ def verify_bundle_signature(
     finally:
         pubkey_path.unlink(missing_ok=True)
 
-    if provenance_path and provenance_path.exists():
-        provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+    if safe_provenance_path:
+        provenance = json.loads(safe_provenance_path.read_text(encoding="utf-8"))
         expected_bundle = provenance.get("bundle", {}).get("sha256")
         expected_sig = provenance.get("signature", {}).get("sha256")
         expected_fp = provenance.get("certificate", {}).get("sha256_fingerprint")
-        actual_fp = _cert_metadata(signing_cert).get("sha256_fingerprint")
+        actual_fp = _cert_metadata(safe_signing_cert).get("sha256_fingerprint")
 
-        if expected_bundle and expected_bundle != sha256_bytes(bundle_path.read_bytes()):
+        if expected_bundle and expected_bundle != sha256_bytes(safe_bundle_path.read_bytes()):
             raise ValueError("Provenance bundle SHA256 does not match input bundle")
-        if expected_sig and expected_sig != sha256_bytes(signature_path.read_bytes()):
+        if expected_sig and expected_sig != sha256_bytes(safe_signature_path.read_bytes()):
             raise ValueError("Provenance signature SHA256 does not match signature file")
         if expected_fp and expected_fp != actual_fp:
             raise ValueError(
                 "Provenance certificate fingerprint does not match provided certificate"
             )
 
-    policy_checks["signer_allowlist"] = _match_allowlist(signing_cert, allowlist_policy)
+    policy_checks["signer_allowlist"] = _match_allowlist(safe_signing_cert, allowlist_policy)
     policy_checks["revocation"] = _evaluate_revocation(
-        signing_cert,
+        safe_signing_cert,
         revocation_policy,
         revocation_hook=revocation_hook,
     )
 
     if provenance_path:
-        provenance = (
-            json.loads(provenance_path.read_text(encoding="utf-8"))
-            if provenance_path.exists()
-            else {
+        if safe_provenance_path:
+            provenance = json.loads(safe_provenance_path.read_text(encoding="utf-8"))
+        else:
+            provenance = {
                 "attestation_type": "aibom-bundle-signature/v1",
                 "created_at": datetime.now(timezone.utc).isoformat(),
             }
-        )
         provenance["policy_evaluation"] = {
             "status": "passed",
             "evaluated_at": datetime.now(timezone.utc).isoformat(),
             "checks": policy_checks,
         }
-        provenance_path.write_text(stable_json(provenance), encoding="utf-8")
+        if safe_provenance_path:
+            safe_provenance_path.write_text(stable_json(provenance), encoding="utf-8")
