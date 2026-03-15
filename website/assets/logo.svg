@@ -1,9 +1,49 @@
-<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background - Earth tone accent -->
-  <rect width="32" height="32" rx="6" fill="#c4a574"/>
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient using earth tones -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#181613"/>
+      <stop offset="100%" style="stop-color:#0f0d0b"/>
+    </linearGradient>
+  </defs>
   
-  <!-- Document lines (AIBOM = AI Bill of Materials) - Dark brown -->
-  <path d="M8 12h16" stroke="#1a1814" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M8 16h12" stroke="#1a1814" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M8 20h8" stroke="#1a1814" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Main rounded square background -->
+  <rect width="128" height="128" rx="20" fill="url(#bgGrad)"/>
+  
+  <!-- Circuit pattern decorations using accent color -->
+  <circle cx="20" cy="24" r="2" fill="#c4a574"/>
+  <circle cx="108" cy="104" r="2" fill="#c4a574"/>
+  <path d="M20 28v8" stroke="#c4a574" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  <path d="M108 92v-8" stroke="#c4a574" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  <path d="M24 24h8" stroke="#c4a574" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  <path d="M96 104h8" stroke="#c4a574" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  
+  <!-- Robot/AI Face outline -->
+  <rect x="34" y="28" width="60" height="48" rx="12" fill="#1f1c18" stroke="#c4a574" stroke-width="2.5"/>
+  
+  <!-- Robot eyes - glowing with accent color -->
+  <circle cx="50" cy="52" r="8" fill="#c4a574"/>
+  <circle cx="78" cy="52" r="8" fill="#c4a574"/>
+  <circle cx="50" cy="52" r="4" fill="#0f0d0b"/>
+  <circle cx="78" cy="52" r="4" fill="#0f0d0b"/>
+  
+  <!-- Scanner/investigation beam effect -->
+  <path d="M34 76l12 12h36l12-12" fill="none" stroke="#c4a574" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+  <path d="M44 76v-4M64 76v-4M84 76v-4" stroke="#c4a574" stroke-width="1.5" opacity="0.4"/>
+  
+  <!-- Document/BOM element at bottom - using surface elevated color -->
+  <rect x="28" y="82" width="72" height="24" rx="4" fill="#7d9a6e" opacity="0.9"/>
+  
+  <!-- Document lines (representing BOM items) -->
+  <path d="M36 90h20" stroke="#0f0d0b" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M36 96h56" stroke="#0f0d0b" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>
+  
+  <!-- Magnifying glass / scanning circle overlay -->
+  <circle cx="64" cy="64" r="42" fill="none" stroke="#c4a574" stroke-width="1" stroke-dasharray="4 4" opacity="0.3"/>
+  
+  <!-- Small accent nodes -->
+  <circle cx="42" cy="38" r="1.5" fill="#b8a66a"/>
+  <circle cx="86" cy="38" r="1.5" fill="#b8a66a"/>
+  <circle cx="42" cy="66" r="1.5" fill="#b8a66a"/>
+  <circle cx="86" cy="66" r="1.5" fill="#b8a66a"/>
 </svg>
