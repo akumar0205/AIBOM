@@ -71,8 +71,7 @@ class ScanContext:
 class Detector(Protocol):
     source_type: str
 
-    def scan(self, context: ScanContext) -> ScanResult:
-        ...
+    def scan(self, context: ScanContext) -> ScanResult: ...
 
 
 class AIBOMVisitor(ast.NodeVisitor):
@@ -100,7 +99,13 @@ class AIBOMVisitor(ast.NodeVisitor):
         name = self._name_of(node.func)
         leaf = name.split(".")[-1]
         if leaf in MODEL_CLASS_HINTS:
-            self.models.append({"type": leaf, "model": self._arg_or_kw(node, "model", "model_name"), "source_file": str(self.file_path)})
+            self.models.append(
+                {
+                    "type": leaf,
+                    "model": self._arg_or_kw(node, "model", "model_name"),
+                    "source_file": str(self.file_path),
+                }
+            )
         if leaf in TOOL_HINTS or "agent" in leaf.lower():
             self.tools.append({"name": leaf, "source_file": str(self.file_path)})
         if any(part in VECTORSTORE_HINTS for part in name.split(".")):
@@ -123,9 +128,17 @@ class AIBOMVisitor(ast.NodeVisitor):
 
     def _arg_or_kw(self, node: ast.Call, *keys: str, default: str = "unknown") -> str:
         for kw in node.keywords:
-            if kw.arg in keys and isinstance(kw.value, ast.Constant) and isinstance(kw.value.value, str):
+            if (
+                kw.arg in keys
+                and isinstance(kw.value, ast.Constant)
+                and isinstance(kw.value.value, str)
+            ):
                 return kw.value.value
-        if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
+        if (
+            node.args
+            and isinstance(node.args[0], ast.Constant)
+            and isinstance(node.args[0].value, str)
+        ):
             return node.args[0].value
         return default
 
@@ -203,7 +216,9 @@ class NotebookDetector:
                     tree = ast.parse(src)
                 except Exception:
                     continue
-                visitor = AIBOMVisitor(Path(f"{rel}#cell-{idx}"), include_prompts=context.include_prompts)
+                visitor = AIBOMVisitor(
+                    Path(f"{rel}#cell-{idx}"), include_prompts=context.include_prompts
+                )
                 visitor.visit(tree)
                 result.models.extend(visitor.models)
                 result.datasets.extend(visitor.datasets)
@@ -241,7 +256,9 @@ class ConfigFileDetector:
 
                 descriptor = CONFIG_KEY_HINTS[normalized]
                 severity = "high" if "credential" in descriptor else "medium"
-                confidence = "high" if normalized in {"model", "model_name", "provider"} else "medium"
+                confidence = (
+                    "high" if normalized in {"model", "model_name", "provider"} else "medium"
+                )
                 result.scan_findings.append(
                     _finding(
                         finding_id=f"config:{normalized}:{rel}",
@@ -401,6 +418,7 @@ def generate_aibom(
     include_prompts: bool = False,
     include_runtime_manifests: bool = False,
     redaction_policy: str = "strict",
+    risk_policy_path: Path | None = None,
     extra_detectors: list[Detector] | None = None,
 ) -> dict[str, Any]:
     normalized_policy = redaction_policy.lower()
@@ -481,7 +499,9 @@ def generate_aibom(
             },
         ],
     }
-    doc["risk_findings"] = generate_risk_findings(doc)
+    risk_findings, risk_policy = generate_risk_findings(doc, policy_path=risk_policy_path)
+    doc["risk_findings"] = risk_findings
+    doc["risk_policy"] = risk_policy
     artifact_hash = sha256_bytes(stable_json(doc).encode("utf-8"))
     doc["metadata"]["artifact_sha256"] = artifact_hash
     return doc
@@ -593,7 +613,9 @@ def _extract_js_ts_dependencies(filename: str, text: str) -> set[str]:
         for key in ("dependencies", "devDependencies", "peerDependencies"):
             deps.update((data.get(key) or {}).keys())
     if filename == "yarn.lock":
-        deps.update(m.group(1).split("@")[0] for m in re.finditer(r"^([^\s:@][^:\n]*?)@", text, re.M))
+        deps.update(
+            m.group(1).split("@")[0] for m in re.finditer(r"^([^\s:@][^:\n]*?)@", text, re.M)
+        )
     if filename == "pnpm-lock.yaml":
         deps.update(m.group(1).split("/")[-1] for m in re.finditer(r"^\s*/([^:@]+)", text, re.M))
     return {d.lower() for d in deps if d}

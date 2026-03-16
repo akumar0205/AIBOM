@@ -10,6 +10,7 @@ from aibom.analyzer import generate_aibom
 from aibom.bundle import create_bundle, sign_bundle, verify_bundle_signature
 from aibom.diffing import diff_aibom, gate_failures
 from aibom.exporters import export_cyclonedx, export_spdx
+from aibom.risk.heuristics import generate_risk_findings
 from aibom.storage import load_json, persist_run
 from aibom.validation import AIBOMValidationException, validate_aibom
 
@@ -48,11 +49,14 @@ def cmd_generate(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
 
+    risk_policy_path = Path(args.risk_policy).resolve() if args.risk_policy else None
+
     aibom = generate_aibom(
         target,
         include_prompts=args.include_prompts,
         include_runtime_manifests=args.include_runtime_manifests,
         redaction_policy=args.redaction_policy,
+        risk_policy_path=risk_policy_path,
     )
     try:
         validate_aibom(aibom)
@@ -176,8 +180,21 @@ def cmd_attest(args: argparse.Namespace) -> int:
 
 def cmd_risk(args: argparse.Namespace) -> int:
     src = load_json(Path(args.input))
-    findings = src.get("risk_findings", [])
-    print(json.dumps({"count": len(findings), "findings": findings}, indent=2, sort_keys=True))
+    risk_policy_path = Path(args.risk_policy).resolve() if args.risk_policy else None
+
+    if args.risk_policy:
+        findings, risk_policy = generate_risk_findings(src, policy_path=risk_policy_path)
+    else:
+        findings = src.get("risk_findings", [])
+        risk_policy = src.get("risk_policy", {})
+
+    print(
+        json.dumps(
+            {"count": len(findings), "findings": findings, "risk_policy": risk_policy},
+            indent=2,
+            sort_keys=True,
+        )
+    )
     return 0
 
 
@@ -203,6 +220,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Evidence redaction policy for scan findings (SOC default: strict).",
     )
     gen.add_argument("--audit-mode", action="store_true")
+    gen.add_argument("--risk-policy", help="Optional JSON/YAML risk rules policy file.")
     gen.add_argument("--bundle-out")
     gen.add_argument(
         "--fail-on-unsupported-threshold",
@@ -257,6 +275,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     r = sub.add_parser("risk")
     r.add_argument("--input", required=True)
+    r.add_argument("--risk-policy", help="Optional JSON/YAML risk rules policy file.")
     r.set_defaults(func=cmd_risk)
 
     return parser

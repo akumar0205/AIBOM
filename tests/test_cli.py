@@ -51,7 +51,9 @@ def test_config_detector_finds_model_provider_and_keys() -> None:
 def test_secret_evidence_is_redacted_for_all_policies() -> None:
     for policy in ("strict", "default", "off"):
         doc = generate_aibom(_fixture_project(), redaction_policy=policy)
-        evidence = "\n".join(f["evidence"] for f in doc["scan_findings"] if f["source_type"] == "config")
+        evidence = "\n".join(
+            f["evidence"] for f in doc["scan_findings"] if f["source_type"] == "config"
+        )
         assert "sk-test-value" not in evidence
         assert "anth-test" not in evidence
         assert "[masked:" in evidence
@@ -62,8 +64,12 @@ def test_strict_redaction_masks_non_secret_config_values() -> None:
     strict = generate_aibom(_fixture_project(), redaction_policy="strict")
     default = generate_aibom(_fixture_project(), redaction_policy="default")
 
-    strict_evidence = {f["id"]: f["evidence"] for f in strict["scan_findings"] if f["source_type"] == "config"}
-    default_evidence = {f["id"]: f["evidence"] for f in default["scan_findings"] if f["source_type"] == "config"}
+    strict_evidence = {
+        f["id"]: f["evidence"] for f in strict["scan_findings"] if f["source_type"] == "config"
+    }
+    default_evidence = {
+        f["id"]: f["evidence"] for f in default["scan_findings"] if f["source_type"] == "config"
+    }
 
     assert "[masked:" in strict_evidence["config:model:settings.yaml"]
     assert default_evidence["config:model:settings.yaml"] == "model=gpt-4.1-mini"
@@ -77,12 +83,16 @@ def test_runtime_manifest_ingestion_is_opt_in() -> None:
     assert any(f["source_type"] == "runtime_manifest" for f in runtime["scan_findings"])
 
 
-
-
 def test_coverage_summary_and_unsupported_artifacts_present() -> None:
     doc = generate_aibom(_fixture_project(), include_runtime_manifests=True)
     detector_types = {d["source_type"] for d in doc["coverage_summary"]["detectors"]}
-    assert {"python", "jupyter_notebook", "config", "runtime_manifest", "js_ts_manifest"} <= detector_types
+    assert {
+        "python",
+        "jupyter_notebook",
+        "config",
+        "runtime_manifest",
+        "js_ts_manifest",
+    } <= detector_types
     assert any(item["artifact_type"] == ".ts" for item in doc["unsupported_artifacts"])
 
 
@@ -128,6 +138,7 @@ def test_cli_generate_passes_when_unsupported_threshold_allows(tmp_path: Path) -
     )
     assert cmd.returncode == 0
     assert output_path.exists()
+
 
 def test_validation_fails_for_missing_required_field() -> None:
     doc = generate_aibom(_fixture_project())
@@ -253,6 +264,7 @@ def test_generate_fails_closed_before_writing_output(
             audit_mode=False,
             bundle_out=None,
             fail_on_unsupported_threshold=None,
+            risk_policy=None,
         )
     )
 
@@ -322,8 +334,6 @@ def _create_signing_material(tmp_path: Path) -> tuple[Path, Path]:
         text=True,
     )
     return key, cert
-
-
 
 
 def _create_ca_and_leaf(tmp_path: Path) -> tuple[Path, Path, Path]:
@@ -398,6 +408,7 @@ def _create_ca_and_leaf(tmp_path: Path) -> tuple[Path, Path, Path]:
         text=True,
     )
     return leaf_key, leaf_cert, ca_cert
+
 
 def test_bundle_sign_and_attest_verify(tmp_path: Path) -> None:
     doc = generate_aibom(_fixture_project())
@@ -603,3 +614,62 @@ def test_attest_verify_rejects_unauthorized_signer(tmp_path: Path) -> None:
     )
     assert verify_cmd.returncode != 0
     assert "not authorized" in verify_cmd.stderr
+
+
+def test_risk_policy_default_provenance_present() -> None:
+    doc = generate_aibom(_fixture_project())
+    assert doc["risk_policy"]["policy"]["policy_id"] == "builtin-default"
+    assert doc["risk_policy"]["policy"]["source"] == "builtin"
+
+
+def test_risk_policy_custom_severity_override(tmp_path: Path) -> None:
+    policy = {
+        "policy_id": "org-risk-rules",
+        "version": "2026.03",
+        "rule_overrides": {"third-party-provider": {"rule_id": "ORG-TP-01", "severity": "high"}},
+    }
+    policy_path = tmp_path / "risk-policy.json"
+    policy_path.write_text(json.dumps(policy), encoding="utf-8")
+
+    doc = generate_aibom(_fixture_project(), risk_policy_path=policy_path)
+    provider_findings = [
+        f for f in doc["risk_findings"] if f["base_rule_id"] == "third-party-provider"
+    ]
+    assert provider_findings
+    assert all(f["severity"] == "high" for f in provider_findings)
+    assert all(f["rule_id"] == "ORG-TP-01" for f in provider_findings)
+    assert doc["risk_policy"]["policy"]["policy_id"] == "org-risk-rules"
+
+
+def test_risk_policy_allowlist_suppression_with_audit_trace(tmp_path: Path) -> None:
+    policy = {
+        "policy_id": "org-risk-rules",
+        "version": "2026.03",
+        "rule_overrides": {
+            "third-party-provider": {
+                "rule_id": "ORG-TP-01",
+                "allowlist": [
+                    {
+                        "entity_type": "model",
+                        "name": "ChatOpenAI",
+                        "source_file": "app.py",
+                        "reason": "approved-external-provider",
+                    }
+                ],
+            }
+        },
+    }
+    policy_path = tmp_path / "risk-policy.json"
+    policy_path.write_text(json.dumps(policy), encoding="utf-8")
+
+    doc = generate_aibom(_fixture_project(), risk_policy_path=policy_path)
+    assert not any(
+        f["base_rule_id"] == "third-party-provider" and f["id"].endswith(":app.py")
+        for f in doc["risk_findings"]
+    )
+    assert any(
+        s["base_rule_id"] == "third-party-provider"
+        and s["name"] == "ChatOpenAI"
+        and s["reason"] == "approved-external-provider"
+        for s in doc["risk_policy"]["suppressed"]
+    )
