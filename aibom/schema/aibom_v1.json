@@ -160,6 +160,37 @@
           "reason"
         ]
       }
+    },
+    "risk_policy": {
+      "type": "object",
+      "required": [
+        "policy",
+        "applied_rules",
+        "suppressed"
+      ],
+      "properties": {
+        "policy": {
+          "type": "object",
+          "required": [
+            "policy_id",
+            "version",
+            "source",
+            "sha256"
+          ]
+        },
+        "applied_rules": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "suppressed": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
     }
   }
 }

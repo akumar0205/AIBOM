@@ -83,30 +83,63 @@
   ],
   "risk_findings": [
     {
+      "base_rule_id": "prompt-injection-surface",
       "category": "prompt injection surface",
       "heuristic": "true",
-      "id": "prompt-injection-surface",
+      "id": "prompt-injection-surface:prompt_templates:",
       "owasp_llm": "LLM01 Prompt Injection",
       "rationale": "Prompt templates detected; review source trust boundaries.",
+      "rule_id": "prompt-injection-surface",
       "severity": "medium"
     },
     {
+      "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
       "heuristic": "true",
-      "id": "third-party:ChatOpenAI:app.py",
+      "id": "third-party-provider:ChatOpenAI:app.py",
       "owasp_llm": "LLM07 Insecure Plugin Design",
       "rationale": "External model provider detected.",
+      "rule_id": "third-party-provider",
       "severity": "medium"
     },
     {
+      "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
       "heuristic": "true",
-      "id": "third-party:ChatOpenAI:demo.ipynb#cell-0",
+      "id": "third-party-provider:ChatOpenAI:demo.ipynb#cell-0",
       "owasp_llm": "LLM07 Insecure Plugin Design",
       "rationale": "External model provider detected.",
+      "rule_id": "third-party-provider",
       "severity": "medium"
     }
   ],
+  "risk_policy": {
+    "applied_rules": [
+      {
+        "base_rule_id": "prompt-injection-surface",
+        "candidate_count": 1,
+        "post_allowlist_count": 1,
+        "rule_id": "prompt-injection-surface",
+        "severity": "medium",
+        "threshold": 1
+      },
+      {
+        "base_rule_id": "third-party-provider",
+        "candidate_count": 2,
+        "post_allowlist_count": 2,
+        "rule_id": "third-party-provider",
+        "severity": "medium",
+        "threshold": 1
+      }
+    ],
+    "policy": {
+      "policy_id": "builtin-default",
+      "sha256": "cce9851d3aae4c7a1e5d364e0af054db66af01930f76035e1fdac87727dee91a",
+      "source": "builtin",
+      "version": "1"
+    },
+    "suppressed": []
+  },
   "scan_findings": [
     {
       "category": "container metadata",
