@@ -17,3 +17,13 @@
      - `python -m aibom.cli attest --bundle evidence.zip --signature evidence.zip.sig --provenance provenance.json --signing-cert signing.crt --verify --ca-bundle ca.pem --allow-fingerprint "SHA256 Fingerprint=..." --revocation-policy none`
    - If your policy requires CRL validation, use `--revocation-policy crl --crl-file issuer.crl`.
    - Confirm `provenance.json` contains `policy_evaluation.checks` with passed chain/validity/allowlist checks.
+
+7. Review provenance metadata for model and runtime traceability:
+   - Each `models[*].provenance` object SHOULD contain:
+     - `provider_endpoint`: API endpoint/base URL used to resolve the model provider.
+     - `registry_uri`: model registry/repository URI (e.g., OCI/HF/private registry), when known.
+     - `immutable_version`: immutable model identifier (version pin, digest, or immutable image ref).
+     - `environment`: deployment stage context (`dev`, `staging`, `prod`, etc.).
+     - `region`: cloud/geo region context for model invocation or hosting.
+   - `runtime_context` captures the same fields at document scope from runtime manifests and deployment metadata.
+   - Values may be `"unknown"` when not observable from scanned artifacts; treat unknowns as evidence gaps requiring compensating controls or runtime attestation.

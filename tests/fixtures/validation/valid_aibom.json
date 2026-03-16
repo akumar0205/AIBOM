@@ -19,7 +19,14 @@
     {
       "model": "gpt-4o-mini",
       "source_file": "app.py",
-      "type": "ChatOpenAI"
+      "type": "ChatOpenAI",
+      "provenance": {
+        "provider_endpoint": "https://api.openai.com",
+        "registry_uri": "unknown",
+        "immutable_version": "unknown",
+        "environment": "unknown",
+        "region": "unknown"
+      }
     }
   ],
   "prompts": [
@@ -52,5 +59,12 @@
       "name": "initialize_agent",
       "source_file": "app.py"
     }
-  ]
+  ],
+  "runtime_context": {
+    "provider_endpoint": "unknown",
+    "registry_uri": "unknown",
+    "immutable_version": "unknown",
+    "environment": "unknown",
+    "region": "unknown"
+  }
 }
