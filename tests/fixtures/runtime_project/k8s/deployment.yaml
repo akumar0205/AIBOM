@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-inference
+spec:
+  template:
+    spec:
+      containers:
+        - name: api
+          image: us-docker.pkg.dev/org/proj/ai-api@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+          env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai
+                  key: key
+            - name: MODEL_DEPLOYMENT
+              value: gpt-4o-mini

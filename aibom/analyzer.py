@@ -66,13 +66,28 @@ SENSITIVE_CONFIG_KEYS = {
 }
 RUNTIME_MANIFEST_FILES = {
     "requirements.txt",
+    "requirements-dev.txt",
+    "constraints.txt",
     "poetry.lock",
+    "pyproject.toml",
+    "uv.lock",
+    "pdm.lock",
+    "pdm.toml",
     "Pipfile.lock",
     "package-lock.json",
     "Dockerfile",
     "docker-compose.yml",
     "docker-compose.yaml",
+    "Chart.yaml",
+    "values.yaml",
 }
+RUNTIME_MANIFEST_SUFFIXES = {".yaml", ".yml", ".json", ".toml"}
+RUNTIME_MANIFEST_PATH_HINTS = {"k8s", "kubernetes", "helm", "charts", "manifests"}
+AI_RUNTIME_CONFIG_KEY_PATTERN = re.compile(
+    r"(openai|anthropic|azure_openai|huggingface|ollama|vertexai|bedrock|llm|model).*"
+    r"(endpoint|base|url|api|key|token|model|deployment|version)?",
+    re.IGNORECASE,
+)
 
 
 @dataclass
@@ -386,10 +401,38 @@ class RuntimeManifestDetector:
                         if dep.lower() in aliases:
                             result.frameworks.add(fw)
 
-            if file_path.name.lower().startswith("docker") or "compose" in file_path.name.lower():
-                result.runtime_context = _merge_provenance(
-                    result.runtime_context, _runtime_context_from_manifest(file_path.name, text)
+            runtime_context = _runtime_context_from_manifest(file_path.name, text)
+            result.runtime_context = _merge_provenance(result.runtime_context, runtime_context)
+
+            immutable_refs = _extract_immutable_image_refs(file_path.name, text)
+            for ref in immutable_refs:
+                result.scan_findings.append(
+                    _finding(
+                        finding_id=f"runtime-image-digest:{rel}:{ref}",
+                        category="immutable image digest",
+                        source_type=self.source_type,
+                        source_file=str(rel),
+                        severity="low",
+                        confidence="high",
+                        evidence=f"Immutable OCI image reference detected: {ref}",
+                    )
                 )
+
+            ai_runtime_keys = _extract_runtime_ai_service_config(file_path.name, text)
+            for key, value in ai_runtime_keys:
+                result.scan_findings.append(
+                    _finding(
+                        finding_id=f"runtime-ai-config:{rel}:{key}",
+                        category="runtime ai service config",
+                        source_type=self.source_type,
+                        source_file=str(rel),
+                        severity="medium",
+                        confidence="medium",
+                        evidence=_config_evidence(key, value, key, context.redaction_policy),
+                    )
+                )
+
+            if immutable_refs or ai_runtime_keys or file_path.name.lower().startswith("docker"):
                 result.scan_findings.append(
                     _finding(
                         finding_id=f"runtime-container:{rel}",
@@ -398,7 +441,7 @@ class RuntimeManifestDetector:
                         source_file=str(rel),
                         severity="low",
                         confidence="high",
-                        evidence="Container runtime metadata discovered.",
+                        evidence="Container/runtime metadata discovered.",
                     )
                 )
         result.coverage = {
@@ -587,12 +630,23 @@ def _config_candidates(target: Path) -> list[Path]:
 
 def _runtime_manifest_candidates(target: Path) -> list[Path]:
     ignored = {".venv", "venv", "__pycache__", ".git", ".aibom"}
-    out: list[Path] = []
+    out: set[Path] = set()
     for p in target.rglob("*"):
         if not p.is_file() or any(part in ignored for part in p.parts):
             continue
+        lowered = p.name.lower()
+        parent_parts = {part.lower() for part in p.parts}
         if p.name in RUNTIME_MANIFEST_FILES:
-            out.append(p)
+            out.add(p)
+            continue
+        if lowered in {"deployment.yaml", "service.yaml", "statefulset.yaml", "job.yaml"}:
+            out.add(p)
+            continue
+        if (
+            p.suffix.lower() in RUNTIME_MANIFEST_SUFFIXES
+            and parent_parts & RUNTIME_MANIFEST_PATH_HINTS
+        ):
+            out.add(p)
     return sorted(out)
 
 
@@ -654,13 +708,32 @@ def _flatten_dict(data: Any, prefix: str = "") -> list[tuple[str, Any]]:
 
 def _extract_dependencies(filename: str, text: str) -> set[str]:
     deps: set[str] = set()
-    if filename == "requirements.txt":
+    lowered = filename.lower()
+
+    if lowered in {"requirements.txt", "requirements-dev.txt", "constraints.txt"}:
         for line in text.splitlines():
-            pkg = line.strip().split("==")[0].split(">=")[0]
-            if pkg and not pkg.startswith("#"):
+            line = line.strip()
+            if not line or line.startswith("#") or line.startswith("-"):
+                continue
+            pkg = re.split(r"==|>=|<=|~=|!=|<|>", line, maxsplit=1)[0].strip()
+            if pkg:
                 deps.add(pkg.lower())
-    elif filename == "poetry.lock":
+    elif lowered == "poetry.lock":
         deps.update(m.group(1).lower() for m in re.finditer(r'name = "([^"]+)"', text))
+    elif lowered == "uv.lock":
+        deps.update(m.group(1).lower() for m in re.finditer(r'name\s*=\s*"([^"]+)"', text))
+    elif lowered == "pdm.lock":
+        deps.update(m.group(1).lower() for m in re.finditer(r'name\s*=\s*"([^"]+)"', text))
+    elif lowered == "pyproject.toml":
+        deps.update(
+            m.group(1).lower()
+            for m in re.finditer(r'"([A-Za-z0-9_.-]+)\s*(?:==|>=|~=|\^|<|>)', text)
+        )
+    elif lowered in {"pdm.toml", "chart.yaml", "values.yaml"}:
+        deps.update(
+            m.group(1).lower()
+            for m in re.finditer(r"^\s*name\s*:\s*([A-Za-z0-9_.-]+)", text, flags=re.MULTILINE)
+        )
     elif filename in {"Pipfile.lock", "package-lock.json"}:
         try:
             data = json.loads(text)
@@ -770,14 +843,62 @@ def _with_model_provenance(
 
 def _runtime_context_from_manifest(filename: str, text: str) -> dict[str, str]:
     runtime_context = _provenance()
-    if filename == "Dockerfile":
+    if filename.lower().startswith("docker"):
         from_match = re.search(r"^\s*FROM\s+([^\s]+)", text, re.MULTILINE | re.IGNORECASE)
         if from_match:
             image = from_match.group(1).strip()
             runtime_context["immutable_version"] = image
             if "/" in image:
                 runtime_context["registry_uri"] = image.rsplit(":", 1)[0]
+
+    immutable_refs = _extract_immutable_image_refs(filename, text)
+    if immutable_refs:
+        runtime_context["immutable_version"] = immutable_refs[0]
+        runtime_context["registry_uri"] = immutable_refs[0].split("@", 1)[0]
+
+    for key, value in _extract_runtime_ai_service_config(filename, text):
+        if key in PROVIDER_ENDPOINT_KEYS and value:
+            runtime_context["provider_endpoint"] = value
+        elif key in IMMUTABLE_VERSION_KEYS and value:
+            runtime_context["immutable_version"] = value
+        elif key in REGISTRY_URI_KEYS and value:
+            runtime_context["registry_uri"] = value
+        elif key in ENVIRONMENT_KEYS and value:
+            runtime_context["environment"] = value
+        elif key in REGION_KEYS and value:
+            runtime_context["region"] = value
     return runtime_context
+
+
+def _extract_immutable_image_refs(filename: str, text: str) -> list[str]:
+    if not text:
+        return []
+    refs: set[str] = set()
+    if filename.lower().startswith("docker"):
+        refs.update(
+            m.group(1).strip()
+            for m in re.finditer(
+                r"^\s*FROM\s+([^\s]+@sha256:[a-fA-F0-9]{64})",
+                text,
+                re.MULTILINE | re.IGNORECASE,
+            )
+        )
+    refs.update(
+        m.group(1).strip() for m in re.finditer(r"([\w./:-]+@sha256:[a-fA-F0-9]{64})", text)
+    )
+    return sorted(refs)
+
+
+def _extract_runtime_ai_service_config(filename: str, text: str) -> list[tuple[str, str]]:
+    pairs = _extract_key_values(Path(filename), text)
+    findings: list[tuple[str, str]] = []
+    for key, value in pairs:
+        normalized = key.lower()
+        if AI_RUNTIME_CONFIG_KEY_PATTERN.match(normalized):
+            findings.append((normalized, value))
+        elif normalized in PROVIDER_ENDPOINT_KEYS | IMMUTABLE_VERSION_KEYS | REGISTRY_URI_KEYS:
+            findings.append((normalized, value))
+    return findings
 
 
 def _config_evidence(key: str, value: str, normalized_key: str, redaction_policy: str) -> str:

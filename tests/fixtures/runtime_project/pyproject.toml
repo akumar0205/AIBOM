@@ -1,0 +1,6 @@
+[project]
+name = "runtime-scan"
+dependencies = [
+  "langchain>=0.2.0",
+  "openai==1.40.0",
+]
