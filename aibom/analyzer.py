@@ -31,6 +31,31 @@ CONFIG_KEY_HINTS = {
     "huggingfacehub_api_token": "provider credential",
     "azure_openai_api_key": "provider credential",
 }
+PROVENANCE_UNKNOWN = "unknown"
+PROVENANCE_FIELDS = (
+    "provider_endpoint",
+    "registry_uri",
+    "immutable_version",
+    "environment",
+    "region",
+)
+PROVIDER_ENDPOINT_KEYS = {
+    "provider_endpoint",
+    "endpoint",
+    "api_base",
+    "base_url",
+    "openai_api_base",
+    "azure_endpoint",
+}
+REGISTRY_URI_KEYS = {"registry_uri", "model_registry_uri", "model_repo_uri", "repository_uri"}
+IMMUTABLE_VERSION_KEYS = {"model_version", "model_digest", "digest", "image_digest"}
+ENVIRONMENT_KEYS = {"environment", "env", "stage", "deployment_stage"}
+REGION_KEYS = {"region", "aws_region", "azure_region", "gcp_region"}
+MODEL_PROVIDER_ENDPOINTS = {
+    "ChatOpenAI": "https://api.openai.com",
+    "OpenAI": "https://api.openai.com",
+    "ChatAnthropic": "https://api.anthropic.com",
+}
 REDUCTION_POLICIES = {"strict", "default", "off"}
 SENSITIVE_CONFIG_KEYS = {
     "openai_api_key",
@@ -58,6 +83,7 @@ class ScanResult:
     frameworks: set[str] = field(default_factory=set)
     scan_findings: list[dict[str, Any]] = field(default_factory=list)
     coverage: dict[str, Any] = field(default_factory=dict)
+    runtime_context: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -99,11 +125,13 @@ class AIBOMVisitor(ast.NodeVisitor):
         name = self._name_of(node.func)
         leaf = name.split(".")[-1]
         if leaf in MODEL_CLASS_HINTS:
+            provider_endpoint = MODEL_PROVIDER_ENDPOINTS.get(leaf, PROVENANCE_UNKNOWN)
             self.models.append(
                 {
                     "type": leaf,
                     "model": self._arg_or_kw(node, "model", "model_name"),
                     "source_file": str(self.file_path),
+                    "provenance": _provenance(provider_endpoint=provider_endpoint),
                 }
             )
         if leaf in TOOL_HINTS or "agent" in leaf.lower():
@@ -249,8 +277,27 @@ class ConfigFileDetector:
             scanned += 1
 
             kv_pairs = _extract_key_values(file_path, text)
+            detector_runtime_context = _provenance()
+            model_provenance = _provenance()
             for key, value in kv_pairs:
                 normalized = key.lower()
+
+                if normalized in PROVIDER_ENDPOINT_KEYS and value:
+                    detector_runtime_context["provider_endpoint"] = value
+                    model_provenance["provider_endpoint"] = value
+                if normalized in REGISTRY_URI_KEYS and value:
+                    detector_runtime_context["registry_uri"] = value
+                    model_provenance["registry_uri"] = value
+                if normalized in IMMUTABLE_VERSION_KEYS and value:
+                    detector_runtime_context["immutable_version"] = value
+                    model_provenance["immutable_version"] = value
+                if normalized in ENVIRONMENT_KEYS and value:
+                    detector_runtime_context["environment"] = value
+                    model_provenance["environment"] = value
+                if normalized in REGION_KEYS and value:
+                    detector_runtime_context["region"] = value
+                    model_provenance["region"] = value
+
                 if normalized not in CONFIG_KEY_HINTS:
                     continue
 
@@ -279,10 +326,14 @@ class ConfigFileDetector:
                             "source_file": str(rel),
                             "source_type": self.source_type,
                             "confidence": "medium",
+                            "provenance": model_provenance,
                         }
                     )
                 if normalized == "provider" and value:
                     result.frameworks.add(value.lower())
+            result.runtime_context = _merge_provenance(
+                result.runtime_context, detector_runtime_context
+            )
         result.coverage = {
             "source_type": self.source_type,
             "artifacts_seen": len(candidates),
@@ -335,6 +386,9 @@ class RuntimeManifestDetector:
                             result.frameworks.add(fw)
 
             if file_path.name.lower().startswith("docker") or "compose" in file_path.name.lower():
+                result.runtime_context = _merge_provenance(
+                    result.runtime_context, _runtime_context_from_manifest(file_path.name, text)
+                )
                 result.scan_findings.append(
                     _finding(
                         finding_id=f"runtime-container:{rel}",
@@ -448,6 +502,7 @@ def generate_aibom(
     frameworks: set[str] = set()
     scan_findings: list[dict[str, Any]] = []
     coverage_summary: list[dict[str, Any]] = []
+    runtime_context = _provenance()
 
     for detector in detectors:
         partial = detector.scan(context)
@@ -459,8 +514,15 @@ def generate_aibom(
         scan_findings.extend(partial.scan_findings)
         if partial.coverage:
             coverage_summary.append(partial.coverage)
+        runtime_context = _merge_provenance(runtime_context, partial.runtime_context)
 
     unsupported_artifacts = _unsupported_artifacts(context.target_dir)
+
+    model_entries = _dedupe(models, ["type", "model", "source_file"])
+    model_entries = [
+        _with_model_provenance(model_entry, runtime_context=runtime_context)
+        for model_entry in model_entries
+    ]
 
     doc: dict[str, Any] = {
         "schema_version": "1.0",
@@ -468,7 +530,7 @@ def generate_aibom(
             "generated_at": utc_now(),
             "git_sha": git_sha(target_dir),
         },
-        "models": _dedupe(models, ["type", "model", "source_file"]),
+        "models": model_entries,
         "datasets": _dedupe(datasets, ["type", "source_file"]),
         "tools": _dedupe(tools, ["name", "source_file"]),
         "frameworks": [{"name": f} for f in sorted(frameworks)],
@@ -498,6 +560,7 @@ def generate_aibom(
                 "default_confidence": "medium",
             },
         ],
+        "runtime_context": runtime_context,
     }
     risk_findings, risk_policy = generate_risk_findings(doc, policy_path=risk_policy_path)
     doc["risk_findings"] = risk_findings
@@ -657,6 +720,57 @@ def _finding(
         "confidence": confidence,
         "evidence": evidence,
     }
+
+
+def _provenance(
+    provider_endpoint: str = PROVENANCE_UNKNOWN,
+    registry_uri: str = PROVENANCE_UNKNOWN,
+    immutable_version: str = PROVENANCE_UNKNOWN,
+    environment: str = PROVENANCE_UNKNOWN,
+    region: str = PROVENANCE_UNKNOWN,
+) -> dict[str, str]:
+    return {
+        "provider_endpoint": provider_endpoint,
+        "registry_uri": registry_uri,
+        "immutable_version": immutable_version,
+        "environment": environment,
+        "region": region,
+    }
+
+
+def _merge_provenance(base: dict[str, str], overlay: dict[str, str]) -> dict[str, str]:
+    merged = dict(base) if base else _provenance()
+    for provenance_field in PROVENANCE_FIELDS:
+        value = overlay.get(provenance_field, PROVENANCE_UNKNOWN)
+        if value and value != PROVENANCE_UNKNOWN:
+            merged[provenance_field] = value
+        elif provenance_field not in merged:
+            merged[provenance_field] = PROVENANCE_UNKNOWN
+    return merged
+
+
+def _with_model_provenance(
+    model: dict[str, Any], runtime_context: dict[str, str]
+) -> dict[str, Any]:
+    model_copy = dict(model)
+    model_provenance = model_copy.get("provenance")
+    model_copy["provenance"] = _merge_provenance(
+        runtime_context,
+        model_provenance if isinstance(model_provenance, dict) else _provenance(),
+    )
+    return model_copy
+
+
+def _runtime_context_from_manifest(filename: str, text: str) -> dict[str, str]:
+    runtime_context = _provenance()
+    if filename == "Dockerfile":
+        from_match = re.search(r"^\s*FROM\s+([^\s]+)", text, re.MULTILINE | re.IGNORECASE)
+        if from_match:
+            image = from_match.group(1).strip()
+            runtime_context["immutable_version"] = image
+            if "/" in image:
+                runtime_context["registry_uri"] = image.rsplit(":", 1)[0]
+    return runtime_context
 
 
 def _config_evidence(key: str, value: str, normalized_key: str, redaction_policy: str) -> str:

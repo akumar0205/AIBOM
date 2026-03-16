@@ -46,7 +46,13 @@
           "type",
           "model",
           "source_file"
-        ]
+        ],
+        "properties": {
+          "provenance": {
+            "$ref": "#/$defs/provenance"
+          }
+        },
+        "additionalProperties": true
       }
     },
     "datasets": {
@@ -191,6 +197,39 @@
           }
         }
       }
+    },
+    "runtime_context": {
+      "$ref": "#/$defs/provenance"
+    }
+  },
+  "$defs": {
+    "provenance": {
+      "type": "object",
+      "required": [
+        "provider_endpoint",
+        "registry_uri",
+        "immutable_version",
+        "environment",
+        "region"
+      ],
+      "properties": {
+        "provider_endpoint": {
+          "type": "string"
+        },
+        "registry_uri": {
+          "type": "string"
+        },
+        "immutable_version": {
+          "type": "string"
+        },
+        "environment": {
+          "type": "string"
+        },
+        "region": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

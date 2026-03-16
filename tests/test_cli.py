@@ -83,6 +83,32 @@ def test_runtime_manifest_ingestion_is_opt_in() -> None:
     assert any(f["source_type"] == "runtime_manifest" for f in runtime["scan_findings"])
 
 
+def test_provenance_fields_present_for_models_and_runtime_context() -> None:
+    doc = generate_aibom(_fixture_project(), include_runtime_manifests=True)
+
+    required_fields = {
+        "provider_endpoint",
+        "registry_uri",
+        "immutable_version",
+        "environment",
+        "region",
+    }
+    assert required_fields <= set(doc["runtime_context"])
+    assert required_fields <= set(doc["models"][0]["provenance"])
+
+
+def test_config_and_runtime_detectors_populate_provenance_when_observable() -> None:
+    doc = generate_aibom(_fixture_project(), include_runtime_manifests=True)
+    config_model = next(
+        m
+        for m in doc["models"]
+        if m["type"] == "ConfigModelHint" and m["source_file"] == "settings.yaml"
+    )
+
+    assert config_model["provenance"]["provider_endpoint"] == "unknown"
+    assert doc["runtime_context"]["immutable_version"] == "python:3.11-slim"
+
+
 def test_coverage_summary_and_unsupported_artifacts_present() -> None:
     doc = generate_aibom(_fixture_project(), include_runtime_manifests=True)
     detector_types = {d["source_type"] for d in doc["coverage_summary"]["detectors"]}
