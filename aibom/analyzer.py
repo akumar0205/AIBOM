@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
+from aibom.detectors import JSTSAstDetector
 from aibom.risk.heuristics import generate_risk_findings
 from aibom.utils import git_sha, sha256_bytes, stable_json, utc_now
 
@@ -492,6 +493,7 @@ def generate_aibom(
         ConfigFileDetector(),
         RuntimeManifestDetector(),
         JSTSPackageManifestDetector(),
+        JSTSAstDetector(),
     ]
     detectors.extend(extra_detectors or [])
 
@@ -556,6 +558,11 @@ def generate_aibom(
             },
             {
                 "name": "js_ts_manifest",
+                "default_severity": "medium",
+                "default_confidence": "medium",
+            },
+            {
+                "name": "js_ts_ast",
                 "default_severity": "medium",
                 "default_confidence": "medium",
             },
@@ -686,7 +693,7 @@ def _extract_js_ts_dependencies(filename: str, text: str) -> set[str]:
 
 def _unsupported_artifacts(target: Path) -> list[dict[str, str]]:
     ignored = {".venv", "venv", "__pycache__", ".git", ".aibom"}
-    unsupported_ext = {".js", ".jsx", ".ts", ".tsx", ".toml"}
+    unsupported_ext = {".toml"}
     out: list[dict[str, str]] = []
     for p in sorted(target.rglob("*")):
         if not p.is_file() or any(part in ignored for part in p.parts):

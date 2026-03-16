@@ -118,11 +118,39 @@ def test_coverage_summary_and_unsupported_artifacts_present() -> None:
         "config",
         "runtime_manifest",
         "js_ts_manifest",
+        "js_ts_ast",
     } <= detector_types
-    assert any(item["artifact_type"] == ".ts" for item in doc["unsupported_artifacts"])
+    assert not any(
+        item["artifact_type"] in {".ts", ".tsx", ".js", ".jsx"}
+        for item in doc["unsupported_artifacts"]
+    )
+
+
+def test_js_ts_ast_detector_finds_models_tools_prompts_and_frameworks() -> None:
+    doc = generate_aibom(_fixture_project(), include_prompts=True)
+
+    assert any(
+        model["type"] == "OpenAI" and model["source_file"].startswith("script.ts:")
+        for model in doc["models"]
+    )
+    assert any(tool["source_file"].startswith("script.ts:") for tool in doc["tools"])
+    assert any(prompt["source_file"].startswith("script.ts:") for prompt in doc["prompts"])
+    assert any(framework["name"] == "openai" for framework in doc["frameworks"])
+    assert any(framework["name"] == "langchain" for framework in doc["frameworks"])
+    assert any(
+        f["source_type"] == "js_ts_ast" and f["source_file"].startswith("script.ts:")
+        for f in doc["scan_findings"]
+    )
 
 
 def test_cli_generate_fails_on_unsupported_threshold(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    project.mkdir()
+    for src in _fixture_project().iterdir():
+        if src.is_file():
+            (project / src.name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    (project / "scanner.toml").write_text("[tool.aibom]\nstrict=true\n", encoding="utf-8")
+
     output_path = tmp_path / "aibom.json"
     cmd = subprocess.run(
         [
@@ -130,7 +158,7 @@ def test_cli_generate_fails_on_unsupported_threshold(tmp_path: Path) -> None:
             "-m",
             "aibom.cli",
             "generate",
-            str(_fixture_project()),
+            str(project),
             "-o",
             str(output_path),
             "--fail-on-unsupported-threshold",
