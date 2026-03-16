@@ -1,0 +1,117 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "creationInfo": {
+    "created": "2025-01-01T01:02:03Z",
+    "creators": [
+      "Tool: aibom/1.0.0",
+      "Organization: AIBOM Project"
+    ]
+  },
+  "dataLicense": "CC0-1.0",
+  "documentDescribes": [
+    "SPDXRef-Dataset-FAISS.from-texts-unknown-app.py-02df4e4820",
+    "SPDXRef-Framework-langchain-unknown-requirements.txt-3572a0690b",
+    "SPDXRef-Model-ChatOpenAI-gpt-4o-mini-app.py-9276abb57e",
+    "SPDXRef-Tool-initialize-agent-unknown-app.py-321166f59b"
+  ],
+  "documentNamespace": "https://aibom.dev/spdx/1111111111111111111111111111111111111111111111111111111111111111",
+  "name": "AIBOM SPDX Export 111111111111",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Dataset-FAISS.from-texts-unknown-app.py-02df4e4820",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "file:app.py",
+          "referenceType": "aibom-evidence-source"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "name": "FAISS.from_texts",
+      "supplier": "NOASSERTION",
+      "versionInfo": "unknown"
+    },
+    {
+      "SPDXID": "SPDXRef-Framework-langchain-unknown-requirements.txt-3572a0690b",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "file:requirements.txt",
+          "referenceType": "aibom-evidence-source"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "name": "langchain",
+      "supplier": "NOASSERTION",
+      "versionInfo": "unknown"
+    },
+    {
+      "SPDXID": "SPDXRef-Model-ChatOpenAI-gpt-4o-mini-app.py-9276abb57e",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "file:app.py",
+          "referenceType": "aibom-evidence-source"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "name": "ChatOpenAI",
+      "supplier": "NOASSERTION",
+      "versionInfo": "gpt-4o-mini"
+    },
+    {
+      "SPDXID": "SPDXRef-Tool-initialize-agent-unknown-app.py-321166f59b",
+      "downloadLocation": "NOASSERTION",
+      "externalRefs": [
+        {
+          "referenceCategory": "OTHER",
+          "referenceLocator": "file:app.py",
+          "referenceType": "aibom-evidence-source"
+        }
+      ],
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "name": "initialize_agent",
+      "supplier": "NOASSERTION",
+      "versionInfo": "unknown"
+    }
+  ],
+  "relationships": [
+    {
+      "relatedSpdxElement": "SPDXRef-Dataset-FAISS.from-texts-unknown-app.py-02df4e4820",
+      "relationshipType": "DESCRIBES",
+      "spdxElementId": "SPDXRef-DOCUMENT"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Framework-langchain-unknown-requirements.txt-3572a0690b",
+      "relationshipType": "DESCRIBES",
+      "spdxElementId": "SPDXRef-DOCUMENT"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Model-ChatOpenAI-gpt-4o-mini-app.py-9276abb57e",
+      "relationshipType": "DESCRIBES",
+      "spdxElementId": "SPDXRef-DOCUMENT"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Tool-initialize-agent-unknown-app.py-321166f59b",
+      "relationshipType": "DESCRIBES",
+      "spdxElementId": "SPDXRef-DOCUMENT"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Framework-langchain-unknown-requirements.txt-3572a0690b",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-DOCUMENT"
+    }
+  ],
+  "spdxVersion": "SPDX-2.3"
+}

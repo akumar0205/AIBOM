@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "generated_at": "20250101T010203Z",
+    "git_sha": "abc123def456",
+    "artifact_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "models": [
+    {
+      "type": "ChatOpenAI",
+      "model": "gpt-4o-mini",
+      "source_file": "app.py"
+    }
+  ],
+  "tools": [
+    {
+      "name": "initialize_agent",
+      "source_file": "app.py"
+    }
+  ],
+  "datasets": [
+    {
+      "type": "FAISS.from_texts",
+      "source_file": "app.py"
+    }
+  ],
+  "frameworks": [
+    {
+      "name": "langchain",
+      "source_file": "requirements.txt"
+    }
+  ],
+  "scan_findings": [
+    {
+      "id": "runtime-deps:requirements.txt",
+      "category": "dependency graph",
+      "evidence": "Detected dependencies: langchain, pydantic",
+      "source_file": "requirements.txt",
+      "source_type": "runtime_manifest",
+      "confidence": "medium",
+      "severity": "low"
+    },
+    {
+      "id": "python-model:ChatOpenAI:app.py",
+      "category": "model invocation",
+      "evidence": "Model class ChatOpenAI detected in Python source.",
+      "source_file": "app.py",
+      "source_type": "python",
+      "confidence": "high",
+      "severity": "medium"
+    }
+  ]
+}
