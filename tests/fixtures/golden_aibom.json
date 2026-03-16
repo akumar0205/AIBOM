@@ -208,7 +208,7 @@
     {
       "category": "container metadata",
       "confidence": "high",
-      "evidence": "Container runtime metadata discovered.",
+      "evidence": "Container/runtime metadata discovered.",
       "id": "runtime-container:Dockerfile",
       "severity": "low",
       "source_file": "Dockerfile",

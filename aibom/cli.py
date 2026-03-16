@@ -8,10 +8,10 @@ from pathlib import Path
 from aibom import __version__
 from aibom.analyzer import generate_aibom
 from aibom.bundle import create_bundle, sign_bundle, verify_bundle_signature
-from aibom.diffing import diff_aibom, gate_failures
+from aibom.diffing import diff_aibom, gate_failures, trend_diff_aibom
 from aibom.exporters import export_cyclonedx, export_spdx
 from aibom.risk.heuristics import generate_risk_findings
-from aibom.storage import load_json, persist_run
+from aibom.storage import load_json, list_run_history, persist_periodic_snapshot, persist_run
 from aibom.validation import AIBOMValidationException, validate_aibom
 
 
@@ -88,6 +88,36 @@ def cmd_generate(args: argparse.Namespace) -> int:
                 baseline if baseline.exists() else None,
                 COMPLIANCE_STARTER,
             )
+    return 0
+
+
+def cmd_periodic_scan(args: argparse.Namespace) -> int:
+    target = Path(args.target).resolve()
+    out = Path(args.output).resolve()
+    aibom = generate_aibom(
+        target,
+        include_prompts=args.include_prompts,
+        include_runtime_manifests=args.include_runtime_manifests,
+        redaction_policy=args.redaction_policy,
+    )
+    try:
+        validate_aibom(aibom)
+    except AIBOMValidationException as exc:
+        print(f"ERROR: Schema validation failed at {exc.pointer}: {exc.message}", file=sys.stderr)
+        return 2
+
+    history_docs = [load_json(path) for path in list_run_history(target, limit=args.history_window)]
+    drift = trend_diff_aibom(history_docs, aibom)
+
+    payload = {
+        "aibom": aibom,
+        "drift": drift,
+        "history_window": len(history_docs),
+    }
+    _write_json(out, payload)
+    persist_run(target, aibom)
+    persist_periodic_snapshot(target, aibom, interval=args.interval, drift=drift)
+    print(json.dumps(drift, indent=2, sort_keys=True))
     return 0
 
 
@@ -228,6 +258,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="Fail generation if unsupported artifact count is greater than this threshold.",
     )
     gen.set_defaults(func=cmd_generate)
+
+    pscan = sub.add_parser("periodic-scan")
+    pscan.add_argument("target", nargs="?", default=".")
+    pscan.add_argument("-o", "--output", default="periodic_scan.json")
+    pscan.add_argument("--interval", default="daily", choices=["hourly", "daily", "weekly"])
+    pscan.add_argument("--history-window", type=int, default=10)
+    pscan.add_argument("--include-prompts", action="store_true")
+    pscan.add_argument("--include-runtime-manifests", action="store_true")
+    pscan.add_argument(
+        "--redaction-policy",
+        choices=["strict", "default", "off"],
+        default="strict",
+    )
+    pscan.set_defaults(func=cmd_periodic_scan)
 
     v = sub.add_parser("validate")
     v.add_argument("input")

@@ -26,6 +26,48 @@ def diff_aibom(old: dict[str, Any], new: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def trend_diff_aibom(history: list[dict[str, Any]], current: dict[str, Any]) -> dict[str, Any]:
+    latest = history[-1] if history else {"models": [], "tools": [], "datasets": []}
+    pairwise = diff_aibom(latest, current)
+
+    all_seen = {"models": set(), "tools": set(), "datasets": set()}
+    for snapshot in history:
+        all_seen["models"].update(item.get("type", "") for item in snapshot.get("models", []))
+        all_seen["tools"].update(item.get("name", "") for item in snapshot.get("tools", []))
+        all_seen["datasets"].update(item.get("type", "") for item in snapshot.get("datasets", []))
+
+    novel = {
+        "models": [
+            item
+            for item in current.get("models", [])
+            if item.get("type", "") not in all_seen["models"]
+        ],
+        "tools": [
+            item
+            for item in current.get("tools", [])
+            if item.get("name", "") not in all_seen["tools"]
+        ],
+        "datasets": [
+            item
+            for item in current.get("datasets", [])
+            if item.get("type", "") not in all_seen["datasets"]
+        ],
+    }
+
+    return {
+        "pairwise": pairwise,
+        "trend": {
+            "history_window": len(history),
+            "novel_since_window": novel,
+            "change_counts": {
+                "added": sum(len(v) for v in pairwise["added"].values()),
+                "removed": sum(len(v) for v in pairwise["removed"].values()),
+                "changed": sum(len(v) for v in pairwise["changed"].values()),
+            },
+        },
+    }
+
+
 def gate_failures(diff: dict[str, Any], fail_on: set[str]) -> list[str]:
     failures: list[str] = []
     if "new-model" in fail_on and diff["added"]["models"]:

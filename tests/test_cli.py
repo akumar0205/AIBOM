@@ -11,13 +11,17 @@ import pytest
 
 from aibom.analyzer import generate_aibom
 from aibom.bundle import create_bundle, verify_bundle_signature
-from aibom.diffing import diff_aibom
+from aibom.diffing import diff_aibom, trend_diff_aibom
 from aibom.exporters import export_spdx
 from aibom.validation import AIBOMValidationException, validate_aibom
 
 
 def _fixture_project() -> Path:
     return Path(__file__).parent / "fixtures" / "sample_project"
+
+
+def _runtime_fixture_project() -> Path:
+    return Path(__file__).parent / "fixtures" / "runtime_project"
 
 
 def test_generate_matches_golden_structure() -> None:
@@ -333,6 +337,93 @@ def test_export_spdx_deterministic() -> None:
     assert [p["SPDXID"] for p in spdx["packages"]] == sorted(
         [p["SPDXID"] for p in spdx["packages"]]
     )
+
+
+def test_runtime_manifest_supports_lockfiles_k8s_and_oci_findings() -> None:
+    doc = generate_aibom(_runtime_fixture_project(), include_runtime_manifests=True)
+
+    runtime_findings = [f for f in doc["scan_findings"] if f["source_type"] == "runtime_manifest"]
+    assert any(f["category"] == "immutable image digest" for f in runtime_findings)
+    assert any(f["category"] == "runtime ai service config" for f in runtime_findings)
+    assert any(f["source_file"].endswith("k8s/deployment.yaml") for f in runtime_findings)
+    assert any(framework["name"] == "langchain" for framework in doc["frameworks"])
+    assert "@sha256:" in doc["runtime_context"]["immutable_version"]
+
+
+def test_trend_diff_tracks_novel_components() -> None:
+    history = [
+        {"models": [{"type": "ChatOpenAI"}], "tools": [{"name": "Tool"}], "datasets": []},
+        {"models": [{"type": "ChatOpenAI"}], "tools": [{"name": "Tool"}], "datasets": []},
+    ]
+    current = {
+        "models": [{"type": "ChatOpenAI"}, {"type": "ChatAnthropic"}],
+        "tools": [{"name": "Tool"}, {"name": "initialize_agent"}],
+        "datasets": [{"type": "Chroma"}],
+    }
+
+    drift = trend_diff_aibom(history, current)
+    assert drift["trend"]["history_window"] == 2
+    assert any(
+        item["type"] == "ChatAnthropic" for item in drift["trend"]["novel_since_window"]["models"]
+    )
+    assert any(
+        item["name"] == "initialize_agent" for item in drift["trend"]["novel_since_window"]["tools"]
+    )
+
+
+def test_cli_periodic_scan_persists_history_and_trend_output(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    project.mkdir()
+    (project / "app.py").write_text(
+        "from langchain_openai import ChatOpenAI\nChatOpenAI(model='gpt-4o-mini')\n",
+        encoding="utf-8",
+    )
+
+    output_path = tmp_path / "periodic.json"
+    first = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "periodic-scan",
+            str(project),
+            "-o",
+            str(output_path),
+            "--include-runtime-manifests",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert first.returncode == 0
+
+    (project / "tool.py").write_text(
+        "from langchain.agents import initialize_agent\n", encoding="utf-8"
+    )
+    second = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "periodic-scan",
+            str(project),
+            "-o",
+            str(output_path),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert second.returncode == 0
+
+    payload = json.loads(output_path.read_text(encoding="utf-8"))
+    assert payload["history_window"] >= 1
+    assert "trend" in payload["drift"]
+
+    history_file = project / ".aibom" / "periodic" / "history.json"
+    assert history_file.exists()
+    history_data = json.loads(history_file.read_text(encoding="utf-8"))
+    assert len(history_data["snapshots"]) >= 2
 
 
 def test_diff_detects_additions() -> None:

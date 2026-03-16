@@ -1,0 +1,2 @@
+openai_api_base: https://api.openai.com/v1
+model_version: gpt-4o-mini
