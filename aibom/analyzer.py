@@ -42,6 +42,12 @@ PROVENANCE_FIELDS = (
     "environment",
     "region",
 )
+LINEAGE_FIELDS = (
+    "model_artifact_digest",
+    "deployment_id",
+    "service_account_identity",
+    "owning_system",
+)
 PROVIDER_ENDPOINT_KEYS = {
     "provider_endpoint",
     "endpoint",
@@ -50,10 +56,54 @@ PROVIDER_ENDPOINT_KEYS = {
     "openai_api_base",
     "azure_endpoint",
 }
-REGISTRY_URI_KEYS = {"registry_uri", "model_registry_uri", "model_repo_uri", "repository_uri"}
-IMMUTABLE_VERSION_KEYS = {"model_version", "model_digest", "digest", "image_digest"}
+REGISTRY_URI_KEYS = {
+    "registry_uri",
+    "model_registry_uri",
+    "model_repo_uri",
+    "repository",
+    "repository_uri",
+}
+IMMUTABLE_VERSION_KEYS = {
+    "model_version",
+    "model_digest",
+    "digest",
+    "image",
+    "image_digest",
+    "image_uri",
+}
 ENVIRONMENT_KEYS = {"environment", "env", "stage", "deployment_stage"}
 REGION_KEYS = {"region", "aws_region", "azure_region", "gcp_region"}
+DEPLOYMENT_ID_KEYS = {
+    "deployment",
+    "deployment_id",
+    "deployment_name",
+    "release",
+    "release_name",
+}
+SERVICE_ACCOUNT_IDENTITY_KEYS = {
+    "serviceaccount",
+    "serviceaccountname",
+    "service_account",
+    "service_account_email",
+    "service_account_name",
+    "workload_identity",
+}
+OWNING_SYSTEM_KEYS = {
+    "app",
+    "application",
+    "managed_by",
+    "owner",
+    "owning_system",
+    "system",
+    "team",
+}
+MODEL_ARTIFACT_DIGEST_KEYS = {
+    "artifact_digest",
+    "digest",
+    "image_digest",
+    "model_artifact_digest",
+    "model_digest",
+}
 MODEL_PROVIDER_ENDPOINTS = {
     "ChatOpenAI": "https://api.openai.com",
     "OpenAI": "https://api.openai.com",
@@ -383,6 +433,27 @@ class ConfigFileDetector:
                     detector_runtime_context["region"] = value
                     model_provenance["region"] = value
 
+                if normalized in DEPLOYMENT_ID_KEYS and value:
+                    detector_runtime_context.setdefault("lineage", _lineage())
+                    model_provenance.setdefault("lineage", _lineage())
+                    detector_runtime_context["lineage"]["deployment_id"] = value
+                    model_provenance["lineage"]["deployment_id"] = value
+                if normalized in SERVICE_ACCOUNT_IDENTITY_KEYS and value:
+                    detector_runtime_context.setdefault("lineage", _lineage())
+                    model_provenance.setdefault("lineage", _lineage())
+                    detector_runtime_context["lineage"]["service_account_identity"] = value
+                    model_provenance["lineage"]["service_account_identity"] = value
+                if normalized in OWNING_SYSTEM_KEYS and value:
+                    detector_runtime_context.setdefault("lineage", _lineage())
+                    model_provenance.setdefault("lineage", _lineage())
+                    detector_runtime_context["lineage"]["owning_system"] = value
+                    model_provenance["lineage"]["owning_system"] = value
+                if normalized in MODEL_ARTIFACT_DIGEST_KEYS and value and "sha256:" in value:
+                    detector_runtime_context.setdefault("lineage", _lineage())
+                    model_provenance.setdefault("lineage", _lineage())
+                    detector_runtime_context["lineage"]["model_artifact_digest"] = value
+                    model_provenance["lineage"]["model_artifact_digest"] = value
+
                 if normalized not in CONFIG_KEY_HINTS:
                     continue
 
@@ -474,6 +545,20 @@ class RuntimeManifestDetector:
             runtime_context = _runtime_context_from_manifest(file_path.name, text)
             result.runtime_context = _merge_provenance(result.runtime_context, runtime_context)
 
+            lineage_pairs = _extract_lineage_key_values(file_path.name, text)
+            for key, value in lineage_pairs:
+                result.scan_findings.append(
+                    _finding(
+                        finding_id=f"runtime-lineage:{rel}:{key}",
+                        category="deployment lineage",
+                        source_type=self.source_type,
+                        source_file=str(rel),
+                        severity="low",
+                        confidence="medium",
+                        evidence=_config_evidence(key, value, key, context.redaction_policy),
+                    )
+                )
+
             immutable_refs = _extract_immutable_image_refs(file_path.name, text)
             for ref in immutable_refs:
                 result.scan_findings.append(
@@ -502,7 +587,12 @@ class RuntimeManifestDetector:
                     )
                 )
 
-            if immutable_refs or ai_runtime_keys or file_path.name.lower().startswith("docker"):
+            if (
+                immutable_refs
+                or ai_runtime_keys
+                or lineage_pairs
+                or file_path.name.lower().startswith("docker")
+            ):
                 result.scan_findings.append(
                     _finding(
                         finding_id=f"runtime-container:{rel}",
@@ -894,6 +984,38 @@ def _provenance(
     }
 
 
+def _lineage(
+    model_artifact_digest: str = PROVENANCE_UNKNOWN,
+    deployment_id: str = PROVENANCE_UNKNOWN,
+    service_account_identity: str = PROVENANCE_UNKNOWN,
+    owning_system: str = PROVENANCE_UNKNOWN,
+) -> dict[str, str]:
+    return {
+        "model_artifact_digest": model_artifact_digest,
+        "deployment_id": deployment_id,
+        "service_account_identity": service_account_identity,
+        "owning_system": owning_system,
+    }
+
+
+def _merge_lineage(
+    base: dict[str, str] | None, overlay: dict[str, str] | None
+) -> dict[str, str] | None:
+    merged = dict(base) if isinstance(base, dict) else _lineage()
+    has_known = False
+    for lineage_field in LINEAGE_FIELDS:
+        value = PROVENANCE_UNKNOWN
+        if isinstance(overlay, dict):
+            value = overlay.get(lineage_field, PROVENANCE_UNKNOWN)
+        if value and value != PROVENANCE_UNKNOWN:
+            merged[lineage_field] = value
+        elif lineage_field not in merged:
+            merged[lineage_field] = PROVENANCE_UNKNOWN
+        if merged.get(lineage_field) != PROVENANCE_UNKNOWN:
+            has_known = True
+    return merged if has_known else None
+
+
 def _merge_provenance(base: dict[str, str], overlay: dict[str, str]) -> dict[str, str]:
     merged = dict(base) if base else _provenance()
     for provenance_field in PROVENANCE_FIELDS:
@@ -902,6 +1024,12 @@ def _merge_provenance(base: dict[str, str], overlay: dict[str, str]) -> dict[str
             merged[provenance_field] = value
         elif provenance_field not in merged:
             merged[provenance_field] = PROVENANCE_UNKNOWN
+    merged_lineage = _merge_lineage(
+        base.get("lineage") if isinstance(base.get("lineage"), dict) else None,
+        overlay.get("lineage") if isinstance(overlay.get("lineage"), dict) else None,
+    )
+    if merged_lineage:
+        merged["lineage"] = merged_lineage
     return merged
 
 
@@ -943,6 +1071,20 @@ def _runtime_context_from_manifest(filename: str, text: str) -> dict[str, str]:
             runtime_context["environment"] = value
         elif key in REGION_KEYS and value:
             runtime_context["region"] = value
+
+    lineage = _lineage()
+    for key, value in _extract_lineage_key_values(filename, text):
+        if key in DEPLOYMENT_ID_KEYS and value:
+            lineage["deployment_id"] = value
+        elif key in SERVICE_ACCOUNT_IDENTITY_KEYS and value:
+            lineage["service_account_identity"] = value
+        elif key in OWNING_SYSTEM_KEYS and value:
+            lineage["owning_system"] = value
+        elif key in MODEL_ARTIFACT_DIGEST_KEYS and value and "sha256:" in value:
+            lineage["model_artifact_digest"] = value
+    merged_lineage = _merge_lineage(None, lineage)
+    if merged_lineage:
+        runtime_context["lineage"] = merged_lineage
     return runtime_context
 
 
@@ -973,6 +1115,22 @@ def _extract_runtime_ai_service_config(filename: str, text: str) -> list[tuple[s
         if AI_RUNTIME_CONFIG_KEY_PATTERN.match(normalized):
             findings.append((normalized, value))
         elif normalized in PROVIDER_ENDPOINT_KEYS | IMMUTABLE_VERSION_KEYS | REGISTRY_URI_KEYS:
+            findings.append((normalized, value))
+    return findings
+
+
+def _extract_lineage_key_values(filename: str, text: str) -> list[tuple[str, str]]:
+    pairs = _extract_key_values(Path(filename), text)
+    findings: list[tuple[str, str]] = []
+    lineage_keys = (
+        DEPLOYMENT_ID_KEYS
+        | SERVICE_ACCOUNT_IDENTITY_KEYS
+        | OWNING_SYSTEM_KEYS
+        | MODEL_ARTIFACT_DIGEST_KEYS
+    )
+    for key, value in pairs:
+        normalized = key.lower()
+        if normalized in lineage_keys:
             findings.append((normalized, value))
     return findings
 
