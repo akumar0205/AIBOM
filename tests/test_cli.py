@@ -150,6 +150,49 @@ def test_js_ts_ast_detector_finds_models_tools_prompts_and_frameworks() -> None:
     )
 
 
+def test_python_alias_binding_detection_for_models_and_tools() -> None:
+    doc = generate_aibom(_fixture_project())
+
+    assert any(
+        model["source_file"] == "alias_wrappers.py" and model["type"] == "ChatOpenAI"
+        for model in doc["models"]
+    )
+    assert any(
+        tool["source_file"] == "alias_wrappers.py" and tool["name"] == "initialize_agent"
+        for tool in doc["tools"]
+    )
+    python_findings = [
+        finding
+        for finding in doc["scan_findings"]
+        if finding["source_type"] == "python" and finding["source_file"] == "alias_wrappers.py"
+    ]
+    assert python_findings
+    assert all(finding["confidence"] in {"medium", "high"} for finding in python_findings)
+
+
+def test_js_ts_ast_alias_and_factory_detection_uses_ast_context() -> None:
+    doc = generate_aibom(_fixture_project(), include_prompts=True)
+
+    assert any(
+        model["source_file"].startswith("edge_cases.ts:") and model["type"] == "ChatOpenAI"
+        for model in doc["models"]
+    )
+    assert any(
+        tool["source_file"].startswith("edge_cases.ts:") and tool["name"] == "tool"
+        for tool in doc["tools"]
+    )
+    assert any(prompt["source_file"].startswith("edge_cases.ts:") for prompt in doc["prompts"])
+
+    edge_findings = [
+        finding
+        for finding in doc["scan_findings"]
+        if finding["source_type"] == "js_ts_ast"
+        and finding["source_file"].startswith("edge_cases.ts:")
+    ]
+    assert edge_findings
+    assert any("context=" in finding["evidence"] for finding in edge_findings)
+
+
 def test_java_go_dotnet_detectors_find_expected_surfaces() -> None:
     doc = generate_aibom(_fixture_project(), include_prompts=True)
 

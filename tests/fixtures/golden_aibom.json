@@ -1,67 +1,184 @@
 {
-  "coverage_summary": {
-    "detectors": [
-      {
-        "artifacts_scanned": 3,
-        "artifacts_seen": 3,
-        "default_confidence": "medium",
-        "source_type": "config"
-      },
-      {
-        "artifacts_scanned": 1,
-        "artifacts_seen": 1,
-        "default_confidence": "medium",
-        "source_type": "dotnet_ast"
-      },
-      {
-        "artifacts_scanned": 1,
-        "artifacts_seen": 1,
-        "default_confidence": "medium",
-        "source_type": "go_ast"
-      },
-      {
-        "artifacts_scanned": 1,
-        "artifacts_seen": 1,
-        "default_confidence": "medium",
-        "source_type": "java_ast"
-      },
-      {
-        "artifacts_scanned": 1,
-        "artifacts_seen": 1,
-        "default_confidence": "medium",
-        "source_type": "js_ts_ast"
-      },
-      {
-        "artifacts_scanned": 1,
-        "artifacts_seen": 1,
-        "default_confidence": "medium",
-        "source_type": "js_ts_manifest"
-      },
-      {
-        "artifacts_scanned": 1,
-        "artifacts_seen": 1,
-        "default_confidence": "medium",
-        "source_type": "jupyter_notebook"
-      },
-      {
-        "artifacts_scanned": 1,
-        "artifacts_seen": 1,
-        "default_confidence": "high",
-        "source_type": "python"
-      },
-      {
-        "artifacts_scanned": 2,
-        "artifacts_seen": 2,
-        "default_confidence": "medium",
-        "source_type": "runtime_manifest"
-      }
-    ],
-    "unsupported_total": 0
+  "schema_version": "1.0",
+  "metadata": {
+    "generated_at": "DYNAMIC",
+    "git_sha": "DYNAMIC",
+    "artifact_sha256": "DYNAMIC"
   },
+  "models": [
+    {
+      "type": "ConfigModelHint",
+      "model": "gpt-4.1-mini",
+      "source_file": "settings.yaml",
+      "source_type": "config",
+      "confidence": "medium",
+      "provenance": {
+        "provider_endpoint": "unknown",
+        "registry_uri": "unknown",
+        "immutable_version": "python:3.11-slim",
+        "environment": "unknown",
+        "region": "unknown"
+      }
+    },
+    {
+      "type": "ChatOpenAI",
+      "model": "gpt-4.1-mini",
+      "source_file": "alias_wrappers.py",
+      "provenance": {
+        "provider_endpoint": "https://api.openai.com",
+        "registry_uri": "unknown",
+        "immutable_version": "python:3.11-slim",
+        "environment": "unknown",
+        "region": "unknown"
+      }
+    },
+    {
+      "type": "ChatOpenAI",
+      "model": "gpt-4o-mini",
+      "source_file": "app.py",
+      "provenance": {
+        "provider_endpoint": "https://api.openai.com",
+        "registry_uri": "unknown",
+        "immutable_version": "python:3.11-slim",
+        "environment": "unknown",
+        "region": "unknown"
+      }
+    },
+    {
+      "type": "OpenAI",
+      "model": "gpt-4o-mini",
+      "source_file": "assistant.java:7",
+      "provenance": {
+        "provider_endpoint": "https://api.openai.com",
+        "registry_uri": "unknown",
+        "immutable_version": "python:3.11-slim",
+        "environment": "unknown",
+        "region": "unknown"
+      }
+    },
+    {
+      "type": "ChatOpenAI",
+      "model": "gpt-4o-mini",
+      "source_file": "demo.ipynb#cell-0",
+      "provenance": {
+        "provider_endpoint": "https://api.openai.com",
+        "registry_uri": "unknown",
+        "immutable_version": "python:3.11-slim",
+        "environment": "unknown",
+        "region": "unknown"
+      }
+    },
+    {
+      "type": "OpenAI",
+      "model": "gpt-4o-mini",
+      "source_file": "script.ts:5",
+      "provenance": {
+        "provider_endpoint": "https://api.openai.com",
+        "registry_uri": "unknown",
+        "immutable_version": "python:3.11-slim",
+        "environment": "unknown",
+        "region": "unknown"
+      }
+    },
+    {
+      "type": "OpenAI",
+      "model": "sk-local",
+      "source_file": "Assistant.cs:6",
+      "provenance": {
+        "provider_endpoint": "https://api.openai.com",
+        "registry_uri": "unknown",
+        "immutable_version": "python:3.11-slim",
+        "environment": "unknown",
+        "region": "unknown"
+      }
+    },
+    {
+      "type": "ChatOpenAI",
+      "model": "unknown",
+      "source_file": "alias_wrappers.py",
+      "provenance": {
+        "provider_endpoint": "https://api.openai.com",
+        "registry_uri": "unknown",
+        "immutable_version": "python:3.11-slim",
+        "environment": "unknown",
+        "region": "unknown"
+      }
+    },
+    {
+      "type": "OpenAI",
+      "model": "unknown",
+      "source_file": "assistant.go:9",
+      "provenance": {
+        "provider_endpoint": "https://api.openai.com",
+        "registry_uri": "unknown",
+        "immutable_version": "python:3.11-slim",
+        "environment": "unknown",
+        "region": "unknown"
+      }
+    },
+    {
+      "type": "OpenAI",
+      "model": "unknown",
+      "source_file": "assistant.java:1",
+      "provenance": {
+        "provider_endpoint": "https://api.openai.com",
+        "registry_uri": "unknown",
+        "immutable_version": "python:3.11-slim",
+        "environment": "unknown",
+        "region": "unknown"
+      }
+    },
+    {
+      "type": "ChatOpenAI",
+      "model": "unknown",
+      "source_file": "edge_cases.ts:6",
+      "provenance": {
+        "provider_endpoint": "https://api.openai.com",
+        "registry_uri": "unknown",
+        "immutable_version": "python:3.11-slim",
+        "environment": "unknown",
+        "region": "unknown"
+      }
+    }
+  ],
   "datasets": [
     {
-      "source_file": "app.py",
-      "type": "FAISS.from_texts"
+      "type": "langchain.vectorstores.FAISS.from_texts",
+      "source_file": "app.py"
+    }
+  ],
+  "tools": [
+    {
+      "name": "builder",
+      "source_file": "assistant.java:8"
+    },
+    {
+      "name": "initialize_agent",
+      "source_file": "alias_wrappers.py"
+    },
+    {
+      "name": "initialize_agent",
+      "source_file": "app.py"
+    },
+    {
+      "name": "java_tool",
+      "source_file": "assistant.java:2"
+    },
+    {
+      "name": "tool",
+      "source_file": "assistant.go:10"
+    },
+    {
+      "name": "tool",
+      "source_file": "edge_cases.ts:7"
+    },
+    {
+      "name": "tool",
+      "source_file": "script.ts:6"
+    },
+    {
+      "name": "var",
+      "source_file": "Assistant.cs:7"
     }
   ],
   "frameworks": [
@@ -73,111 +190,6 @@
     },
     {
       "name": "openai"
-    }
-  ],
-  "metadata": {
-    "artifact_sha256": "DYNAMIC",
-    "generated_at": "DYNAMIC",
-    "git_sha": "DYNAMIC"
-  },
-  "models": [
-    {
-      "confidence": "medium",
-      "model": "gpt-4.1-mini",
-      "provenance": {
-        "environment": "unknown",
-        "immutable_version": "python:3.11-slim",
-        "provider_endpoint": "unknown",
-        "region": "unknown",
-        "registry_uri": "unknown"
-      },
-      "source_file": "settings.yaml",
-      "source_type": "config",
-      "type": "ConfigModelHint"
-    },
-    {
-      "model": "gpt-4o-mini",
-      "provenance": {
-        "environment": "unknown",
-        "immutable_version": "python:3.11-slim",
-        "provider_endpoint": "https://api.openai.com",
-        "region": "unknown",
-        "registry_uri": "unknown"
-      },
-      "source_file": "app.py",
-      "type": "ChatOpenAI"
-    },
-    {
-      "model": "gpt-4o-mini",
-      "provenance": {
-        "environment": "unknown",
-        "immutable_version": "python:3.11-slim",
-        "provider_endpoint": "https://api.openai.com",
-        "region": "unknown",
-        "registry_uri": "unknown"
-      },
-      "source_file": "assistant.java:7",
-      "type": "OpenAI"
-    },
-    {
-      "model": "gpt-4o-mini",
-      "provenance": {
-        "environment": "unknown",
-        "immutable_version": "python:3.11-slim",
-        "provider_endpoint": "https://api.openai.com",
-        "region": "unknown",
-        "registry_uri": "unknown"
-      },
-      "source_file": "demo.ipynb#cell-0",
-      "type": "ChatOpenAI"
-    },
-    {
-      "model": "gpt-4o-mini",
-      "provenance": {
-        "environment": "unknown",
-        "immutable_version": "python:3.11-slim",
-        "provider_endpoint": "https://api.openai.com",
-        "region": "unknown",
-        "registry_uri": "unknown"
-      },
-      "source_file": "script.ts:5",
-      "type": "OpenAI"
-    },
-    {
-      "model": "sk-local",
-      "provenance": {
-        "environment": "unknown",
-        "immutable_version": "python:3.11-slim",
-        "provider_endpoint": "https://api.openai.com",
-        "region": "unknown",
-        "registry_uri": "unknown"
-      },
-      "source_file": "Assistant.cs:6",
-      "type": "OpenAI"
-    },
-    {
-      "model": "unknown",
-      "provenance": {
-        "environment": "unknown",
-        "immutable_version": "python:3.11-slim",
-        "provider_endpoint": "https://api.openai.com",
-        "region": "unknown",
-        "registry_uri": "unknown"
-      },
-      "source_file": "assistant.go:9",
-      "type": "OpenAI"
-    },
-    {
-      "model": "unknown",
-      "provenance": {
-        "environment": "unknown",
-        "immutable_version": "python:3.11-slim",
-        "provider_endpoint": "https://api.openai.com",
-        "region": "unknown",
-        "registry_uri": "unknown"
-      },
-      "source_file": "assistant.java:1",
-      "type": "OpenAI"
     }
   ],
   "prompts": [
@@ -202,349 +214,438 @@
       "source_file": "assistant.java:9"
     },
     {
-      "id": "script.ts:2",
-      "source_file": "script.ts:2"
+      "id": "edge_cases.ts:8",
+      "source_file": "edge_cases.ts:8"
     },
     {
       "id": "script.ts:7",
       "source_file": "script.ts:7"
     }
   ],
+  "scan_findings": [
+    {
+      "id": "runtime-container:Dockerfile",
+      "category": "container metadata",
+      "source_type": "runtime_manifest",
+      "source_file": "Dockerfile",
+      "severity": "low",
+      "confidence": "medium",
+      "evidence": "Container/runtime metadata discovered."
+    },
+    {
+      "id": "js-ts-deps:package.json",
+      "category": "dependency graph",
+      "source_type": "js_ts_manifest",
+      "source_file": "package.json",
+      "severity": "medium",
+      "confidence": "medium",
+      "evidence": "Detected JS/TS dependencies: langchain, openai"
+    },
+    {
+      "id": "runtime-deps:requirements.txt",
+      "category": "dependency graph",
+      "source_type": "runtime_manifest",
+      "source_file": "requirements.txt",
+      "severity": "medium",
+      "confidence": "medium",
+      "evidence": "Detected dependencies: anthropic, langchain"
+    },
+    {
+      "id": "config:model:settings.yaml",
+      "category": "model configuration",
+      "source_type": "config",
+      "source_file": "settings.yaml",
+      "severity": "medium",
+      "confidence": "high",
+      "evidence": "model=[masked:gp********ni hash:13a647d426a0]"
+    },
+    {
+      "id": "js-ts-model:ChatOpenAI:edge_cases.ts:6",
+      "category": "model invocation",
+      "source_type": "js_ts_ast",
+      "source_file": "edge_cases.ts:6",
+      "severity": "medium",
+      "confidence": "high",
+      "evidence": "JS/TS AST constructor detected: @langchain/openai.ChatOpenAI (imported=True)."
+    },
+    {
+      "id": "js-ts-model:OpenAI:script.ts:5",
+      "category": "model invocation",
+      "source_type": "js_ts_ast",
+      "source_file": "script.ts:5",
+      "severity": "medium",
+      "confidence": "high",
+      "evidence": "JS/TS AST constructor detected: openai.default (imported=True)."
+    },
+    {
+      "id": "python-model:ChatOpenAI:alias_wrappers.py",
+      "category": "model invocation",
+      "source_type": "python",
+      "source_file": "alias_wrappers.py",
+      "severity": "medium",
+      "confidence": "high",
+      "evidence": "Model class ChatOpenAI detected in Python source."
+    },
+    {
+      "id": "python-model:ChatOpenAI:app.py",
+      "category": "model invocation",
+      "source_type": "python",
+      "source_file": "app.py",
+      "severity": "medium",
+      "confidence": "high",
+      "evidence": "Model class ChatOpenAI detected in Python source."
+    },
+    {
+      "id": "dotnet-model:OpenAI:Assistant.cs:6",
+      "category": "model invocation",
+      "source_type": "dotnet_ast",
+      "source_file": "Assistant.cs:6",
+      "severity": "medium",
+      "confidence": "medium",
+      "evidence": ".NET model usage detected: OpenAI."
+    },
+    {
+      "id": "go-model:OpenAI:assistant.go:9",
+      "category": "model invocation",
+      "source_type": "go_ast",
+      "source_file": "assistant.go:9",
+      "severity": "medium",
+      "confidence": "medium",
+      "evidence": "Go model usage detected: OpenAI."
+    },
+    {
+      "id": "java-model:OpenAI:assistant.java:1",
+      "category": "model invocation",
+      "source_type": "java_ast",
+      "source_file": "assistant.java:1",
+      "severity": "medium",
+      "confidence": "medium",
+      "evidence": "Java model usage detected: OpenAI."
+    },
+    {
+      "id": "java-model:OpenAI:assistant.java:7",
+      "category": "model invocation",
+      "source_type": "java_ast",
+      "source_file": "assistant.java:7",
+      "severity": "medium",
+      "confidence": "medium",
+      "evidence": "Java model usage detected: OpenAI."
+    },
+    {
+      "id": "js-ts-prompt:edge_cases.ts:8",
+      "category": "prompt template",
+      "source_type": "js_ts_ast",
+      "source_file": "edge_cases.ts:8",
+      "severity": "medium",
+      "confidence": "high",
+      "evidence": "JS/TS AST prompt call detected: @langchain/core/prompts.ChatPromptTemplate.fromTemplate (context=method)."
+    },
+    {
+      "id": "js-ts-prompt:script.ts:7",
+      "category": "prompt template",
+      "source_type": "js_ts_ast",
+      "source_file": "script.ts:7",
+      "severity": "medium",
+      "confidence": "high",
+      "evidence": "JS/TS AST prompt call detected: @langchain/core/prompts.ChatPromptTemplate.fromTemplate (context=method)."
+    },
+    {
+      "id": "config:provider:settings.yaml",
+      "category": "provider configuration",
+      "source_type": "config",
+      "source_file": "settings.yaml",
+      "severity": "medium",
+      "confidence": "high",
+      "evidence": "provider=[masked:op**ai hash:7d3194f79e64]"
+    },
+    {
+      "id": "config:anthropic_api_key:.env",
+      "category": "provider credential",
+      "source_type": "config",
+      "source_file": ".env",
+      "severity": "high",
+      "confidence": "medium",
+      "evidence": "ANTHROPIC_API_KEY=[masked:an*****st hash:25e2f144a82b]"
+    },
+    {
+      "id": "config:openai_api_key:.env",
+      "category": "provider credential",
+      "source_type": "config",
+      "source_file": ".env",
+      "severity": "high",
+      "confidence": "medium",
+      "evidence": "OPENAI_API_KEY=[masked:sk*********ue hash:928d882b4239]"
+    },
+    {
+      "id": "js-ts-tool:tool:edge_cases.ts:7",
+      "category": "tool invocation",
+      "source_type": "js_ts_ast",
+      "source_file": "edge_cases.ts:7",
+      "severity": "low",
+      "confidence": "high",
+      "evidence": "JS/TS AST call detected: @langchain/core/tools.tool (context=function)."
+    },
+    {
+      "id": "js-ts-tool:tool:script.ts:6",
+      "category": "tool invocation",
+      "source_type": "js_ts_ast",
+      "source_file": "script.ts:6",
+      "severity": "low",
+      "confidence": "high",
+      "evidence": "JS/TS AST call detected: @langchain/core/tools.tool (context=function)."
+    }
+  ],
+  "coverage_summary": {
+    "detectors": [
+      {
+        "source_type": "config",
+        "artifacts_seen": 3,
+        "artifacts_scanned": 3,
+        "default_confidence": "medium"
+      },
+      {
+        "source_type": "dotnet_ast",
+        "artifacts_seen": 1,
+        "artifacts_scanned": 1,
+        "default_confidence": "medium"
+      },
+      {
+        "source_type": "go_ast",
+        "artifacts_seen": 1,
+        "artifacts_scanned": 1,
+        "default_confidence": "medium"
+      },
+      {
+        "source_type": "java_ast",
+        "artifacts_seen": 1,
+        "artifacts_scanned": 1,
+        "default_confidence": "medium"
+      },
+      {
+        "source_type": "js_ts_ast",
+        "artifacts_seen": 2,
+        "artifacts_scanned": 2,
+        "default_confidence": "medium"
+      },
+      {
+        "source_type": "js_ts_manifest",
+        "artifacts_seen": 1,
+        "artifacts_scanned": 1,
+        "default_confidence": "medium"
+      },
+      {
+        "source_type": "jupyter_notebook",
+        "artifacts_seen": 1,
+        "artifacts_scanned": 1,
+        "default_confidence": "medium"
+      },
+      {
+        "source_type": "python",
+        "artifacts_seen": 2,
+        "artifacts_scanned": 2,
+        "default_confidence": "high"
+      },
+      {
+        "source_type": "runtime_manifest",
+        "artifacts_seen": 2,
+        "artifacts_scanned": 2,
+        "default_confidence": "medium"
+      }
+    ],
+    "unsupported_total": 0
+  },
+  "unsupported_artifacts": [],
+  "source_types": [
+    {
+      "name": "python",
+      "default_severity": "medium",
+      "default_confidence": "high"
+    },
+    {
+      "name": "jupyter_notebook",
+      "default_severity": "medium",
+      "default_confidence": "medium"
+    },
+    {
+      "name": "config",
+      "default_severity": "medium",
+      "default_confidence": "medium"
+    },
+    {
+      "name": "runtime_manifest",
+      "default_severity": "medium",
+      "default_confidence": "medium"
+    },
+    {
+      "name": "js_ts_manifest",
+      "default_severity": "medium",
+      "default_confidence": "medium"
+    },
+    {
+      "name": "js_ts_ast",
+      "default_severity": "medium",
+      "default_confidence": "medium"
+    },
+    {
+      "name": "java_ast",
+      "default_severity": "medium",
+      "default_confidence": "medium"
+    },
+    {
+      "name": "go_ast",
+      "default_severity": "medium",
+      "default_confidence": "medium"
+    },
+    {
+      "name": "dotnet_ast",
+      "default_severity": "medium",
+      "default_confidence": "medium"
+    }
+  ],
+  "runtime_context": {
+    "provider_endpoint": "unknown",
+    "registry_uri": "unknown",
+    "immutable_version": "python:3.11-slim",
+    "environment": "unknown",
+    "region": "unknown"
+  },
   "risk_findings": [
     {
+      "id": "prompt-injection-surface:prompt_templates:",
+      "rule_id": "prompt-injection-surface",
       "base_rule_id": "prompt-injection-surface",
       "category": "prompt injection surface",
-      "heuristic": "true",
-      "id": "prompt-injection-surface:prompt_templates:",
       "owasp_llm": "LLM01 Prompt Injection",
+      "severity": "medium",
       "rationale": "Prompt templates detected; review source trust boundaries.",
-      "rule_id": "prompt-injection-surface",
-      "severity": "medium"
+      "heuristic": "true"
     },
     {
+      "id": "third-party-provider:ChatOpenAI:alias_wrappers.py",
+      "rule_id": "third-party-provider",
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
-      "heuristic": "true",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "severity": "medium",
+      "rationale": "External model provider detected.",
+      "heuristic": "true"
+    },
+    {
+      "id": "third-party-provider:ChatOpenAI:alias_wrappers.py",
+      "rule_id": "third-party-provider",
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "severity": "medium",
+      "rationale": "External model provider detected.",
+      "heuristic": "true"
+    },
+    {
       "id": "third-party-provider:ChatOpenAI:app.py",
-      "owasp_llm": "LLM07 Insecure Plugin Design",
-      "rationale": "External model provider detected.",
       "rule_id": "third-party-provider",
-      "severity": "medium"
-    },
-    {
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
-      "heuristic": "true",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "severity": "medium",
+      "rationale": "External model provider detected.",
+      "heuristic": "true"
+    },
+    {
       "id": "third-party-provider:ChatOpenAI:demo.ipynb#cell-0",
-      "owasp_llm": "LLM07 Insecure Plugin Design",
-      "rationale": "External model provider detected.",
       "rule_id": "third-party-provider",
-      "severity": "medium"
-    },
-    {
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
-      "heuristic": "true",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "severity": "medium",
+      "rationale": "External model provider detected.",
+      "heuristic": "true"
+    },
+    {
+      "id": "third-party-provider:ChatOpenAI:edge_cases.ts:6",
+      "rule_id": "third-party-provider",
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "severity": "medium",
+      "rationale": "External model provider detected.",
+      "heuristic": "true"
+    },
+    {
       "id": "third-party-provider:OpenAI:Assistant.cs:6",
-      "owasp_llm": "LLM07 Insecure Plugin Design",
-      "rationale": "External model provider detected.",
       "rule_id": "third-party-provider",
-      "severity": "medium"
-    },
-    {
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
-      "heuristic": "true",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "severity": "medium",
+      "rationale": "External model provider detected.",
+      "heuristic": "true"
+    },
+    {
       "id": "third-party-provider:OpenAI:assistant.go:9",
-      "owasp_llm": "LLM07 Insecure Plugin Design",
-      "rationale": "External model provider detected.",
       "rule_id": "third-party-provider",
-      "severity": "medium"
-    },
-    {
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
-      "heuristic": "true",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "severity": "medium",
+      "rationale": "External model provider detected.",
+      "heuristic": "true"
+    },
+    {
       "id": "third-party-provider:OpenAI:assistant.java:1",
-      "owasp_llm": "LLM07 Insecure Plugin Design",
-      "rationale": "External model provider detected.",
       "rule_id": "third-party-provider",
-      "severity": "medium"
-    },
-    {
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
-      "heuristic": "true",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "severity": "medium",
+      "rationale": "External model provider detected.",
+      "heuristic": "true"
+    },
+    {
       "id": "third-party-provider:OpenAI:assistant.java:7",
-      "owasp_llm": "LLM07 Insecure Plugin Design",
-      "rationale": "External model provider detected.",
       "rule_id": "third-party-provider",
-      "severity": "medium"
-    },
-    {
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
-      "heuristic": "true",
-      "id": "third-party-provider:OpenAI:script.ts:5",
       "owasp_llm": "LLM07 Insecure Plugin Design",
+      "severity": "medium",
       "rationale": "External model provider detected.",
+      "heuristic": "true"
+    },
+    {
+      "id": "third-party-provider:OpenAI:script.ts:5",
       "rule_id": "third-party-provider",
-      "severity": "medium"
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "severity": "medium",
+      "rationale": "External model provider detected.",
+      "heuristic": "true"
     }
   ],
   "risk_policy": {
+    "policy": {
+      "policy_id": "builtin-default",
+      "version": "1",
+      "source": "builtin",
+      "sha256": "cce9851d3aae4c7a1e5d364e0af054db66af01930f76035e1fdac87727dee91a"
+    },
     "applied_rules": [
       {
         "base_rule_id": "prompt-injection-surface",
-        "candidate_count": 1,
-        "post_allowlist_count": 1,
         "rule_id": "prompt-injection-surface",
         "severity": "medium",
-        "threshold": 1
+        "threshold": 1,
+        "candidate_count": 1,
+        "post_allowlist_count": 1
       },
       {
         "base_rule_id": "third-party-provider",
-        "candidate_count": 7,
-        "post_allowlist_count": 7,
         "rule_id": "third-party-provider",
         "severity": "medium",
-        "threshold": 1
+        "threshold": 1,
+        "candidate_count": 10,
+        "post_allowlist_count": 10
       }
     ],
-    "policy": {
-      "policy_id": "builtin-default",
-      "sha256": "cce9851d3aae4c7a1e5d364e0af054db66af01930f76035e1fdac87727dee91a",
-      "source": "builtin",
-      "version": "1"
-    },
     "suppressed": []
-  },
-  "runtime_context": {
-    "environment": "unknown",
-    "immutable_version": "python:3.11-slim",
-    "provider_endpoint": "unknown",
-    "region": "unknown",
-    "registry_uri": "unknown"
-  },
-  "scan_findings": [
-    {
-      "category": "container metadata",
-      "confidence": "high",
-      "evidence": "Container/runtime metadata discovered.",
-      "id": "runtime-container:Dockerfile",
-      "severity": "low",
-      "source_file": "Dockerfile",
-      "source_type": "runtime_manifest"
-    },
-    {
-      "category": "dependency graph",
-      "confidence": "medium",
-      "evidence": "Detected JS/TS dependencies: langchain, openai",
-      "id": "js-ts-deps:package.json",
-      "severity": "medium",
-      "source_file": "package.json",
-      "source_type": "js_ts_manifest"
-    },
-    {
-      "category": "dependency graph",
-      "confidence": "medium",
-      "evidence": "Detected dependencies: anthropic, langchain",
-      "id": "runtime-deps:requirements.txt",
-      "severity": "medium",
-      "source_file": "requirements.txt",
-      "source_type": "runtime_manifest"
-    },
-    {
-      "category": "model configuration",
-      "confidence": "high",
-      "evidence": "model=[masked:gp********ni hash:13a647d426a0]",
-      "id": "config:model:settings.yaml",
-      "severity": "medium",
-      "source_file": "settings.yaml",
-      "source_type": "config"
-    },
-    {
-      "category": "model invocation",
-      "confidence": "high",
-      "evidence": "Model class ChatOpenAI detected in Python source.",
-      "id": "python-model:ChatOpenAI:app.py",
-      "severity": "medium",
-      "source_file": "app.py",
-      "source_type": "python"
-    },
-    {
-      "category": "model invocation",
-      "confidence": "medium",
-      "evidence": ".NET model usage detected: OpenAI.",
-      "id": "dotnet-model:OpenAI:Assistant.cs:6",
-      "severity": "medium",
-      "source_file": "Assistant.cs:6",
-      "source_type": "dotnet_ast"
-    },
-    {
-      "category": "model invocation",
-      "confidence": "medium",
-      "evidence": "Go model usage detected: OpenAI.",
-      "id": "go-model:OpenAI:assistant.go:9",
-      "severity": "medium",
-      "source_file": "assistant.go:9",
-      "source_type": "go_ast"
-    },
-    {
-      "category": "model invocation",
-      "confidence": "medium",
-      "evidence": "JS/TS model usage detected: OpenAI.",
-      "id": "js-ts-model:OpenAI:script.ts:5",
-      "severity": "medium",
-      "source_file": "script.ts:5",
-      "source_type": "js_ts_ast"
-    },
-    {
-      "category": "model invocation",
-      "confidence": "medium",
-      "evidence": "Java model usage detected: OpenAI.",
-      "id": "java-model:OpenAI:assistant.java:1",
-      "severity": "medium",
-      "source_file": "assistant.java:1",
-      "source_type": "java_ast"
-    },
-    {
-      "category": "model invocation",
-      "confidence": "medium",
-      "evidence": "Java model usage detected: OpenAI.",
-      "id": "java-model:OpenAI:assistant.java:7",
-      "severity": "medium",
-      "source_file": "assistant.java:7",
-      "source_type": "java_ast"
-    },
-    {
-      "category": "prompt template",
-      "confidence": "medium",
-      "evidence": "JS/TS prompt template usage detected.",
-      "id": "js-ts-prompt:script.ts:2",
-      "severity": "medium",
-      "source_file": "script.ts:2",
-      "source_type": "js_ts_ast"
-    },
-    {
-      "category": "prompt template",
-      "confidence": "medium",
-      "evidence": "JS/TS prompt template usage detected.",
-      "id": "js-ts-prompt:script.ts:7",
-      "severity": "medium",
-      "source_file": "script.ts:7",
-      "source_type": "js_ts_ast"
-    },
-    {
-      "category": "provider configuration",
-      "confidence": "high",
-      "evidence": "provider=[masked:op**ai hash:7d3194f79e64]",
-      "id": "config:provider:settings.yaml",
-      "severity": "medium",
-      "source_file": "settings.yaml",
-      "source_type": "config"
-    },
-    {
-      "category": "provider credential",
-      "confidence": "medium",
-      "evidence": "ANTHROPIC_API_KEY=[masked:an*****st hash:25e2f144a82b]",
-      "id": "config:anthropic_api_key:.env",
-      "severity": "high",
-      "source_file": ".env",
-      "source_type": "config"
-    },
-    {
-      "category": "provider credential",
-      "confidence": "medium",
-      "evidence": "OPENAI_API_KEY=[masked:sk*********ue hash:928d882b4239]",
-      "id": "config:openai_api_key:.env",
-      "severity": "high",
-      "source_file": ".env",
-      "source_type": "config"
-    },
-    {
-      "category": "tool invocation",
-      "confidence": "medium",
-      "evidence": "JS/TS tool usage detected: tool.",
-      "id": "js-ts-tool:tool:script.ts:6",
-      "severity": "low",
-      "source_file": "script.ts:6",
-      "source_type": "js_ts_ast"
-    }
-  ],
-  "schema_version": "1.0",
-  "source_types": [
-    {
-      "default_confidence": "high",
-      "default_severity": "medium",
-      "name": "python"
-    },
-    {
-      "default_confidence": "medium",
-      "default_severity": "medium",
-      "name": "jupyter_notebook"
-    },
-    {
-      "default_confidence": "medium",
-      "default_severity": "medium",
-      "name": "config"
-    },
-    {
-      "default_confidence": "medium",
-      "default_severity": "medium",
-      "name": "runtime_manifest"
-    },
-    {
-      "default_confidence": "medium",
-      "default_severity": "medium",
-      "name": "js_ts_manifest"
-    },
-    {
-      "default_confidence": "medium",
-      "default_severity": "medium",
-      "name": "js_ts_ast"
-    },
-    {
-      "default_confidence": "medium",
-      "default_severity": "medium",
-      "name": "java_ast"
-    },
-    {
-      "default_confidence": "medium",
-      "default_severity": "medium",
-      "name": "go_ast"
-    },
-    {
-      "default_confidence": "medium",
-      "default_severity": "medium",
-      "name": "dotnet_ast"
-    }
-  ],
-  "tools": [
-    {
-      "name": "builder",
-      "source_file": "assistant.java:8"
-    },
-    {
-      "name": "initialize_agent",
-      "source_file": "app.py"
-    },
-    {
-      "name": "java_tool",
-      "source_file": "assistant.java:2"
-    },
-    {
-      "name": "tool",
-      "source_file": "assistant.go:10"
-    },
-    {
-      "name": "tool",
-      "source_file": "script.ts:6"
-    },
-    {
-      "name": "var",
-      "source_file": "Assistant.cs:7"
-    }
-  ],
-  "unsupported_artifacts": []
+  }
 }

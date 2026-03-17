@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from aibom.confidence import score_confidence
 from aibom.detectors import DotNetAstDetector, GoAstDetector, JSTSAstDetector, JavaAstDetector
 from aibom.detectors.protocol import SourceDetector
 from aibom.risk.heuristics import generate_risk_findings
@@ -120,38 +121,63 @@ class AIBOMVisitor(ast.NodeVisitor):
         self.tools: list[dict[str, Any]] = []
         self.prompts: list[dict[str, Any]] = []
         self.imported_frameworks: set[str] = set()
+        self.import_aliases: dict[str, str] = {}
+        self.bindings: dict[str, str] = {}
 
     def visit_Import(self, node: ast.Import) -> Any:
         for alias in node.names:
-            self._track_framework(alias.name.split(".")[0])
+            root = alias.name.split(".")[0]
+            self._track_framework(root)
+            self.import_aliases[alias.asname or root] = alias.name
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> Any:
         if not node.module:
             return
         self._track_framework(node.module.split(".")[0])
+        for alias in node.names:
+            if alias.name == "*":
+                continue
+            self.import_aliases[alias.asname or alias.name] = f"{node.module}.{alias.name}"
+        self.generic_visit(node)
+
+    def visit_Assign(self, node: ast.Assign) -> Any:
+        bound = self._bound_symbol(node.value)
+        if bound:
+            for target in node.targets:
+                for target_name in self._target_names(target):
+                    self.bindings[target_name] = bound
+        self.generic_visit(node)
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> Any:
+        bound = self._bound_symbol(node.value)
+        if bound:
+            for target_name in self._target_names(node.target):
+                self.bindings[target_name] = bound
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> Any:
-        name = self._name_of(node.func)
-        leaf = name.split(".")[-1]
+        resolved_name = self._resolve_symbol(self._name_of(node.func))
+        leaf = resolved_name.split(".")[-1]
+        source_ref = f"{self.file_path}:{getattr(node, 'lineno', 0)}"
+        file_ref = str(self.file_path)
         if leaf in MODEL_CLASS_HINTS:
             provider_endpoint = MODEL_PROVIDER_ENDPOINTS.get(leaf, PROVENANCE_UNKNOWN)
             self.models.append(
                 {
                     "type": leaf,
                     "model": self._arg_or_kw(node, "model", "model_name"),
-                    "source_file": str(self.file_path),
+                    "source_file": file_ref,
+                    "signals": sorted(self._classification_signals(resolved_name, node)),
                     "provenance": _provenance(provider_endpoint=provider_endpoint),
                 }
             )
         if leaf in TOOL_HINTS or "agent" in leaf.lower():
-            self.tools.append({"name": leaf, "source_file": str(self.file_path)})
-        if any(part in VECTORSTORE_HINTS for part in name.split(".")):
-            self.datasets.append({"type": name, "source_file": str(self.file_path)})
+            self.tools.append({"name": leaf, "source_file": file_ref})
+        if any(part in VECTORSTORE_HINTS for part in resolved_name.split(".")):
+            self.datasets.append({"type": resolved_name, "source_file": file_ref})
         if leaf in PROMPT_HINTS:
-            prompt_id = f"{self.file_path}:{getattr(node, 'lineno', 0)}"
-            entry = {"id": prompt_id, "source_file": str(self.file_path)}
+            entry = {"id": source_ref, "source_file": file_ref}
             if self.include_prompts:
                 entry["template"] = self._arg_or_kw(node, "template", default="redacted")
             self.prompts.append(entry)
@@ -164,6 +190,51 @@ class AIBOMVisitor(ast.NodeVisitor):
             parent = self._name_of(node.value)
             return f"{parent}.{node.attr}" if parent else node.attr
         return ""
+
+    def _resolve_symbol(self, name: str) -> str:
+        if not name:
+            return ""
+        parts = name.split(".")
+        root = parts[0]
+        if root in self.bindings:
+            return ".".join(self.bindings[root].split(".") + parts[1:])
+        if root in self.import_aliases:
+            return ".".join(self.import_aliases[root].split(".") + parts[1:])
+        return name
+
+    def _bound_symbol(self, value: ast.AST | None) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, ast.Name):
+            return self._resolve_symbol(value.id)
+        if isinstance(value, ast.Attribute):
+            return self._resolve_symbol(self._name_of(value))
+        if isinstance(value, ast.Call):
+            return self._resolve_symbol(self._name_of(value.func))
+        return ""
+
+    def _target_names(self, target: ast.AST) -> list[str]:
+        if isinstance(target, ast.Name):
+            return [target.id]
+        if isinstance(target, (ast.Tuple, ast.List)):
+            out: list[str] = []
+            for elt in target.elts:
+                out.extend(self._target_names(elt))
+            return out
+        return []
+
+    def _classification_signals(self, resolved_name: str, node: ast.Call) -> set[str]:
+        signals: set[str] = {"constructor"}
+        root = resolved_name.split(".")[0]
+        if root in {"openai", "anthropic", "langchain", "langchain_openai", "transformers"}:
+            signals.add("import")
+        if any(
+            kw.arg in {"model", "model_name", "api_key", "provider", "openai_api_key"}
+            for kw in node.keywords
+            if kw.arg
+        ):
+            signals.add("config_key")
+        return signals
 
     def _arg_or_kw(self, node: ast.Call, *keys: str, default: str = "unknown") -> str:
         for kw in node.keywords:
@@ -203,13 +274,10 @@ class PythonAstDetector:
             rel = py_file.relative_to(context.target_dir)
             visitor = AIBOMVisitor(rel, include_prompts=context.include_prompts)
             visitor.visit(tree)
-            result.models.extend(visitor.models)
-            result.datasets.extend(visitor.datasets)
-            result.tools.extend(visitor.tools)
-            result.prompts.extend(visitor.prompts)
-            result.frameworks.update(visitor.imported_frameworks)
-
             for model in visitor.models:
+                model_signals = set(model.get("signals", []))
+                clean_model = {k: v for k, v in model.items() if k != "signals"}
+                result.models.append(clean_model)
                 result.scan_findings.append(
                     _finding(
                         finding_id=f"python-model:{model['type']}:{model['source_file']}",
@@ -217,10 +285,14 @@ class PythonAstDetector:
                         source_type=self.source_type,
                         source_file=model["source_file"],
                         severity="medium",
-                        confidence="high",
+                        confidence=score_confidence(model_signals),
                         evidence=f"Model class {model['type']} detected in Python source.",
                     )
                 )
+            result.datasets.extend(visitor.datasets)
+            result.tools.extend(visitor.tools)
+            result.prompts.extend(visitor.prompts)
+            result.frameworks.update(visitor.imported_frameworks)
         result.coverage = {
             "source_type": self.source_type,
             "artifacts_seen": len(candidates),
@@ -259,7 +331,9 @@ class NotebookDetector:
                     Path(f"{rel}#cell-{idx}"), include_prompts=context.include_prompts
                 )
                 visitor.visit(tree)
-                result.models.extend(visitor.models)
+                result.models.extend(
+                    {k: v for k, v in model.items() if k != "signals"} for model in visitor.models
+                )
                 result.datasets.extend(visitor.datasets)
                 result.tools.extend(visitor.tools)
                 result.prompts.extend(visitor.prompts)
@@ -314,9 +388,10 @@ class ConfigFileDetector:
 
                 descriptor = CONFIG_KEY_HINTS[normalized]
                 severity = "high" if "credential" in descriptor else "medium"
-                confidence = (
-                    "high" if normalized in {"model", "model_name", "provider"} else "medium"
-                )
+                signals = {"config_key"}
+                if normalized in {"model", "model_name", "provider"}:
+                    signals.add("import")
+                confidence = score_confidence(signals)
                 result.scan_findings.append(
                     _finding(
                         finding_id=f"config:{normalized}:{rel}",
@@ -336,7 +411,7 @@ class ConfigFileDetector:
                             "model": value,
                             "source_file": str(rel),
                             "source_type": self.source_type,
-                            "confidence": "medium",
+                            "confidence": score_confidence({"config_key"}),
                             "provenance": model_provenance,
                         }
                     )
@@ -408,7 +483,7 @@ class RuntimeManifestDetector:
                         source_type=self.source_type,
                         source_file=str(rel),
                         severity="low",
-                        confidence="high",
+                        confidence=score_confidence({"constructor"}),
                         evidence=f"Immutable OCI image reference detected: {ref}",
                     )
                 )
@@ -435,7 +510,7 @@ class RuntimeManifestDetector:
                         source_type=self.source_type,
                         source_file=str(rel),
                         severity="low",
-                        confidence="high",
+                        confidence=score_confidence({"constructor"}),
                         evidence="Container/runtime metadata discovered.",
                     )
                 )
