@@ -95,8 +95,8 @@
    * Initialize copy buttons
    */
   function initCopyButtons() {
+    // Copy from target element (by ID)
     const copyButtons = document.querySelectorAll('[data-copy-target]');
-
     copyButtons.forEach(button => {
       button.addEventListener('click', async function(e) {
         e.preventDefault();
@@ -118,6 +118,41 @@
           const originalContent = this.innerHTML;
           this.innerHTML = `
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          `;
+          
+          setTimeout(() => {
+            this.innerHTML = originalContent;
+          }, 1500);
+        } else {
+          showToast('Failed to copy');
+        }
+      });
+    });
+
+    // Copy from data attribute (direct text)
+    const copyTextButtons = document.querySelectorAll('[data-copy-text]');
+    copyTextButtons.forEach(button => {
+      button.addEventListener('click', async function(e) {
+        e.preventDefault();
+        
+        const text = this.getAttribute('data-copy-text');
+        
+        if (!text) {
+          console.error('No copy text found');
+          return;
+        }
+
+        const success = await copyToClipboard(text);
+        
+        if (success) {
+          showToast('Copied to clipboard');
+          
+          // Visual feedback on button
+          const originalContent = this.innerHTML;
+          this.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
           `;
@@ -248,7 +283,7 @@
     }, observerOptions);
 
     // Observe elements that should animate
-    document.querySelectorAll('.feature-card, .why-card, .step').forEach(el => {
+    document.querySelectorAll('.feature-card, .why-card, .step, .language-card, .contribute-area, .capability-card').forEach(el => {
       el.style.opacity = '0';
       el.style.transform = 'translateY(20px)';
       el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
@@ -275,7 +310,7 @@
    */
   function initKeyboardNavigation() {
     // Make copy buttons focusable and keyboard accessible
-    document.querySelectorAll('[data-copy-target]').forEach(button => {
+    document.querySelectorAll('[data-copy-target], [data-copy-text]').forEach(button => {
       if (!button.hasAttribute('tabindex')) {
         button.setAttribute('tabindex', '0');
       }
@@ -301,7 +336,7 @@
     initKeyboardNavigation();
 
     // Console greeting
-    console.log('%c AIBOM ', 'background: #4F8CFF; color: #0B0F17; font-weight: bold; padding: 4px 8px; border-radius: 4px;', 'AI Bill of Materials Generator');
+    console.log('%c AIBOM ', 'background: #c4a574; color: #0f0d0b; font-weight: bold; padding: 4px 8px; border-radius: 4px;', 'AI Bill of Materials Generator - git clone https://github.com/akumar0205/AIBOM.git');
   }
 
   // Run on DOM ready

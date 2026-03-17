@@ -4,15 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AIBOM — AI Bill of Materials Generator</title>
-  <meta name="description" content="Generate an AI Bill of Materials for your AI applications. Scan codebases to detect models, agents, prompts, tools, and datasets.">
+  <meta name="description" content="Generate an AI Bill of Materials for your AI applications. Scan codebases to detect models, agents, prompts, tools, and datasets in Python, JavaScript/TypeScript, Java, Go, and .NET.">
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   
   <!-- Styles -->
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=8">
   
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
@@ -45,13 +45,14 @@
       
       <div class="nav-links">
         <a href="#features" class="nav-link">Features</a>
+        <a href="#languages" class="nav-link">Languages</a>
         <a href="#how-it-works" class="nav-link">How it works</a>
-        <a href="#install" class="nav-link">Install</a>
+        <a href="docs.html" class="nav-link">Docs</a>
         <a href="https://github.com/akumar0205/AIBOM" class="nav-link nav-link-github" target="_blank" rel="noopener">
           <svg viewBox="0 0 16 16" fill="currentColor" width="16" height="16">
             <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
           </svg>
-          GitHub
+          <span class="nav-link-github-text">Star on GitHub</span>
         </a>
       </div>
     </div>
@@ -70,18 +71,36 @@
       <div class="hero-badge">
         <span class="hero-badge-dot"></span>
         Open Source
+        <span class="hero-badge-separator">|</span>
+        <span class="hero-badge-highlight">MIT License</span>
       </div>
       
       <!-- Headline -->
       <h1 class="hero-title">
-        Generate an AI Bill of Materials<br>for your AI apps
+        AI Inventory & Risk Analyzer
       </h1>
       
       <!-- Subtext -->
       <p class="hero-subtitle">
-        Scan your AI codebase and automatically map the models, agents, prompts, tools, 
-        datasets, and APIs inside it. The <a href="https://trivy.dev" target="_blank" rel="noopener">Trivy</a> for AI applications.
+        Generate an AI Bill of Materials for your AI codebase. Automatically detect models, agents, 
+        prompts, tools, and APIs across <strong>Python</strong>, <strong>JavaScript/TypeScript</strong>, 
+        <strong>Java</strong>, <strong>Go</strong>, and <strong>.NET</strong> with built-in OWASP LLM risk analysis.
       </p>
+      
+      <!-- Clone Box -->
+      <div class="hero-clone-box">
+        <div class="clone-label">Clone & Get Started</div>
+        <div class="clone-command-wrapper">
+          <code class="clone-command">git clone https://github.com/akumar0205/AIBOM.git && cd AIBOM</code>
+          <button class="clone-copy-btn" data-copy-text="git clone https://github.com/akumar0205/AIBOM.git && cd AIBOM" aria-label="Copy clone command">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          </button>
+        </div>
+        <div class="clone-hint">Then run: <code>pip install -e . && aibom generate .</code></div>
+      </div>
       
       <!-- CTA Buttons -->
       <div class="hero-cta">
@@ -94,10 +113,52 @@
         <a href="#example-output" class="btn btn-secondary">See Example Output</a>
       </div>
       
-      <!-- License -->
+      <!-- Stats -->
       <div class="hero-stats">
         <div class="hero-stat">
-          <span>MIT License</span>
+          <span class="hero-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="#7d9a6e"/>
+            </svg>
+          </span>
+          <span>Python</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+              <rect x="2" y="2" width="20" height="20" rx="4" fill="#c4a574"/>
+              <path d="M12 7v10M7 12h10" stroke="#0f0d0b" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span>TypeScript</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+              <circle cx="12" cy="12" r="10" fill="#9c9588"/>
+              <path d="M8 8c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2h-4c-1.1 0-2-.9-2-2V8z" fill="#0f0d0b"/>
+              <circle cx="12" cy="7" r="1" fill="#9c9588"/>
+            </svg>
+          </span>
+          <span>Java</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+              <rect x="2" y="4" width="20" height="16" rx="3" fill="#9ab88a"/>
+              <path d="M6 12h4M8 10v4" stroke="#0f0d0b" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span>Go</span>
+        </div>
+        <div class="hero-stat">
+          <span class="hero-stat-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+              <rect x="2" y="2" width="20" height="20" rx="4" fill="#8fa8c8"/>
+              <path d="M7 12h10M12 7v10" stroke="#0f0d0b" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span>.NET</span>
         </div>
       </div>
     </div>
@@ -109,7 +170,7 @@
       <div class="section-header">
         <h2 class="section-title">What AIBOM Detects</h2>
         <p class="section-description">
-          AIBOM finds AI components in your code and maps them to a structured inventory.
+          AIBOM finds AI components in your code and maps them to a structured inventory with OWASP LLM risk analysis.
         </p>
       </div>
       
@@ -132,7 +193,62 @@ llm = ChatOpenAI(
           </div>
         </div>
 
-        <!-- Item 2: Agents -->
+        <!-- Item 2: JavaScript/TypeScript Models -->
+        <div class="detection-item">
+          <div class="detection-code">
+            <div class="detection-code-header">your_app.ts</div>
+            <pre><code><span class="code-keyword">import</span> OpenAI <span class="code-keyword">from</span> <span class="code-string">"openai"</span>;
+
+<span class="code-keyword">const</span> client = <span class="code-keyword">new</span> OpenAI({
+    model: <span class="code-string">"gpt-4o-mini"</span>
+});</code></pre>
+          </div>
+          <div class="detection-arrow">→</div>
+          <div class="detection-result">
+            <div class="detection-tag detection-tag-model">gpt-4o-mini</div>
+            <div class="detection-meta">OpenAI / TypeScript</div>
+          </div>
+        </div>
+
+        <!-- Item 3: Java Models -->
+        <div class="detection-item">
+          <div class="detection-code">
+            <div class="detection-code-header">Assistant.java</div>
+            <pre><code><span class="code-keyword">import</span> dev.langchain4j.model.openai.OpenAiChatModel;
+
+<span class="code-keyword">OpenAiChatModel</span> model = OpenAiChatModel.builder()
+    .modelName(<span class="code-string">"gpt-4"</span>)
+    .build();</code></pre>
+          </div>
+          <div class="detection-arrow">→</div>
+          <div class="detection-result">
+            <div class="detection-tag detection-tag-model">gpt-4</div>
+            <div class="detection-meta">OpenAI / LangChain4j</div>
+          </div>
+        </div>
+
+        <!-- Item 4: Go Models -->
+        <div class="detection-item">
+          <div class="detection-code">
+            <div class="detection-code-header">main.go</div>
+            <pre><code><span class="code-keyword">import</span> <span class="code-string">"github.com/openai/openai-go"</span>
+
+client := openai.NewClient()
+resp, err := client.Chat.Completions.New(
+    ctx,
+    openai.ChatCompletionNewParams{
+        Model: <span class="code-string">"gpt-4"</span>,
+    },
+)</code></pre>
+          </div>
+          <div class="detection-arrow">→</div>
+          <div class="detection-result">
+            <div class="detection-tag detection-tag-model">gpt-4</div>
+            <div class="detection-meta">OpenAI / Go</div>
+          </div>
+        </div>
+
+        <!-- Item 5: Agents -->
         <div class="detection-item">
           <div class="detection-code">
             <div class="detection-code-header">your_code.py</div>
@@ -151,7 +267,7 @@ agent = initialize_agent(
           </div>
         </div>
 
-        <!-- Item 3: Tools -->
+        <!-- Item 6: Tools -->
         <div class="detection-item">
           <div class="detection-code">
             <div class="detection-code-header">your_code.py</div>
@@ -169,53 +285,114 @@ search = Tool(
           </div>
         </div>
 
-        <!-- Item 4: Embeddings -->
-        <div class="detection-item">
-          <div class="detection-code">
-            <div class="detection-code-header">your_code.py</div>
-            <pre><code>embeddings = OpenAIEmbeddings(
-    model=<span class="code-string">"text-embedding-3-small"</span>
-)
-vectorstore = FAISS.from_documents(
-    docs, embeddings
-)</code></pre>
-          </div>
-          <div class="detection-arrow">→</div>
-          <div class="detection-result">
-            <div class="detection-tag detection-tag-embedding">text-embedding-3-small</div>
-            <div class="detection-meta">FAISS Vector Store</div>
-          </div>
-        </div>
-
-        <!-- Item 5: Prompts -->
-        <div class="detection-item">
-          <div class="detection-code">
-            <div class="detection-code-header">your_code.py</div>
-            <pre><code>prompt = ChatPromptTemplate.from_messages([
-    (<span class="code-string">"system"</span>, <span class="code-string">"You are a helpful assistant..."</span>),
-    (<span class="code-string">"human"</span>, <span class="code-string">"{input}"</span>)
-])</code></pre>
-          </div>
-          <div class="detection-arrow">→</div>
-          <div class="detection-result">
-            <div class="detection-tag detection-tag-prompt">System Prompt</div>
-            <div class="detection-meta">2 message templates</div>
-          </div>
-        </div>
-
         <!-- Summary Stats -->
         <div class="detection-summary">
+          <div class="detection-stat">
+            <span class="detection-stat-number">9</span>
+            <span class="detection-stat-label">Source Detectors</span>
+          </div>
           <div class="detection-stat">
             <span class="detection-stat-number">50+</span>
             <span class="detection-stat-label">Model Providers</span>
           </div>
           <div class="detection-stat">
-            <span class="detection-stat-number">20+</span>
-            <span class="detection-stat-label">AI Frameworks</span>
+            <span class="detection-stat-number">5</span>
+            <span class="detection-stat-label">Languages</span>
           </div>
-          <div class="detection-stat">
-            <span class="detection-stat-number">100+</span>
-            <span class="detection-stat-label">Tool Integrations</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Languages Section -->
+  <section class="languages" id="languages">
+    <div class="section-container">
+      <div class="section-header">
+        <h2 class="section-title">Multi-Language Support</h2>
+        <p class="section-description">
+          AIBOM detects AI components across your entire polyglot codebase with specialized parsers for each language.
+        </p>
+      </div>
+      
+      <div class="languages-grid">
+        <div class="language-card">
+          <div class="language-icon">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+              <circle cx="24" cy="24" r="20" fill="#7d9a6e" opacity="0.2"/>
+              <circle cx="24" cy="24" r="12" fill="#7d9a6e"/>
+              <path d="M18 18h12v12H18z" fill="#0f0d0b" opacity="0.3"/>
+            </svg>
+          </div>
+          <h3 class="language-name">Python</h3>
+          <p class="language-desc">Full AST parsing for LangChain, OpenAI, Anthropic, and more</p>
+          <div class="language-features">
+            <span class="language-feature">AST Analysis</span>
+            <span class="language-feature">Jupyter Notebooks</span>
+          </div>
+        </div>
+        
+        <div class="language-card">
+          <div class="language-icon">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+              <rect x="4" y="4" width="40" height="40" rx="8" fill="#c4a574" opacity="0.2"/>
+              <rect x="12" y="12" width="24" height="24" rx="4" fill="#c4a574"/>
+              <path d="M18 24h12M24 18v12" stroke="#0f0d0b" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3 class="language-name">TypeScript</h3>
+          <p class="language-desc">Pattern-based detection for OpenAI SDK, LangChain.js</p>
+          <div class="language-features">
+            <span class="language-feature">JS/TS AST</span>
+            <span class="language-feature">Package.json</span>
+          </div>
+        </div>
+        
+        <div class="language-card">
+          <div class="language-icon">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+              <circle cx="24" cy="24" r="20" fill="#9c9588" opacity="0.2"/>
+              <circle cx="24" cy="24" r="12" fill="#9c9588"/>
+              <rect x="20" y="16" width="8" height="16" rx="2" fill="#0f0d0b" opacity="0.4"/>
+            </svg>
+          </div>
+          <h3 class="language-name">Java</h3>
+          <p class="language-desc">Detect LangChain4j, Spring AI, and OpenAI integrations</p>
+          <div class="language-features">
+            <span class="language-feature">LangChain4j</span>
+            <span class="language-feature">Spring AI</span>
+          </div>
+        </div>
+        
+        <div class="language-card">
+          <div class="language-icon">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+              <rect x="4" y="8" width="40" height="32" rx="8" fill="#9ab88a" opacity="0.2"/>
+              <rect x="12" y="16" width="24" height="16" rx="4" fill="#9ab88a"/>
+              <circle cx="18" cy="24" r="3" fill="#0f0d0b"/>
+              <circle cx="30" cy="24" r="3" fill="#0f0d0b"/>
+            </svg>
+          </div>
+          <h3 class="language-name">Go</h3>
+          <p class="language-desc">Find OpenAI and Anthropic SDK usage in Go applications</p>
+          <div class="language-features">
+            <span class="language-feature">OpenAI Go</span>
+            <span class="language-feature">LangChain Go</span>
+          </div>
+        </div>
+        
+        <div class="language-card">
+          <div class="language-icon">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+              <rect x="4" y="4" width="40" height="40" rx="8" fill="#8fa8c8" opacity="0.2"/>
+              <rect x="12" y="12" width="24" height="24" rx="4" fill="#8fa8c8"/>
+              <path d="M16 24h16M24 16v16" stroke="#0f0d0b" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3 class="language-name">.NET</h3>
+          <p class="language-desc">Scan C# projects for Semantic Kernel and AI integrations</p>
+          <div class="language-features">
+            <span class="language-feature">Semantic Kernel</span>
+            <span class="language-feature">Azure AI</span>
           </div>
         </div>
       </div>
@@ -228,7 +405,7 @@ vectorstore = FAISS.from_documents(
       <div class="section-header">
         <h2 class="section-title">Example Output</h2>
         <p class="section-description">
-          AIBOM generates a structured JSON document mapping all AI components in your codebase.
+          AIBOM generates a structured JSON document mapping all AI components in your codebase with risk findings and provenance tracking.
         </p>
       </div>
       
@@ -239,7 +416,7 @@ vectorstore = FAISS.from_documents(
             <span class="terminal-dot terminal-dot-yellow"></span>
             <span class="terminal-dot terminal-dot-green"></span>
           </div>
-          <span class="terminal-title">aibom scan .</span>
+          <span class="terminal-title">aibom generate .</span>
           <button class="terminal-copy" data-copy-target="terminal-content" aria-label="Copy to clipboard">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
@@ -250,7 +427,7 @@ vectorstore = FAISS.from_documents(
         <div class="terminal-content" id="terminal-content">
           <div class="terminal-line terminal-line-prompt">
             <span class="terminal-prompt">$</span>
-            <span class="terminal-command">aibom scan . --output AI_BOM.json</span>
+            <span class="terminal-command">aibom generate . --output AI_BOM.json --audit-mode</span>
           </div>
           <div class="terminal-line terminal-line-output">
             <span class="terminal-success">✓</span> Scanning repository...
@@ -259,7 +436,16 @@ vectorstore = FAISS.from_documents(
             <span class="terminal-success">✓</span> Analyzing 247 Python files
           </div>
           <div class="terminal-line terminal-line-output">
+            <span class="terminal-success">✓</span> Analyzing 56 TypeScript files
+          </div>
+          <div class="terminal-line terminal-line-output">
+            <span class="terminal-success">✓</span> Parsing runtime manifests
+          </div>
+          <div class="terminal-line terminal-line-output">
             <span class="terminal-success">✓</span> Detecting AI components
+          </div>
+          <div class="terminal-line terminal-line-output">
+            <span class="terminal-success">✓</span> Evaluating risk policies
           </div>
           <div class="terminal-line terminal-line-output">
             <span class="terminal-success">✓</span> Generated AI_BOM.json
@@ -274,24 +460,23 @@ vectorstore = FAISS.from_documents(
           </div>
           <div class="terminal-line terminal-line-empty"></div>
           <div class="terminal-line terminal-line-output">
-            <span class="terminal-key">Model:</span>
+            <span class="terminal-key">Models:</span>
           </div>
           <div class="terminal-line terminal-line-output terminal-line-indent">
-            <span class="terminal-bullet">-</span> gpt-4
+            <span class="terminal-bullet">-</span> gpt-4 (OpenAI)
+          </div>
+          <div class="terminal-line terminal-line-output terminal-line-indent">
+            <span class="terminal-bullet">-</span> text-embedding-3-small
           </div>
           <div class="terminal-line terminal-line-empty"></div>
           <div class="terminal-line terminal-line-output">
-            <span class="terminal-key">Framework:</span>
+            <span class="terminal-key">Frameworks:</span>
           </div>
           <div class="terminal-line terminal-line-output terminal-line-indent">
             <span class="terminal-bullet">-</span> langchain
           </div>
-          <div class="terminal-line terminal-line-empty"></div>
-          <div class="terminal-line terminal-line-output">
-            <span class="terminal-key">Embedding:</span>
-          </div>
           <div class="terminal-line terminal-line-output terminal-line-indent">
-            <span class="terminal-bullet">-</span> text-embedding-3-small
+            <span class="terminal-bullet">-</span> openai
           </div>
           <div class="terminal-line terminal-line-empty"></div>
           <div class="terminal-line terminal-line-output">
@@ -312,11 +497,105 @@ vectorstore = FAISS.from_documents(
           </div>
           <div class="terminal-line terminal-line-empty"></div>
           <div class="terminal-line terminal-line-output">
-            <span class="terminal-key">Datasets:</span>
+            <span class="terminal-key">Risk Findings:</span>
           </div>
           <div class="terminal-line terminal-line-output terminal-line-indent">
-            <span class="terminal-bullet">-</span> internal-support-docs
+            <span class="terminal-bullet">-</span> 2 third-party provider warnings
           </div>
+          <div class="terminal-line terminal-line-output terminal-line-indent">
+            <span class="terminal-bullet">-</span> 1 exfil surface detected
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Capabilities Section -->
+  <section class="capabilities" id="capabilities">
+    <div class="section-container">
+      <div class="section-header">
+        <h2 class="section-title">Key Capabilities</h2>
+        <p class="section-description">
+          Beyond simple detection, AIBOM provides enterprise-grade features for AI supply chain security.
+        </p>
+      </div>
+      
+      <div class="capabilities-grid">
+        <div class="capability-card">
+          <div class="capability-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <h3 class="capability-title">OWASP LLM Risk Analysis</h3>
+          <p class="capability-description">
+            Built-in heuristics aligned with OWASP LLM Top 10. Detect third-party providers, exfiltration surfaces, and prompt injection risks.
+          </p>
+        </div>
+        
+        <div class="capability-card">
+          <div class="capability-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+            </svg>
+          </div>
+          <h3 class="capability-title">Multi-Language Support</h3>
+          <p class="capability-description">
+            Detect AI components in Python, Jupyter notebooks, JavaScript, TypeScript, Java, Go, and .NET codebases.
+          </p>
+        </div>
+        
+        <div class="capability-card">
+          <div class="capability-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            </svg>
+          </div>
+          <h3 class="capability-title">Cryptographic Attestation</h3>
+          <p class="capability-description">
+            Sign evidence bundles with X.509 certificates. Verify provenance, certificate chains, and enforce signer allowlists.
+          </p>
+        </div>
+        
+        <div class="capability-card">
+          <div class="capability-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+              <polyline points="17 6 23 6 23 12"/>
+            </svg>
+          </div>
+          <h3 class="capability-title">Drift Detection</h3>
+          <p class="capability-description">
+            Compare AIBOM versions to detect new models, tools, or external providers. Gate CI/CD pipelines on unauthorized changes.
+          </p>
+        </div>
+        
+        <div class="capability-card">
+          <div class="capability-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="16" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+          </div>
+          <h3 class="capability-title">Custom Risk Policies</h3>
+          <p class="capability-description">
+            Define organization-specific risk rules with allowlists, thresholds, and severity overrides in JSON or YAML format.
+          </p>
+        </div>
+        
+        <div class="capability-card">
+          <div class="capability-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+          </div>
+          <h3 class="capability-title">Periodic Scanning</h3>
+          <p class="capability-description">
+            Schedule recurring scans with trend analysis. Track novel components over time and maintain historical snapshots.
+          </p>
         </div>
       </div>
     </div>
@@ -376,7 +655,7 @@ vectorstore = FAISS.from_documents(
           <rect x="40" y="20" width="220" height="200" rx="8" stroke="#4a433c" stroke-width="1" fill="#24201c"/>
           <text x="150" y="50" text-anchor="middle" fill="#9c9588" font-size="13" font-weight="500" font-family="Inter, sans-serif">Traditional SBOM</text>
           
-          <!-- Traditional SBOM Items (gray = not covered well) -->
+          <!-- Traditional SBOM Items -->
           <g transform="translate(60, 70)">
             <rect x="0" y="0" width="180" height="28" rx="4" fill="#3d3630"/>
             <text x="15" y="19" fill="#7a756b" font-size="11" font-family="Inter, sans-serif">Dependencies</text>
@@ -397,7 +676,7 @@ vectorstore = FAISS.from_documents(
           
           <g transform="translate(60, 175)">
             <rect x="0" y="0" width="180" height="28" rx="4" fill="#2f2a25"/>
-            <text x="15" y="19" fill="#5a554b" font-size="11" font-family="Inter, sans-serif">Prompts & Agents</text>
+            <text x="15" y="19" fill="#5a554b" font-size="11" font-family="Inter, sans-serif">Prompts &amp; Agents</text>
             <text x="155" y="19" text-anchor="middle" fill="#b86b6b" font-size="12">✗</text>
           </g>
           
@@ -405,7 +684,7 @@ vectorstore = FAISS.from_documents(
           <rect x="290" y="20" width="220" height="200" rx="8" stroke="#c4a574" stroke-width="2" fill="#24201c"/>
           <text x="400" y="50" text-anchor="middle" fill="#e8e4dc" font-size="13" font-weight="600" font-family="Inter, sans-serif">AIBOM</text>
           
-          <!-- AIBOM Items (all covered) -->
+          <!-- AIBOM Items -->
           <g transform="translate(310, 70)">
             <rect x="0" y="0" width="180" height="28" rx="4" fill="#3d3630"/>
             <text x="15" y="19" fill="#9c9588" font-size="11" font-family="Inter, sans-serif">Dependencies</text>
@@ -426,14 +705,14 @@ vectorstore = FAISS.from_documents(
           
           <g transform="translate(310, 175)">
             <rect x="0" y="0" width="180" height="28" rx="4" fill="#3d3630"/>
-            <text x="15" y="19" fill="#9c9588" font-size="11" font-family="Inter, sans-serif">Prompts & Agents</text>
+            <text x="15" y="19" fill="#9c9588" font-size="11" font-family="Inter, sans-serif">Prompts &amp; Agents</text>
             <text x="155" y="19" text-anchor="middle" fill="#7c9a6a" font-size="12">✓</text>
           </g>
           
-          <!-- Plus sign between columns -->
+          <!-- Plus sign -->
           <text x="275" y="125" text-anchor="middle" fill="#c4a574" font-size="24" font-weight="300">+</text>
           
-          <!-- Equals and Benefits Column -->
+          <!-- Equals -->
           <text x="530" y="125" text-anchor="middle" fill="#c4a574" font-size="24" font-weight="300">=</text>
           
           <!-- Benefits -->
@@ -471,10 +750,13 @@ vectorstore = FAISS.from_documents(
         <div class="step">
           <div class="step-number">1</div>
           <div class="step-content">
-            <h3 class="step-title">Scan Repository</h3>
+            <h3 class="step-title">Clone & Install</h3>
             <p class="step-description">
-              AIBOM analyzes your codebase using AST parsing to identify Python files, notebooks, and configuration files.
+              Get the code from GitHub and install with pip. It's just a few commands to get started.
             </p>
+            <div class="step-code">
+              <code>git clone https://github.com/akumar0205/AIBOM.git && cd AIBOM && pip install -e .</code>
+            </div>
           </div>
         </div>
         
@@ -482,10 +764,13 @@ vectorstore = FAISS.from_documents(
         <div class="step">
           <div class="step-number">2</div>
           <div class="step-content">
-            <h3 class="step-title">Detect AI Components</h3>
+            <h3 class="step-title">Scan Your Codebase</h3>
             <p class="step-description">
-              Multiple detectors identify models, agents, prompts, tools, datasets, and frameworks with precise source locations.
+              Run AIBOM against your project. It analyzes Python, TypeScript, Java, Go, and .NET files to detect AI components.
             </p>
+            <div class="step-code">
+              <code>aibom generate . --output AI_BOM.json</code>
+            </div>
           </div>
         </div>
         
@@ -493,10 +778,13 @@ vectorstore = FAISS.from_documents(
         <div class="step">
           <div class="step-number">3</div>
           <div class="step-content">
-            <h3 class="step-title">Generate AIBOM</h3>
+            <h3 class="step-title">Review & Export</h3>
             <p class="step-description">
-              Produces a structured JSON document with full inventory, risk findings, and export formats like SPDX and CycloneDX.
+              Get a structured JSON document with risk findings. Export to SPDX, CycloneDX, SARIF, or VEX formats for your compliance tools.
             </p>
+            <div class="step-code">
+              <code>aibom export --input AI_BOM.json --format spdx-json -o spdx.json</code>
+            </div>
           </div>
         </div>
       </div>
@@ -507,16 +795,30 @@ vectorstore = FAISS.from_documents(
   <section class="install" id="install">
     <div class="section-container">
       <div class="section-header">
-        <h2 class="section-title">Get Started</h2>
+        <h2 class="section-title">Get Started in Seconds</h2>
         <p class="section-description">
-          Install AIBOM and scan your first AI project in minutes.
+          Clone the repo and scan your first AI project in under a minute.
         </p>
       </div>
       
       <div class="install-grid">
+        <!-- Clone Command -->
+        <div class="install-card install-card-primary">
+          <h3 class="install-card-title">1. Clone Repository</h3>
+          <div class="code-block">
+            <button class="code-block-copy" data-copy-target="clone-code" aria-label="Copy to clipboard">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+            <code class="code-block-content" id="clone-code">git clone https://github.com/akumar0205/AIBOM.git</code>
+          </div>
+        </div>
+        
         <!-- Install Command -->
         <div class="install-card">
-          <h3 class="install-card-title">Install</h3>
+          <h3 class="install-card-title">2. Install</h3>
           <div class="code-block">
             <button class="code-block-copy" data-copy-target="install-code" aria-label="Copy to clipboard">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -524,13 +826,13 @@ vectorstore = FAISS.from_documents(
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
             </button>
-            <code class="code-block-content" id="install-code">pip install aibom</code>
+            <code class="code-block-content" id="install-code">cd AIBOM && pip install -e .</code>
           </div>
         </div>
         
         <!-- Scan Command -->
         <div class="install-card">
-          <h3 class="install-card-title">Scan</h3>
+          <h3 class="install-card-title">3. Generate</h3>
           <div class="code-block">
             <button class="code-block-copy" data-copy-target="scan-code" aria-label="Copy to clipboard">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -538,22 +840,104 @@ vectorstore = FAISS.from_documents(
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
             </button>
-            <code class="code-block-content" id="scan-code">aibom scan .</code>
+            <code class="code-block-content" id="scan-code">aibom generate .</code>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Advanced Commands -->
+      <div class="advanced-commands">
+        <h3 class="advanced-title">Advanced Usage</h3>
+        <div class="command-list">
+          <div class="command-item">
+            <code class="command-code">aibom generate . --audit-mode --bundle-out evidence.zip</code>
+            <span class="command-desc">Create signed evidence bundle</span>
+          </div>
+          <div class="command-item">
+            <code class="command-code">aibom diff baseline.json new.json --fail-on new-model</code>
+            <span class="command-desc">Detect drift between versions</span>
+          </div>
+          <div class="command-item">
+            <code class="command-code">aibom periodic-scan . --interval daily</code>
+            <span class="command-desc">Schedule recurring scans</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contribute Section -->
+  <section class="contribute" id="contribute">
+    <div class="section-container">
+      <div class="contribute-content">
+        <h2 class="contribute-title">Contribute to AIBOM</h2>
+        <p class="contribute-description">
+          AIBOM is built by and for the AI security community. We're looking for contributors to help us support more languages, frameworks, and risk detection rules. Whether you're an AI security researcher, ML engineer, or developer — your contributions are welcome!
+        </p>
+        
+        <div class="contribute-areas">
+          <div class="contribute-area">
+            <div class="contribute-area-icon">
+              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+                <rect x="8" y="20" width="12" height="8" rx="2" fill="#c4a574"/>
+                <rect x="28" y="20" width="12" height="8" rx="2" fill="#c4a574"/>
+                <rect x="20" y="8" width="8" height="12" rx="2" fill="#c4a574"/>
+                <rect x="20" y="28" width="8" height="12" rx="2" fill="#c4a574"/>
+                <circle cx="24" cy="24" r="4" fill="#0f0d0b"/>
+              </svg>
+            </div>
+            <h4>Add Detectors</h4>
+            <p>Build support for new AI frameworks and languages</p>
+          </div>
+          <div class="contribute-area">
+            <div class="contribute-area-icon">
+              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+                <path d="M24 4L6 12v12c0 11.1 7.7 21.5 18 24 10.3-2.5 18-12.9 18-24V12L24 4z" fill="#7d9a6e" opacity="0.8"/>
+                <path d="M24 8L10 14.5v9.5c0 9 6.2 17.4 14 19.5 7.8-2.1 14-10.5 14-19.5v-9.5L24 8z" fill="#0f0d0b" opacity="0.3"/>
+                <path d="M20 24l4 4 8-8" stroke="#c4a574" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h4>Risk Rules</h4>
+            <p>Implement new OWASP LLM-aligned risk detections</p>
+          </div>
+          <div class="contribute-area">
+            <div class="contribute-area-icon">
+              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+                <rect x="6" y="6" width="36" height="36" rx="4" fill="#9c9588" opacity="0.3"/>
+                <rect x="10" y="28" width="8" height="10" rx="1" fill="#9c9588"/>
+                <rect x="20" y="18" width="8" height="20" rx="1" fill="#c4a574"/>
+                <rect x="30" y="10" width="8" height="28" rx="1" fill="#7d9a6e"/>
+              </svg>
+            </div>
+            <h4>Export Formats</h4>
+            <p>Add new SBOM and compliance export formats</p>
+          </div>
+          <div class="contribute-area">
+            <div class="contribute-area-icon">
+              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+                <circle cx="24" cy="24" r="16" fill="#b88a6a" opacity="0.3"/>
+                <circle cx="24" cy="24" r="10" fill="#b88a6a"/>
+                <circle cx="20" cy="20" r="2" fill="#0f0d0b"/>
+                <circle cx="28" cy="20" r="2" fill="#0f0d0b"/>
+                <path d="M20 28c1.5 2 4.5 2 6 0" stroke="#0f0d0b" stroke-width="2" stroke-linecap="round"/>
+                <line x1="6" y1="24" x2="12" y2="24" stroke="#b88a6a" stroke-width="3" stroke-linecap="round"/>
+                <line x1="36" y1="24" x2="42" y2="24" stroke="#b88a6a" stroke-width="3" stroke-linecap="round"/>
+                <line x1="9" y1="12" x2="14" y2="17" stroke="#b88a6a" stroke-width="3" stroke-linecap="round"/>
+                <line x1="39" y1="12" x2="34" y2="17" stroke="#b88a6a" stroke-width="3" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h4>Bug Reports</h4>
+            <p>Help us improve by reporting issues and edge cases</p>
           </div>
         </div>
         
-        <!-- Output Command -->
-        <div class="install-card">
-          <h3 class="install-card-title">Export</h3>
-          <div class="code-block">
-            <button class="code-block-copy" data-copy-target="export-code" aria-label="Copy to clipboard">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
-            </button>
-            <code class="code-block-content" id="export-code">aibom export --format spdx</code>
-          </div>
+        <div class="contribute-cta">
+          <a href="https://github.com/akumar0205/AIBOM" class="btn btn-primary btn-large" target="_blank" rel="noopener">
+            <svg viewBox="0 0 16 16" fill="currentColor" width="20" height="20">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+            </svg>
+            Clone & Contribute on GitHub
+          </a>
         </div>
       </div>
     </div>
@@ -565,18 +949,16 @@ vectorstore = FAISS.from_documents(
       <div class="opensource-content">
         <h2 class="opensource-title">Open Source</h2>
         <p class="opensource-description">
-          AIBOM is built by and for the AI security community. We welcome contributions from AI security researchers, AI engineers, and LangChain developers.
+          AIBOM is MIT licensed and free to use. Join our growing community of AI security practitioners.
         </p>
         <div class="opensource-cta">
           <a href="https://github.com/akumar0205/AIBOM" class="btn btn-primary btn-large" target="_blank" rel="noopener">
             <svg viewBox="0 0 16 16" fill="currentColor" width="20" height="20">
               <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
             </svg>
-            Contribute on GitHub
+            Star on GitHub
           </a>
         </div>
-        
-
       </div>
     </div>
   </section>
@@ -619,15 +1001,18 @@ vectorstore = FAISS.from_documents(
             <h4 class="footer-links-title">Product</h4>
             <ul class="footer-links-list">
               <li><a href="#features">Features</a></li>
+              <li><a href="#languages">Languages</a></li>
+              <li><a href="#capabilities">Capabilities</a></li>
               <li><a href="#how-it-works">How it works</a></li>
-              <li><a href="#install">Install</a></li>
             </ul>
           </div>
           <div class="footer-links-col">
             <h4 class="footer-links-title">Resources</h4>
             <ul class="footer-links-list">
-              <li><a href="https://github.com/akumar0205/AIBOM" target="_blank" rel="noopener">Documentation</a></li>
-              <li><a href="https://github.com/akumar0205/AIBOM" target="_blank" rel="noopener">Examples</a></li>
+              <li><a href="docs.html">Documentation</a></li>
+              <li><a href="https://github.com/akumar0205/AIBOM" target="_blank" rel="noopener">GitHub</a></li>
+              <li><a href="https://github.com/akumar0205/AIBOM/blob/main/docs/FOR_AUDITORS.md" target="_blank" rel="noopener">For Auditors</a></li>
+              <li><a href="https://github.com/akumar0205/AIBOM/blob/main/docs/SOC_DEPLOYMENT_GUIDE.md" target="_blank" rel="noopener">SOC Deployment</a></li>
             </ul>
           </div>
         </div>
@@ -636,7 +1021,7 @@ vectorstore = FAISS.from_documents(
       <!-- Bottom -->
       <div class="footer-bottom">
         <p class="footer-copyright">
-          © 2025 AIBOM Project. MIT Licensed.
+          © 2026 AIBOM Project. MIT Licensed.
         </p>
       </div>
     </div>

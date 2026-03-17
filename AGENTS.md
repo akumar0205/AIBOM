@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-AIBOM is a standards-first, CI-native AI Bill of Materials (AIBOM) generator for Python/LangChain projects. It performs static analysis to detect AI/ML components (models, frameworks, tools, datasets, prompts) and produces structured inventory documents with audit evidence bundling, drift detection, and heuristic risk overlays aligned with OWASP LLM Top 10.
+AIBOM is a standards-first, CI-native AI Bill of Materials (AIBOM) generator for Python/LangChain/JS-TS/Java/Go/.NET projects. It performs static analysis to detect AI/ML components (models, frameworks, tools, datasets, prompts) and produces structured inventory documents with audit evidence bundling, drift detection, and heuristic risk overlays aligned with OWASP LLM Top 10.
 
 ## Technology Stack
 
@@ -25,28 +25,50 @@ AIBOM is a standards-first, CI-native AI Bill of Materials (AIBOM) generator for
 │   ├── __init__.py           # Package version
 │   ├── cli.py                # CLI entry point and command handlers
 │   ├── analyzer.py           # Multi-detector static analysis engine
+│   ├── confidence.py         # Confidence scoring for detector signals
 │   ├── validation.py         # JSON Schema validation
-│   ├── exporters.py          # SPDX/CycloneDX format export
+│   ├── exporters.py          # SPDX/CycloneDX/SARIF/VEX format export
 │   ├── bundle.py             # Evidence bundle creation and signing
 │   ├── diffing.py            # Drift detection between AIBOM versions
-│   ├── storage.py            # Persistence utilities
+│   ├── storage.py            # Persistence utilities (runs, snapshots, history)
 │   ├── utils.py              # Utility functions with security validations
+│   ├── detectors/            # Detector plugins package
+│   │   ├── __init__.py       # Detector exports
+│   │   ├── protocol.py       # SourceDetector Protocol interface
+│   │   ├── js_ts_ast.py      # JavaScript/TypeScript AST detector
+│   │   ├── java_ast.py       # Java AST detector
+│   │   ├── go_ast.py         # Go AST detector
+│   │   └── dotnet_ast.py     # .NET/C# AST detector
 │   ├── risk/                 # Risk analysis module
 │   │   ├── __init__.py
-│   │   └── heuristics.py     # OWASP LLM-aligned risk heuristics
+│   │   ├── heuristics.py     # Risk evaluation engine with policy support
+│   │   └── rules/            # Risk rule implementations
+│   │       ├── __init__.py   # Rule pack loader
+│   │       ├── base.py       # Base rule classes and types
+│   │       ├── third_party_provider.py
+│   │       ├── prompt_injection_surface.py
+│   │       └── exfil_surface.py
 │   └── schema/
 │       └── aibom_v1.json     # JSON Schema for AIBOM validation
 ├── tests/                    # Test suite
 │   ├── test_cli.py           # Comprehensive CLI and integration tests
+│   ├── test_exporters.py     # SPDX/CycloneDX/SARIF/VEX export tests
+│   ├── test_risk_rules.py    # Risk rule and policy tests
 │   └── fixtures/             # Test fixtures
 │       ├── sample_project/   # Representative AI project for testing
+│       ├── runtime_project/  # Project with runtime manifests for testing
 │       ├── golden_aibom.json # Expected output for regression tests
 │       ├── valid_aibom.json  # Valid AIBOM fixture
+│       ├── export_input_aibom.json
+│       ├── golden_spdx_export.json
+│       ├── golden_cyclonedx_export.json
+│       ├── golden_sarif_export.json
+│       ├── golden_vex_export.json
 │       └── validation/       # Additional validation test fixtures
 ├── deploy/                   # Deployment assets
 │   ├── Dockerfile            # Production container image
-│   └── k8s/
-│       └── aibom-generate.yaml  # Kubernetes Job/CronJob manifests
+│   └── k8s/                  # Kubernetes manifests
+│       └── aibom-generate.yaml
 ├── scripts/
 │   └── check_license_policy.py  # License compliance checker
 ├── docs/                     # Documentation
@@ -148,6 +170,18 @@ aibom generate . --redaction-policy strict
 
 # Fail on unsupported artifact threshold
 aibom generate . --fail-on-unsupported-threshold 0
+
+# Custom risk policy
+aibom generate . --risk-policy risk-policy.json
+```
+
+### Periodic Scan
+```bash
+# Periodic scan with trend analysis
+aibom periodic-scan . -o periodic_scan.json
+
+# With history window and interval
+aibom periodic-scan . --history-window 10 --interval daily
 ```
 
 ### Validate
@@ -162,6 +196,12 @@ aibom export --input AI_BOM.json --format spdx-json -o SPDX.json
 
 # CycloneDX format
 aibom export --input AI_BOM.json --format cyclonedx-json -o CYCLONEDX.json
+
+# SARIF format
+aibom export --input AI_BOM.json --format sarif-json -o FINDINGS.sarif.json
+
+# VEX format
+aibom export --input AI_BOM.json --format vex-json -o ADVISORIES.vex.json
 ```
 
 ### Diff (Drift Detection)
@@ -193,35 +233,77 @@ aibom attest --bundle evidence.zip --signature evidence.zip.sig --signing-cert c
 # Full verification with CA and allowlist
 aibom attest --bundle evidence.zip --signature evidence.zip.sig --provenance provenance.json \
   --signing-cert cert.pem --verify --ca-bundle ca.pem --allow-subject "CN=signer"
+
+# With revocation checking
+aibom attest --bundle evidence.zip --signature evidence.zip.sig --signing-cert cert.pem --verify \
+  --revocation-policy crl --crl-file crl.pem
+
+# With trusted roots and SAN DNS allowlist
+aibom attest --bundle evidence.zip --signature evidence.zip.sig --signing-cert cert.pem --verify \
+  --trusted-root root.pem --allow-san-dns "aibom.example"
 ```
 
 ### Risk
 ```bash
+# Show risk findings
 aibom risk --input AI_BOM.json
+
+# With custom risk policy
+aibom risk --input AI_BOM.json --risk-policy risk-policy.json
 ```
 
 ## Architecture
 
 ### Detector System
-The analyzer uses a pluggable detector architecture:
+The analyzer uses a pluggable detector architecture with a `SourceDetector` Protocol:
 
-1. **PythonAstDetector**: Parses `.py` files using AST to detect:
+```python
+class SourceDetector(Protocol):
+    source_type: str
+    def scan(self, context: ScanContext) -> ScanResult: ...
+```
+
+Available detectors:
+
+1. **PythonAstDetector** (`analyzer.py`): Parses `.py` files using AST to detect:
    - Model classes (OpenAI, ChatOpenAI, ChatAnthropic, etc.)
    - Tool usage (initialize_agent, load_tools, etc.)
    - Vector stores (FAISS, Chroma, Pinecone)
    - Prompt templates
    - Framework imports
 
-2. **NotebookDetector**: Extracts code cells from `.ipynb` files and applies Python AST detection
+2. **NotebookDetector** (`analyzer.py`): Extracts code cells from `.ipynb` files and applies Python AST detection
 
-3. **ConfigFileDetector**: Scans YAML, JSON, and `.env` files for:
+3. **ConfigFileDetector** (`analyzer.py`): Scans YAML, JSON, and `.env` files for:
    - Model configuration keys
    - Provider settings
    - API credentials (with redaction)
+   - Provenance and lineage metadata
 
-4. **RuntimeManifestDetector**: Analyzes dependency files (requirements.txt, poetry.lock, etc.) and Dockerfiles when `--include-runtime-manifests` is enabled
+4. **RuntimeManifestDetector** (`analyzer.py`): Analyzes dependency files (requirements.txt, poetry.lock, etc.) and Dockerfiles when `--include-runtime-manifests` is enabled
 
-5. **JSTSPackageManifestDetector**: Extracts dependencies from package.json, yarn.lock, pnpm-lock.yaml
+5. **JSTSPackageManifestDetector** (`analyzer.py`): Extracts dependencies from package.json, yarn.lock, pnpm-lock.yaml
+
+6. **JSTSAstDetector** (`detectors/js_ts_ast.py`): Pattern-based detection for JavaScript/TypeScript files:
+   - Model instantiations (new OpenAI(), new Anthropic(), etc.)
+   - Tool patterns
+   - Prompt templates
+   - Framework imports
+
+7. **JavaAstDetector** (`detectors/java_ast.py`): Pattern-based detection for Java files
+
+8. **GoAstDetector** (`detectors/go_ast.py`): Pattern-based detection for Go files
+
+9. **DotNetAstDetector** (`detectors/dotnet_ast.py`): Pattern-based detection for C#/.NET files
+
+### Confidence Scoring
+The `confidence.py` module provides signal-based confidence scoring:
+- `import` signal: +1 point
+- `constructor` signal: +1 point  
+- `config_key` signal: +1 point
+- Score >= 2: "high" confidence
+- Score == 1: "medium" confidence
+- Score == 0: "low" confidence
 
 ### AIBOM Document Structure
 ```json
@@ -239,11 +321,53 @@ The analyzer uses a pluggable detector architecture:
   "prompts": [...],
   "scan_findings": [...],
   "risk_findings": [...],
-  "coverage_summary": {...},
+  "risk_policy": {
+    "policy": {...},
+    "applied_rules": [...],
+    "suppressed": [...],
+    "scoring": {"weights": {...}}
+  },
+  "coverage_summary": {
+    "detectors": [...],
+    "unsupported_total": 0
+  },
   "unsupported_artifacts": [...],
-  "source_types": [...]
+  "source_types": [...],
+  "runtime_context": {
+    "provider_endpoint": "...",
+    "registry_uri": "...",
+    "immutable_version": "...",
+    "environment": "...",
+    "region": "...",
+    "lineage": {
+      "model_artifact_digest": "...",
+      "deployment_id": "...",
+      "service_account_identity": "...",
+      "owning_system": "..."
+    }
+  }
 }
 ```
+
+### Risk Analysis System
+The risk analysis engine (`risk/heuristics.py`) provides:
+
+1. **Built-in Risk Rules**:
+   - `third-party-provider`: Detects external model providers (OWASP LLM-07)
+   - `exfil-surface`: Detects data exfiltration-capable tools (OWASP LLM-06)
+   - `prompt-injection-surface`: Detects prompt template surfaces (OWASP LLM-01)
+
+2. **Risk Scoring**:
+   - Weighted scoring based on confidence, exposure, and provenance completeness
+   - Configurable weights via policy
+   - Severity bands: critical (0.8+), high (0.6+), medium (0.4+), low (<0.4)
+
+3. **Policy Controls**:
+   - Rule enable/disable
+   - Severity overrides
+   - Threshold-based suppression
+   - Allowlist-based suppression with audit trail
+   - Control mapping tags
 
 ### Security Features
 - **Path Validation**: All paths passed to subprocess are validated via `validate_safe_path()` to prevent path traversal and shell injection
@@ -251,14 +375,23 @@ The analyzer uses a pluggable detector architecture:
 - **Credential Protection**: API keys always masked regardless of redaction policy
 - **Prompt Exposure Control**: Requires explicit `--acknowledge-prompt-exposure-risk` flag to include prompt content
 
+### Storage and Persistence
+The `storage.py` module provides:
+- **Run Persistence**: Each scan is saved to `.aibom/runs/` with timestamp and git SHA
+- **Latest Tracking**: `.aibom/latest.json` always points to the most recent scan
+- **Periodic Snapshots**: History tracking with drift analysis for scheduled scans
+- **History Index**: `.aibom/periodic/history.json` maintains rolling window of snapshots
+
 ## Testing Strategy
 
 - **Unit Tests**: `tests/test_cli.py` covers all major CLI commands and edge cases
+- **Export Tests**: `tests/test_exporters.py` validates SPDX/CycloneDX/SARIF/VEX output
+- **Risk Rule Tests**: `tests/test_risk_rules.py` validates risk policy and rule evaluation
 - **Golden File Testing**: Compare generated AIBOM against `tests/fixtures/golden_aibom.json`
 - **Schema Validation Tests**: Verify valid/invalid AIBOM documents
 - **Integration Tests**: Full CLI subprocess invocations
 - **Security Tests**: Signature creation and verification with ephemeral certificates
-- **Fixtures**: `tests/fixtures/sample_project/` provides realistic test data
+- **Fixtures**: `tests/fixtures/sample_project/` and `tests/fixtures/runtime_project/` provide realistic test data
 
 ## CI/CD Workflows
 
@@ -306,11 +439,17 @@ docker run --rm -v $(pwd):/workspace aibom-cli:latest generate /workspace -o /ou
    - Evidence bundles with SHA256 manifests
    - Cryptographic signing with X.509 certificates
    - Provenance attestation with policy evaluation
+   - Certificate chain verification
+   - Signer allowlist enforcement (subject, SAN DNS, fingerprint)
+   - Revocation checking (CRL/OCSP with hooks)
+   - Validity window enforcement
 
 3. **Data Protection**:
-   - Config value redaction
+   - Config value redaction (strict/default/off policies)
    - Prompt template exposure controls
-   - Path traversal prevention
+   - Path traversal prevention via `validate_safe_path()`
+   - Shell metacharacter rejection
+   - Symlink control
 
 4. **SOC Compliance**:
    - Three-tier data handling policies
@@ -322,10 +461,53 @@ docker run --rm -v $(pwd):/workspace aibom-cli:latest generate /workspace -o /ou
 
 - Use `from __future__ import annotations` for forward compatibility
 - Prefer dataclasses for structured data
-- Use Protocol for interface definitions (Detector)
+- Use Protocol for interface definitions (SourceDetector)
 - Sort JSON output keys for reproducibility (`stable_json()`)
 - All file paths resolved via `Path.resolve()`
 - Ignored directories: `.venv`, `venv`, `__pycache__`, `.git`, `.aibom`
+
+## Risk Policy Format
+
+Custom risk policies can be provided as JSON or YAML:
+
+```json
+{
+  "policy_id": "org-risk-rules",
+  "version": "2026.03",
+  "scoring": {
+    "weights": {
+      "confidence": 0.35,
+      "exposure": 0.4,
+      "provenance": 0.25
+    }
+  },
+  "rule_overrides": {
+    "third-party-provider": {
+      "rule_id": "ORG-TP-01",
+      "severity": "high",
+      "threshold": 1,
+      "enabled": true,
+      "weights": {
+        "confidence": 0.5,
+        "exposure": 0.3,
+        "provenance": 0.2
+      },
+      "allowlist": [
+        {
+          "entity_type": "model",
+          "name": "ChatOpenAI",
+          "source_file": "app.py",
+          "reason": "approved-external-provider"
+        }
+      ],
+      "control_mapping_tags": ["tier-1-vendor"]
+    },
+    "prompt-injection-surface": {
+      "enabled": false
+    }
+  }
+}
+```
 
 ## Contributing
 
