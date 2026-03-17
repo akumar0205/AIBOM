@@ -62,5 +62,27 @@
       "confidence": "high",
       "severity": "medium"
     }
+  ],
+  "risk_findings": [
+    {
+      "id": "third-party-provider:ChatOpenAI:app.py",
+      "rule_id": "third-party-provider",
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "severity": "medium",
+      "rationale": "External model provider detected.",
+      "heuristic": "true"
+    },
+    {
+      "id": "exfil-surface:initialize_agent:app.py",
+      "rule_id": "exfil-surface",
+      "base_rule_id": "exfil-surface",
+      "category": "exfil surface",
+      "owasp_llm": "LLM06 Sensitive Information Disclosure",
+      "severity": "high",
+      "rationale": "Tool may read/write data or access web.",
+      "heuristic": "true"
+    }
   ]
 }

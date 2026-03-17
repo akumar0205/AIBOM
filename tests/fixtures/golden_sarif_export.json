@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "aibom",
+          "version": "1.0.0",
+          "rules": [
+            {
+              "id": "risk:exfil-surface",
+              "name": "exfil-surface",
+              "shortDescription": {
+                "text": "LLM06 Sensitive Information Disclosure"
+              }
+            },
+            {
+              "id": "risk:third-party-provider",
+              "name": "third-party-provider",
+              "shortDescription": {
+                "text": "LLM07 Insecure Plugin Design"
+              }
+            },
+            {
+              "id": "scan:dependency graph",
+              "name": "dependency graph",
+              "shortDescription": {
+                "text": "dependency graph"
+              }
+            },
+            {
+              "id": "scan:model invocation",
+              "name": "model invocation",
+              "shortDescription": {
+                "text": "model invocation"
+              }
+            }
+          ]
+        }
+      },
+      "invocations": [
+        {
+          "endTimeUtc": "2025-01-01T01:02:03Z"
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "scan:model invocation",
+          "level": "medium",
+          "message": {
+            "text": "Model class ChatOpenAI detected in Python source."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app.py"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "aibom:finding_id": "python-model:ChatOpenAI:app.py",
+            "aibom:confidence": "high",
+            "aibom:source_type": "python"
+          }
+        },
+        {
+          "ruleId": "scan:dependency graph",
+          "level": "low",
+          "message": {
+            "text": "Detected dependencies: langchain, pydantic"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "requirements.txt"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "aibom:finding_id": "runtime-deps:requirements.txt",
+            "aibom:confidence": "medium",
+            "aibom:source_type": "runtime_manifest"
+          }
+        },
+        {
+          "ruleId": "risk:exfil-surface",
+          "level": "high",
+          "message": {
+            "text": "Tool may read/write data or access web."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app.py"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "aibom:finding_id": "exfil-surface:initialize_agent:app.py",
+            "aibom:owasp_llm": "LLM06 Sensitive Information Disclosure",
+            "aibom:category": "exfil surface"
+          }
+        },
+        {
+          "ruleId": "risk:third-party-provider",
+          "level": "medium",
+          "message": {
+            "text": "External model provider detected."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "app.py"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "aibom:finding_id": "third-party-provider:ChatOpenAI:app.py",
+            "aibom:owasp_llm": "LLM07 Insecure Plugin Design",
+            "aibom:category": "third-party dependency"
+          }
+        }
+      ]
+    }
+  ]
+}

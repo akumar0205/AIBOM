@@ -75,6 +75,41 @@ def _provenance_properties(provenance: dict[str, Any] | None) -> list[dict[str, 
     return props
 
 
+def _finding_metadata_by_source(scan_findings: list[dict[str, Any]]) -> dict[str, dict[str, str]]:
+    by_source: dict[str, dict[str, str]] = {}
+    for finding in sorted(
+        scan_findings,
+        key=lambda item: (
+            str(item.get("source_file", "")),
+            str(item.get("id", "")),
+        ),
+    ):
+        source = str(finding.get("source_file", ""))
+        if not source or source in by_source:
+            continue
+        by_source[source] = {
+            "confidence": str(finding.get("confidence", "unknown")),
+            "severity": str(finding.get("severity", "unknown")),
+            "source_type": str(finding.get("source_type", "unknown")),
+            "finding_id": str(finding.get("id", "unknown")),
+        }
+    return by_source
+
+
+def _extract_risk_source_file(risk_finding: dict[str, Any]) -> str:
+    finding_id = str(risk_finding.get("id", ""))
+    parts = finding_id.split(":")
+    return parts[-1] if len(parts) >= 3 else ""
+
+
+def _normalize_vex_status(severity: str) -> str:
+    if severity == "high":
+        return "affected"
+    if severity == "medium":
+        return "under_investigation"
+    return "not_affected"
+
+
 def _parse_dependency_names(scan_findings: list[dict[str, Any]]) -> list[str]:
     deps: set[str] = set()
     for finding in scan_findings:
@@ -98,6 +133,8 @@ def export_spdx(aibom: dict[str, Any]) -> dict[str, Any]:
 
     packages: list[dict[str, Any]] = []
     package_ids_by_name: dict[str, str] = {}
+    finding_by_source = _finding_metadata_by_source(aibom.get("scan_findings", []))
+    risk_findings = sorted(aibom.get("risk_findings", []), key=lambda item: str(item.get("id", "")))
 
     def add_package(
         kind: str,
@@ -129,6 +166,37 @@ def export_spdx(aibom: dict[str, Any]) -> dict[str, Any]:
             }
             for prop in _provenance_properties(provenance)
         )
+        source_meta = finding_by_source.get(source_file or "")
+        if source_meta:
+            refs.extend(
+                [
+                    {
+                        "referenceCategory": "OTHER",
+                        "referenceType": "aibom:detector:confidence",
+                        "referenceLocator": source_meta["confidence"],
+                    },
+                    {
+                        "referenceCategory": "OTHER",
+                        "referenceType": "aibom:detector:severity",
+                        "referenceLocator": source_meta["severity"],
+                    },
+                    {
+                        "referenceCategory": "OTHER",
+                        "referenceType": "aibom:detector:source_type",
+                        "referenceLocator": source_meta["source_type"],
+                    },
+                ]
+            )
+        for risk_finding in risk_findings:
+            if _extract_risk_source_file(risk_finding) != (source_file or ""):
+                continue
+            refs.append(
+                {
+                    "referenceCategory": "SECURITY",
+                    "referenceType": "advisory",
+                    "referenceLocator": f"aibom-risk:{risk_finding.get('id', 'unknown')}",
+                }
+            )
         if refs:
             package["externalRefs"] = refs
         packages.append(package)
@@ -211,16 +279,7 @@ def export_cyclonedx(aibom: dict[str, Any]) -> dict[str, Any]:
 
     components: list[dict[str, Any]] = []
     refs_by_name: dict[str, str] = {}
-
-    finding_by_source: dict[str, dict[str, str]] = {}
-    for finding in aibom.get("scan_findings", []):
-        source = str(finding.get("source_file", ""))
-        if source and source not in finding_by_source:
-            finding_by_source[source] = {
-                "confidence": str(finding.get("confidence", "unknown")),
-                "severity": str(finding.get("severity", "unknown")),
-                "source_type": str(finding.get("source_type", "unknown")),
-            }
+    finding_by_source = _finding_metadata_by_source(aibom.get("scan_findings", []))
 
     def add_component(
         component_type: str,
@@ -239,6 +298,7 @@ def export_cyclonedx(aibom: dict[str, Any]) -> dict[str, Any]:
                     {"name": "aibom:confidence", "value": source_meta["confidence"]},
                     {"name": "aibom:severity", "value": source_meta["severity"]},
                     {"name": "aibom:source_type", "value": source_meta["source_type"]},
+                    {"name": "aibom:finding_id", "value": source_meta["finding_id"]},
                 ]
             )
         props.extend(_provenance_properties(provenance))
@@ -288,7 +348,44 @@ def export_cyclonedx(aibom: dict[str, Any]) -> dict[str, Any]:
         refs_by_name[name.lower()] for name in dependency_names if name.lower() in refs_by_name
     ]
 
-    return {
+    vulnerabilities: list[dict[str, Any]] = []
+    for risk_finding in sorted(
+        aibom.get("risk_findings", []), key=lambda item: str(item.get("id", ""))
+    ):
+        source_file = _extract_risk_source_file(risk_finding)
+        affects = []
+        if source_file:
+            affects = [
+                {"ref": component["bom-ref"]}
+                for component in components
+                if any(
+                    prop.get("name") == "aibom:source_file" and prop.get("value") == source_file
+                    for prop in component.get("properties", [])
+                )
+            ]
+        vulnerabilities.append(
+            {
+                "id": str(risk_finding.get("id", "unknown")),
+                "source": {"name": "AIBOM Risk Heuristics"},
+                "ratings": [{"severity": str(risk_finding.get("severity", "unknown"))}],
+                "description": str(risk_finding.get("rationale", "")),
+                "analysis": {
+                    "state": "in_triage",
+                    "detail": str(risk_finding.get("owasp_llm", "")),
+                },
+                "affects": affects,
+                "properties": [
+                    {"name": "aibom:rule_id", "value": str(risk_finding.get("rule_id", ""))},
+                    {
+                        "name": "aibom:base_rule_id",
+                        "value": str(risk_finding.get("base_rule_id", "")),
+                    },
+                    {"name": "aibom:category", "value": str(risk_finding.get("category", ""))},
+                ],
+            }
+        )
+
+    doc: dict[str, Any] = {
         "bomFormat": "CycloneDX",
         "specVersion": "1.5",
         "serialNumber": f"urn:uuid:{serial}",
@@ -304,4 +401,122 @@ def export_cyclonedx(aibom: dict[str, Any]) -> dict[str, Any]:
                 "dependsOn": sorted(set(depends_on)),
             }
         ],
+    }
+    if vulnerabilities:
+        doc["vulnerabilities"] = vulnerabilities
+    return doc
+
+
+def export_sarif(aibom: dict[str, Any]) -> dict[str, Any]:
+    timestamp = _normalize_timestamp(aibom)
+    scan_findings = sorted(aibom.get("scan_findings", []), key=lambda item: str(item.get("id", "")))
+    risk_findings = sorted(aibom.get("risk_findings", []), key=lambda item: str(item.get("id", "")))
+
+    rules: dict[str, dict[str, Any]] = {}
+    results: list[dict[str, Any]] = []
+
+    for finding in scan_findings:
+        rule_id = f"scan:{finding.get('category', 'unknown')}"
+        rules.setdefault(
+            rule_id,
+            {
+                "id": rule_id,
+                "name": str(finding.get("category", "unknown")),
+                "shortDescription": {"text": str(finding.get("category", "unknown"))},
+            },
+        )
+        results.append(
+            {
+                "ruleId": rule_id,
+                "level": str(finding.get("severity", "warning")).lower(),
+                "message": {"text": str(finding.get("evidence", ""))},
+                "locations": [
+                    {
+                        "physicalLocation": {
+                            "artifactLocation": {
+                                "uri": str(finding.get("source_file", "unknown")),
+                            }
+                        }
+                    }
+                ],
+                "properties": {
+                    "aibom:finding_id": str(finding.get("id", "")),
+                    "aibom:confidence": str(finding.get("confidence", "unknown")),
+                    "aibom:source_type": str(finding.get("source_type", "unknown")),
+                },
+            }
+        )
+
+    for finding in risk_findings:
+        rule_id = f"risk:{finding.get('rule_id', 'unknown')}"
+        rules.setdefault(
+            rule_id,
+            {
+                "id": rule_id,
+                "name": str(finding.get("rule_id", "unknown")),
+                "shortDescription": {"text": str(finding.get("owasp_llm", "Risk finding"))},
+            },
+        )
+        source_file = _extract_risk_source_file(finding) or "risk-policy"
+        results.append(
+            {
+                "ruleId": rule_id,
+                "level": str(finding.get("severity", "warning")).lower(),
+                "message": {"text": str(finding.get("rationale", ""))},
+                "locations": [{"physicalLocation": {"artifactLocation": {"uri": source_file}}}],
+                "properties": {
+                    "aibom:finding_id": str(finding.get("id", "")),
+                    "aibom:owasp_llm": str(finding.get("owasp_llm", "")),
+                    "aibom:category": str(finding.get("category", "")),
+                },
+            }
+        )
+
+    return {
+        "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+        "version": "2.1.0",
+        "runs": [
+            {
+                "tool": {
+                    "driver": {
+                        "name": "aibom",
+                        "version": __version__,
+                        "rules": sorted(rules.values(), key=lambda item: item["id"]),
+                    }
+                },
+                "invocations": [{"endTimeUtc": timestamp}],
+                "results": results,
+            }
+        ],
+    }
+
+
+def export_vex(aibom: dict[str, Any]) -> dict[str, Any]:
+    seed = _stable_seed(aibom)
+    timestamp = _normalize_timestamp(aibom)
+    vex_id = uuid.uuid5(uuid.NAMESPACE_URL, f"aibom:vex:{seed}")
+    risk_findings = sorted(aibom.get("risk_findings", []), key=lambda item: str(item.get("id", "")))
+
+    statements: list[dict[str, Any]] = []
+    for finding in risk_findings:
+        source_file = _extract_risk_source_file(finding)
+        statements.append(
+            {
+                "vulnerability": {"name": str(finding.get("id", "unknown"))},
+                "products": [{"@id": f"file:{source_file or 'unknown'}"}],
+                "status": _normalize_vex_status(str(finding.get("severity", "unknown"))),
+                "justification": str(finding.get("owasp_llm", "")),
+                "impact_statement": str(finding.get("rationale", "")),
+                "action_statement": "Review mitigation and compensating controls.",
+            }
+        )
+
+    return {
+        "@context": "https://openvex.dev/ns/v0.2.0",
+        "@id": f"urn:uuid:{vex_id}",
+        "author": "AIBOM",
+        "timestamp": timestamp,
+        "version": 1,
+        "tooling": f"aibom/{__version__}",
+        "statements": statements,
     }

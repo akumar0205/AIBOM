@@ -9,7 +9,7 @@ from aibom import __version__
 from aibom.analyzer import generate_aibom
 from aibom.bundle import create_bundle, sign_bundle, verify_bundle_signature
 from aibom.diffing import diff_aibom, gate_failures, trend_diff_aibom
-from aibom.exporters import export_cyclonedx, export_spdx
+from aibom.exporters import export_cyclonedx, export_sarif, export_spdx, export_vex
 from aibom.risk.heuristics import generate_risk_findings
 from aibom.storage import load_json, list_run_history, persist_periodic_snapshot, persist_run
 from aibom.validation import AIBOMValidationException, validate_aibom
@@ -136,8 +136,12 @@ def cmd_export(args: argparse.Namespace) -> int:
     src = load_json(Path(args.input))
     if args.format == "spdx-json":
         data = export_spdx(src)
-    else:
+    elif args.format == "cyclonedx-json":
         data = export_cyclonedx(src)
+    elif args.format == "sarif-json":
+        data = export_sarif(src)
+    else:
+        data = export_vex(src)
     _write_json(Path(args.output), data)
     return 0
 
@@ -279,7 +283,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     ex = sub.add_parser("export")
     ex.add_argument("--input", required=True)
-    ex.add_argument("--format", choices=["spdx-json", "cyclonedx-json"], default="spdx-json")
+    ex.add_argument(
+        "--format",
+        choices=["spdx-json", "cyclonedx-json", "sarif-json", "vex-json"],
+        default="spdx-json",
+    )
     ex.add_argument("-o", "--output", required=True)
     ex.set_defaults(func=cmd_export)
 
