@@ -1,0 +1,38 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "urn:uuid:d15cbb33-b823-52b6-a442-ec3867b08e78",
+  "author": "AIBOM",
+  "timestamp": "2025-01-01T01:02:03Z",
+  "version": 1,
+  "tooling": "aibom/1.0.0",
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "exfil-surface:initialize_agent:app.py"
+      },
+      "products": [
+        {
+          "@id": "file:app.py"
+        }
+      ],
+      "status": "affected",
+      "justification": "LLM06 Sensitive Information Disclosure",
+      "impact_statement": "Tool may read/write data or access web.",
+      "action_statement": "Review mitigation and compensating controls."
+    },
+    {
+      "vulnerability": {
+        "name": "third-party-provider:ChatOpenAI:app.py"
+      },
+      "products": [
+        {
+          "@id": "file:app.py"
+        }
+      ],
+      "status": "under_investigation",
+      "justification": "LLM07 Insecure Plugin Design",
+      "impact_statement": "External model provider detected.",
+      "action_statement": "Review mitigation and compensating controls."
+    }
+  ]
+}

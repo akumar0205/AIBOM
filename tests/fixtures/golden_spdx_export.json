@@ -32,6 +32,31 @@
           "referenceCategory": "OTHER",
           "referenceType": "aibom-evidence-source",
           "referenceLocator": "file:app.py"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "aibom:detector:confidence",
+          "referenceLocator": "high"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "aibom:detector:severity",
+          "referenceLocator": "medium"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "aibom:detector:source_type",
+          "referenceLocator": "python"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceType": "advisory",
+          "referenceLocator": "aibom-risk:exfil-surface:initialize_agent:app.py"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceType": "advisory",
+          "referenceLocator": "aibom-risk:third-party-provider:ChatOpenAI:app.py"
         }
       ]
     },
@@ -49,6 +74,21 @@
           "referenceCategory": "OTHER",
           "referenceType": "aibom-evidence-source",
           "referenceLocator": "file:requirements.txt"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "aibom:detector:confidence",
+          "referenceLocator": "medium"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "aibom:detector:severity",
+          "referenceLocator": "low"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "aibom:detector:source_type",
+          "referenceLocator": "runtime_manifest"
         }
       ]
     },
@@ -111,6 +151,31 @@
           "referenceCategory": "OTHER",
           "referenceType": "aibom:lineage:owning_system",
           "referenceLocator": "fraud-platform"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "aibom:detector:confidence",
+          "referenceLocator": "high"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "aibom:detector:severity",
+          "referenceLocator": "medium"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "aibom:detector:source_type",
+          "referenceLocator": "python"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceType": "advisory",
+          "referenceLocator": "aibom-risk:exfil-surface:initialize_agent:app.py"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceType": "advisory",
+          "referenceLocator": "aibom-risk:third-party-provider:ChatOpenAI:app.py"
         }
       ]
     },
@@ -128,6 +193,31 @@
           "referenceCategory": "OTHER",
           "referenceType": "aibom-evidence-source",
           "referenceLocator": "file:app.py"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "aibom:detector:confidence",
+          "referenceLocator": "high"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "aibom:detector:severity",
+          "referenceLocator": "medium"
+        },
+        {
+          "referenceCategory": "OTHER",
+          "referenceType": "aibom:detector:source_type",
+          "referenceLocator": "python"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceType": "advisory",
+          "referenceLocator": "aibom-risk:exfil-surface:initialize_agent:app.py"
+        },
+        {
+          "referenceCategory": "SECURITY",
+          "referenceType": "advisory",
+          "referenceLocator": "aibom-risk:third-party-provider:ChatOpenAI:app.py"
         }
       ]
     }

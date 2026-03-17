@@ -59,13 +59,18 @@ aibom validate AI_BOM.json
 ```bash
 aibom export --input AI_BOM.json --format spdx-json -o SPDX.json
 aibom export --input AI_BOM.json --format cyclonedx-json -o CYCLONEDX.json
+aibom export --input AI_BOM.json --format sarif-json -o FINDINGS.sarif.json
+aibom export --input AI_BOM.json --format vex-json -o ADVISORIES.vex.json
 ```
 
-Internal → SPDX mapping (MVP):
+Internal → SPDX/CycloneDX mapping (extended):
 - `models[].type` -> `packages[].name`
 - `models[].model` -> `packages[].versionInfo`
 - `tools[].name` -> `packages[].name`
 - `datasets[].type` -> `packages[].name`
+- `risk_findings[]` -> SPDX package advisory refs / CycloneDX `vulnerabilities[]`
+- detector metadata (`scan_findings[].confidence`, `severity`, `source_type`) -> external refs/properties
+- model `provenance` + `lineage` -> standards-compatible external refs/properties
 
 ### Drift detection
 

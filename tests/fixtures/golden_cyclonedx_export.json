@@ -35,6 +35,10 @@
         {
           "name": "aibom:source_type",
           "value": "python"
+        },
+        {
+          "name": "aibom:finding_id",
+          "value": "python-model:ChatOpenAI:app.py"
         }
       ]
     },
@@ -59,6 +63,10 @@
         {
           "name": "aibom:source_type",
           "value": "python"
+        },
+        {
+          "name": "aibom:finding_id",
+          "value": "python-model:ChatOpenAI:app.py"
         }
       ]
     },
@@ -83,6 +91,10 @@
         {
           "name": "aibom:source_type",
           "value": "python"
+        },
+        {
+          "name": "aibom:finding_id",
+          "value": "python-model:ChatOpenAI:app.py"
         },
         {
           "name": "aibom:provenance:provider_endpoint",
@@ -143,6 +155,10 @@
         {
           "name": "aibom:source_type",
           "value": "runtime_manifest"
+        },
+        {
+          "name": "aibom:finding_id",
+          "value": "runtime-deps:requirements.txt"
         }
       ]
     }
@@ -152,6 +168,90 @@
       "ref": "aibom-root-document",
       "dependsOn": [
         "aibom-c3204b7b2c3631ab"
+      ]
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "id": "exfil-surface:initialize_agent:app.py",
+      "source": {
+        "name": "AIBOM Risk Heuristics"
+      },
+      "ratings": [
+        {
+          "severity": "high"
+        }
+      ],
+      "description": "Tool may read/write data or access web.",
+      "analysis": {
+        "state": "in_triage",
+        "detail": "LLM06 Sensitive Information Disclosure"
+      },
+      "affects": [
+        {
+          "ref": "aibom-1f1ea61701eb362d"
+        },
+        {
+          "ref": "aibom-5a3a2ff6665b18af"
+        },
+        {
+          "ref": "aibom-77941cb7bd9718f0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "aibom:rule_id",
+          "value": "exfil-surface"
+        },
+        {
+          "name": "aibom:base_rule_id",
+          "value": "exfil-surface"
+        },
+        {
+          "name": "aibom:category",
+          "value": "exfil surface"
+        }
+      ]
+    },
+    {
+      "id": "third-party-provider:ChatOpenAI:app.py",
+      "source": {
+        "name": "AIBOM Risk Heuristics"
+      },
+      "ratings": [
+        {
+          "severity": "medium"
+        }
+      ],
+      "description": "External model provider detected.",
+      "analysis": {
+        "state": "in_triage",
+        "detail": "LLM07 Insecure Plugin Design"
+      },
+      "affects": [
+        {
+          "ref": "aibom-1f1ea61701eb362d"
+        },
+        {
+          "ref": "aibom-5a3a2ff6665b18af"
+        },
+        {
+          "ref": "aibom-77941cb7bd9718f0"
+        }
+      ],
+      "properties": [
+        {
+          "name": "aibom:rule_id",
+          "value": "third-party-provider"
+        },
+        {
+          "name": "aibom:base_rule_id",
+          "value": "third-party-provider"
+        },
+        {
+          "name": "aibom:category",
+          "value": "third-party dependency"
+        }
       ]
     }
   ]
