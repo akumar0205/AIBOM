@@ -123,6 +123,9 @@ def test_coverage_summary_and_unsupported_artifacts_present() -> None:
         "runtime_manifest",
         "js_ts_manifest",
         "js_ts_ast",
+        "java_ast",
+        "go_ast",
+        "dotnet_ast",
     } <= detector_types
     assert not any(
         item["artifact_type"] in {".ts", ".tsx", ".js", ".jsx"}
@@ -145,6 +148,28 @@ def test_js_ts_ast_detector_finds_models_tools_prompts_and_frameworks() -> None:
         f["source_type"] == "js_ts_ast" and f["source_file"].startswith("script.ts:")
         for f in doc["scan_findings"]
     )
+
+
+def test_java_go_dotnet_detectors_find_expected_surfaces() -> None:
+    doc = generate_aibom(_fixture_project(), include_prompts=True)
+
+    expected_source_types = {"java_ast", "go_ast", "dotnet_ast"}
+    assert expected_source_types <= {item["name"] for item in doc["source_types"]}
+
+    for source_type in expected_source_types:
+        assert any(f["source_type"] == source_type for f in doc["scan_findings"])
+
+    assert any(model["source_file"].startswith("assistant.java:") for model in doc["models"])
+    assert any(model["source_file"].startswith("assistant.go:") for model in doc["models"])
+    assert any(model["source_file"].startswith("Assistant.cs:") for model in doc["models"])
+
+    assert any(tool["source_file"].startswith("assistant.java:") for tool in doc["tools"])
+    assert any(tool["source_file"].startswith("assistant.go:") for tool in doc["tools"])
+    assert any(tool["source_file"].startswith("Assistant.cs:") for tool in doc["tools"])
+
+    assert any(prompt["source_file"].startswith("assistant.java:") for prompt in doc["prompts"])
+    assert any(prompt["source_file"].startswith("assistant.go:") for prompt in doc["prompts"])
+    assert any(prompt["source_file"].startswith("Assistant.cs:") for prompt in doc["prompts"])
 
 
 def test_cli_generate_fails_on_unsupported_threshold(tmp_path: Path) -> None:

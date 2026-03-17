@@ -11,6 +11,24 @@
         "artifacts_scanned": 1,
         "artifacts_seen": 1,
         "default_confidence": "medium",
+        "source_type": "dotnet_ast"
+      },
+      {
+        "artifacts_scanned": 1,
+        "artifacts_seen": 1,
+        "default_confidence": "medium",
+        "source_type": "go_ast"
+      },
+      {
+        "artifacts_scanned": 1,
+        "artifacts_seen": 1,
+        "default_confidence": "medium",
+        "source_type": "java_ast"
+      },
+      {
+        "artifacts_scanned": 1,
+        "artifacts_seen": 1,
+        "default_confidence": "medium",
         "source_type": "js_ts_ast"
       },
       {
@@ -98,6 +116,18 @@
         "region": "unknown",
         "registry_uri": "unknown"
       },
+      "source_file": "assistant.java:7",
+      "type": "OpenAI"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "provenance": {
+        "environment": "unknown",
+        "immutable_version": "python:3.11-slim",
+        "provider_endpoint": "https://api.openai.com",
+        "region": "unknown",
+        "registry_uri": "unknown"
+      },
       "source_file": "demo.ipynb#cell-0",
       "type": "ChatOpenAI"
     },
@@ -112,12 +142,64 @@
       },
       "source_file": "script.ts:5",
       "type": "OpenAI"
+    },
+    {
+      "model": "sk-local",
+      "provenance": {
+        "environment": "unknown",
+        "immutable_version": "python:3.11-slim",
+        "provider_endpoint": "https://api.openai.com",
+        "region": "unknown",
+        "registry_uri": "unknown"
+      },
+      "source_file": "Assistant.cs:6",
+      "type": "OpenAI"
+    },
+    {
+      "model": "unknown",
+      "provenance": {
+        "environment": "unknown",
+        "immutable_version": "python:3.11-slim",
+        "provider_endpoint": "https://api.openai.com",
+        "region": "unknown",
+        "registry_uri": "unknown"
+      },
+      "source_file": "assistant.go:9",
+      "type": "OpenAI"
+    },
+    {
+      "model": "unknown",
+      "provenance": {
+        "environment": "unknown",
+        "immutable_version": "python:3.11-slim",
+        "provider_endpoint": "https://api.openai.com",
+        "region": "unknown",
+        "registry_uri": "unknown"
+      },
+      "source_file": "assistant.java:1",
+      "type": "OpenAI"
     }
   ],
   "prompts": [
     {
+      "id": "Assistant.cs:8",
+      "source_file": "Assistant.cs:8"
+    },
+    {
       "id": "app.py:9",
       "source_file": "app.py"
+    },
+    {
+      "id": "assistant.go:11",
+      "source_file": "assistant.go:11"
+    },
+    {
+      "id": "assistant.java:3",
+      "source_file": "assistant.java:3"
+    },
+    {
+      "id": "assistant.java:9",
+      "source_file": "assistant.java:9"
     },
     {
       "id": "script.ts:2",
@@ -163,6 +245,46 @@
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
       "heuristic": "true",
+      "id": "third-party-provider:OpenAI:Assistant.cs:6",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "rationale": "External model provider detected.",
+      "rule_id": "third-party-provider",
+      "severity": "medium"
+    },
+    {
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "heuristic": "true",
+      "id": "third-party-provider:OpenAI:assistant.go:9",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "rationale": "External model provider detected.",
+      "rule_id": "third-party-provider",
+      "severity": "medium"
+    },
+    {
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "heuristic": "true",
+      "id": "third-party-provider:OpenAI:assistant.java:1",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "rationale": "External model provider detected.",
+      "rule_id": "third-party-provider",
+      "severity": "medium"
+    },
+    {
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "heuristic": "true",
+      "id": "third-party-provider:OpenAI:assistant.java:7",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "rationale": "External model provider detected.",
+      "rule_id": "third-party-provider",
+      "severity": "medium"
+    },
+    {
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "heuristic": "true",
       "id": "third-party-provider:OpenAI:script.ts:5",
       "owasp_llm": "LLM07 Insecure Plugin Design",
       "rationale": "External model provider detected.",
@@ -182,8 +304,8 @@
       },
       {
         "base_rule_id": "third-party-provider",
-        "candidate_count": 3,
-        "post_allowlist_count": 3,
+        "candidate_count": 7,
+        "post_allowlist_count": 7,
         "rule_id": "third-party-provider",
         "severity": "medium",
         "threshold": 1
@@ -253,11 +375,47 @@
     {
       "category": "model invocation",
       "confidence": "medium",
+      "evidence": ".NET model usage detected: OpenAI.",
+      "id": "dotnet-model:OpenAI:Assistant.cs:6",
+      "severity": "medium",
+      "source_file": "Assistant.cs:6",
+      "source_type": "dotnet_ast"
+    },
+    {
+      "category": "model invocation",
+      "confidence": "medium",
+      "evidence": "Go model usage detected: OpenAI.",
+      "id": "go-model:OpenAI:assistant.go:9",
+      "severity": "medium",
+      "source_file": "assistant.go:9",
+      "source_type": "go_ast"
+    },
+    {
+      "category": "model invocation",
+      "confidence": "medium",
       "evidence": "JS/TS model usage detected: OpenAI.",
       "id": "js-ts-model:OpenAI:script.ts:5",
       "severity": "medium",
       "source_file": "script.ts:5",
       "source_type": "js_ts_ast"
+    },
+    {
+      "category": "model invocation",
+      "confidence": "medium",
+      "evidence": "Java model usage detected: OpenAI.",
+      "id": "java-model:OpenAI:assistant.java:1",
+      "severity": "medium",
+      "source_file": "assistant.java:1",
+      "source_type": "java_ast"
+    },
+    {
+      "category": "model invocation",
+      "confidence": "medium",
+      "evidence": "Java model usage detected: OpenAI.",
+      "id": "java-model:OpenAI:assistant.java:7",
+      "severity": "medium",
+      "source_file": "assistant.java:7",
+      "source_type": "java_ast"
     },
     {
       "category": "prompt template",
@@ -345,16 +503,47 @@
       "default_confidence": "medium",
       "default_severity": "medium",
       "name": "js_ts_ast"
+    },
+    {
+      "default_confidence": "medium",
+      "default_severity": "medium",
+      "name": "java_ast"
+    },
+    {
+      "default_confidence": "medium",
+      "default_severity": "medium",
+      "name": "go_ast"
+    },
+    {
+      "default_confidence": "medium",
+      "default_severity": "medium",
+      "name": "dotnet_ast"
     }
   ],
   "tools": [
+    {
+      "name": "builder",
+      "source_file": "assistant.java:8"
+    },
     {
       "name": "initialize_agent",
       "source_file": "app.py"
     },
     {
+      "name": "java_tool",
+      "source_file": "assistant.java:2"
+    },
+    {
+      "name": "tool",
+      "source_file": "assistant.go:10"
+    },
+    {
       "name": "tool",
       "source_file": "script.ts:6"
+    },
+    {
+      "name": "var",
+      "source_file": "Assistant.cs:7"
     }
   ],
   "unsupported_artifacts": []
