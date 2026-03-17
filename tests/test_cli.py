@@ -113,6 +113,43 @@ def test_config_and_runtime_detectors_populate_provenance_when_observable() -> N
     assert doc["runtime_context"]["immutable_version"] == "python:3.11-slim"
 
 
+def test_runtime_manifest_detector_extracts_lineage_context(tmp_path: Path) -> None:
+    deployment = tmp_path / "k8s" / "deployment.yaml"
+    deployment.parent.mkdir(parents=True, exist_ok=True)
+    deployment.write_text(
+        """
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inference-prod-v2
+  labels:
+    app: model-serving
+  annotations:
+    deployment_id: inference-prod-v2
+spec:
+  template:
+    spec:
+      serviceAccountName: inference-sa
+      model_artifact_digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+      containers:
+        - name: api
+          image: ghcr.io/acme/serving@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+""".strip(),
+        encoding="utf-8",
+    )
+
+    doc = generate_aibom(tmp_path, include_runtime_manifests=True)
+    lineage = doc["runtime_context"]["lineage"]
+
+    assert lineage["deployment_id"] == "inference-prod-v2"
+    assert lineage["service_account_identity"] == "inference-sa"
+    assert lineage["owning_system"] == "model-serving"
+    assert (
+        lineage["model_artifact_digest"]
+        == "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    )
+
+
 def test_coverage_summary_and_unsupported_artifacts_present() -> None:
     doc = generate_aibom(_fixture_project(), include_runtime_manifests=True)
     detector_types = {d["source_type"] for d in doc["coverage_summary"]["detectors"]}
@@ -282,12 +319,21 @@ def test_golden_fixture_validates_against_schema() -> None:
 
 def test_validation_fixtures_cover_valid_and_invalid_cases() -> None:
     fixtures_dir = Path(__file__).parent / "fixtures"
+    validation_dir = fixtures_dir / "validation"
     valid_doc = json.loads((fixtures_dir / "valid_aibom.json").read_text(encoding="utf-8"))
+    minimal_provenance_doc = json.loads(
+        (validation_dir / "valid_minimal_provenance_aibom.json").read_text(encoding="utf-8")
+    )
+    enriched_provenance_doc = json.loads(
+        (validation_dir / "valid_enriched_provenance_aibom.json").read_text(encoding="utf-8")
+    )
     invalid_doc = json.loads(
         (fixtures_dir / "invalid_aibom_missing_field.json").read_text(encoding="utf-8")
     )
 
     validate_aibom(valid_doc)
+    validate_aibom(minimal_provenance_doc)
+    validate_aibom(enriched_provenance_doc)
     with pytest.raises(AIBOMValidationException) as exc:
         validate_aibom(invalid_doc)
 

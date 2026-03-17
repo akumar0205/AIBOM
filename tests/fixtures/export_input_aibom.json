@@ -9,7 +9,20 @@
     {
       "type": "ChatOpenAI",
       "model": "gpt-4o-mini",
-      "source_file": "app.py"
+      "source_file": "app.py",
+      "provenance": {
+        "provider_endpoint": "https://api.openai.com/v1",
+        "registry_uri": "ghcr.io/acme/inference",
+        "immutable_version": "ghcr.io/acme/inference@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "environment": "prod",
+        "region": "us-east-1",
+        "lineage": {
+          "model_artifact_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "deployment_id": "deploy-42",
+          "service_account_identity": "system:serviceaccount:ml:runner",
+          "owning_system": "fraud-platform"
+        }
+      }
     }
   ],
   "tools": [

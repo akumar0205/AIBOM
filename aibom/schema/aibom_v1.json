@@ -200,6 +200,9 @@
     },
     "runtime_context": {
       "$ref": "#/$defs/provenance"
+    },
+    "lineage": {
+      "$ref": "#/$defs/lineage"
     }
   },
   "$defs": {
@@ -226,6 +229,33 @@
           "type": "string"
         },
         "region": {
+          "type": "string"
+        },
+        "lineage": {
+          "$ref": "#/$defs/lineage"
+        }
+      },
+      "additionalProperties": false
+    },
+    "lineage": {
+      "type": "object",
+      "required": [
+        "model_artifact_digest",
+        "deployment_id",
+        "service_account_identity",
+        "owning_system"
+      ],
+      "properties": {
+        "model_artifact_digest": {
+          "type": "string"
+        },
+        "deployment_id": {
+          "type": "string"
+        },
+        "service_account_identity": {
+          "type": "string"
+        },
+        "owning_system": {
           "type": "string"
         }
       },

@@ -1,33 +1,48 @@
 {
   "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:eb5f9dce-5af2-5636-a04f-0851cddd0e21",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2025-01-01T01:02:03Z",
+    "tools": [
+      {
+        "vendor": "AIBOM",
+        "name": "aibom",
+        "version": "1.0.0"
+      }
+    ]
+  },
   "components": [
     {
-      "bom-ref": "aibom-1f1ea61701eb362d",
-      "name": "FAISS.from_texts",
-      "properties": [
-        {
-          "name": "aibom:source_file",
-          "value": "app.py"
-        },
-        {
-          "name": "aibom:confidence",
-          "value": "high"
-        },
-        {
-          "name": "aibom:severity",
-          "value": "medium"
-        },
-        {
-          "name": "aibom:source_type",
-          "value": "python"
-        }
-      ],
       "type": "data",
-      "version": "unknown"
+      "name": "FAISS.from_texts",
+      "version": "unknown",
+      "bom-ref": "aibom-1f1ea61701eb362d",
+      "properties": [
+        {
+          "name": "aibom:source_file",
+          "value": "app.py"
+        },
+        {
+          "name": "aibom:confidence",
+          "value": "high"
+        },
+        {
+          "name": "aibom:severity",
+          "value": "medium"
+        },
+        {
+          "name": "aibom:source_type",
+          "value": "python"
+        }
+      ]
     },
     {
-      "bom-ref": "aibom-5a3a2ff6665b18af",
+      "type": "application",
       "name": "initialize_agent",
+      "version": "unknown",
+      "bom-ref": "aibom-5a3a2ff6665b18af",
       "properties": [
         {
           "name": "aibom:source_file",
@@ -45,13 +60,13 @@
           "name": "aibom:source_type",
           "value": "python"
         }
-      ],
-      "type": "application",
-      "version": "unknown"
+      ]
     },
     {
-      "bom-ref": "aibom-77941cb7bd9718f0",
+      "type": "application",
       "name": "ChatOpenAI",
+      "version": "gpt-4o-mini",
+      "bom-ref": "aibom-77941cb7bd9718f0",
       "properties": [
         {
           "name": "aibom:source_file",
@@ -68,14 +83,50 @@
         {
           "name": "aibom:source_type",
           "value": "python"
+        },
+        {
+          "name": "aibom:provenance:provider_endpoint",
+          "value": "https://api.openai.com/v1"
+        },
+        {
+          "name": "aibom:provenance:registry_uri",
+          "value": "ghcr.io/acme/inference"
+        },
+        {
+          "name": "aibom:provenance:immutable_version",
+          "value": "ghcr.io/acme/inference@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+          "name": "aibom:provenance:environment",
+          "value": "prod"
+        },
+        {
+          "name": "aibom:provenance:region",
+          "value": "us-east-1"
+        },
+        {
+          "name": "aibom:lineage:model_artifact_digest",
+          "value": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        {
+          "name": "aibom:lineage:deployment_id",
+          "value": "deploy-42"
+        },
+        {
+          "name": "aibom:lineage:service_account_identity",
+          "value": "system:serviceaccount:ml:runner"
+        },
+        {
+          "name": "aibom:lineage:owning_system",
+          "value": "fraud-platform"
         }
-      ],
-      "type": "application",
-      "version": "gpt-4o-mini"
+      ]
     },
     {
-      "bom-ref": "aibom-c3204b7b2c3631ab",
+      "type": "library",
       "name": "langchain",
+      "version": "unknown",
+      "bom-ref": "aibom-c3204b7b2c3631ab",
       "properties": [
         {
           "name": "aibom:source_file",
@@ -93,30 +144,15 @@
           "name": "aibom:source_type",
           "value": "runtime_manifest"
         }
-      ],
-      "type": "library",
-      "version": "unknown"
+      ]
     }
   ],
   "dependencies": [
     {
+      "ref": "aibom-root-document",
       "dependsOn": [
         "aibom-c3204b7b2c3631ab"
-      ],
-      "ref": "aibom-root-document"
+      ]
     }
-  ],
-  "metadata": {
-    "timestamp": "2025-01-01T01:02:03Z",
-    "tools": [
-      {
-        "name": "aibom",
-        "vendor": "AIBOM",
-        "version": "1.0.0"
-      }
-    ]
-  },
-  "serialNumber": "urn:uuid:eb5f9dce-5af2-5636-a04f-0851cddd0e21",
-  "specVersion": "1.5",
-  "version": 1
+  ]
 }

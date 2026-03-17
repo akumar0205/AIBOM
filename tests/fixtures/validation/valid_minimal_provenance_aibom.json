@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "generated_at": "DYNAMIC",
+    "git_sha": "DYNAMIC",
+    "artifact_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "models": [
+    {
+      "type": "ChatOpenAI",
+      "model": "gpt-4o-mini",
+      "source_file": "app.py",
+      "provenance": {
+        "provider_endpoint": "https://api.openai.com",
+        "registry_uri": "unknown",
+        "immutable_version": "unknown",
+        "environment": "unknown",
+        "region": "unknown"
+      }
+    }
+  ],
+  "datasets": [],
+  "tools": [],
+  "frameworks": [],
+  "prompts": [],
+  "scan_findings": [],
+  "risk_findings": [
+    {
+      "id": "sample",
+      "category": "third-party dependency",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "heuristic": "true"
+    }
+  ],
+  "coverage_summary": {
+    "detectors": [],
+    "unsupported_total": 0
+  },
+  "unsupported_artifacts": [],
+  "runtime_context": {
+    "provider_endpoint": "unknown",
+    "registry_uri": "unknown",
+    "immutable_version": "unknown",
+    "environment": "unknown",
+    "region": "unknown"
+  }
+}

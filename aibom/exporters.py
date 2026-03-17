@@ -51,6 +51,30 @@ def _component_evidence(source_file: str | None) -> dict[str, str] | None:
     }
 
 
+def _provenance_properties(provenance: dict[str, Any] | None) -> list[dict[str, str]]:
+    if not isinstance(provenance, dict):
+        return []
+
+    props: list[dict[str, str]] = []
+    for key in ("provider_endpoint", "registry_uri", "immutable_version", "environment", "region"):
+        value = provenance.get(key)
+        if value:
+            props.append({"name": f"aibom:provenance:{key}", "value": str(value)})
+
+    lineage = provenance.get("lineage")
+    if isinstance(lineage, dict):
+        for key in (
+            "model_artifact_digest",
+            "deployment_id",
+            "service_account_identity",
+            "owning_system",
+        ):
+            value = lineage.get(key)
+            if value:
+                props.append({"name": f"aibom:lineage:{key}", "value": str(value)})
+    return props
+
+
 def _parse_dependency_names(scan_findings: list[dict[str, Any]]) -> list[str]:
     deps: set[str] = set()
     for finding in scan_findings:
@@ -75,7 +99,13 @@ def export_spdx(aibom: dict[str, Any]) -> dict[str, Any]:
     packages: list[dict[str, Any]] = []
     package_ids_by_name: dict[str, str] = {}
 
-    def add_package(kind: str, name: str, version: str, source_file: str | None = None) -> None:
+    def add_package(
+        kind: str,
+        name: str,
+        version: str,
+        source_file: str | None = None,
+        provenance: dict[str, Any] | None = None,
+    ) -> None:
         spdx_id = _spdx_safe_id(kind, name, version, source_file or "")
         package: dict[str, Any] = {
             "SPDXID": spdx_id,
@@ -87,9 +117,20 @@ def export_spdx(aibom: dict[str, Any]) -> dict[str, Any]:
             "licenseDeclared": "NOASSERTION",
             "supplier": "NOASSERTION",
         }
+        refs: list[dict[str, str]] = []
         evidence_ref = _component_evidence(source_file)
         if evidence_ref:
-            package["externalRefs"] = [evidence_ref]
+            refs.append(evidence_ref)
+        refs.extend(
+            {
+                "referenceCategory": "OTHER",
+                "referenceType": prop["name"],
+                "referenceLocator": prop["value"],
+            }
+            for prop in _provenance_properties(provenance)
+        )
+        if refs:
+            package["externalRefs"] = refs
         packages.append(package)
         package_ids_by_name.setdefault(name.lower(), spdx_id)
 
@@ -99,6 +140,7 @@ def export_spdx(aibom: dict[str, Any]) -> dict[str, Any]:
             str(model.get("type", "unknown-model")),
             str(model.get("model", "unknown")),
             model.get("source_file"),
+            model.get("provenance") if isinstance(model.get("provenance"), dict) else None,
         )
     for tool in aibom.get("tools", []):
         add_package(
@@ -181,7 +223,11 @@ def export_cyclonedx(aibom: dict[str, Any]) -> dict[str, Any]:
             }
 
     def add_component(
-        component_type: str, name: str, version: str, source_file: str | None = None
+        component_type: str,
+        name: str,
+        version: str,
+        source_file: str | None = None,
+        provenance: dict[str, Any] | None = None,
     ) -> None:
         ref_seed = f"{component_type}:{name}:{version}:{source_file or ''}"
         bom_ref = f"aibom-{hashlib.sha256(ref_seed.encode('utf-8')).hexdigest()[:16]}"
@@ -195,6 +241,7 @@ def export_cyclonedx(aibom: dict[str, Any]) -> dict[str, Any]:
                     {"name": "aibom:source_type", "value": source_meta["source_type"]},
                 ]
             )
+        props.extend(_provenance_properties(provenance))
         component = {
             "type": component_type,
             "name": name,
@@ -211,6 +258,7 @@ def export_cyclonedx(aibom: dict[str, Any]) -> dict[str, Any]:
             str(model.get("type", "unknown-model")),
             str(model.get("model", "unknown")),
             model.get("source_file"),
+            model.get("provenance") if isinstance(model.get("provenance"), dict) else None,
         )
     for tool in aibom.get("tools", []):
         add_component(

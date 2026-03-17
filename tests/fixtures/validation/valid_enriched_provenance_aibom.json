@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0",
+  "metadata": {
+    "generated_at": "DYNAMIC",
+    "git_sha": "DYNAMIC",
+    "artifact_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "models": [
+    {
+      "type": "ConfigModelHint",
+      "model": "gpt-4.1",
+      "source_file": "k8s/deployment.yaml",
+      "provenance": {
+        "provider_endpoint": "https://api.openai.com/v1",
+        "registry_uri": "ghcr.io/acme/serving",
+        "immutable_version": "ghcr.io/acme/serving@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "environment": "prod",
+        "region": "us-east-1",
+        "lineage": {
+          "model_artifact_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "deployment_id": "inference-v3",
+          "service_account_identity": "system:serviceaccount:ml:inference-sa",
+          "owning_system": "risk-scoring-platform"
+        }
+      }
+    }
+  ],
+  "datasets": [],
+  "tools": [],
+  "frameworks": [],
+  "prompts": [],
+  "scan_findings": [],
+  "risk_findings": [
+    {
+      "id": "sample",
+      "category": "third-party dependency",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "heuristic": "true"
+    }
+  ],
+  "coverage_summary": {
+    "detectors": [],
+    "unsupported_total": 0
+  },
+  "unsupported_artifacts": [],
+  "runtime_context": {
+    "provider_endpoint": "https://api.openai.com/v1",
+    "registry_uri": "ghcr.io/acme/serving",
+    "immutable_version": "ghcr.io/acme/serving@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "environment": "prod",
+    "region": "us-east-1",
+    "lineage": {
+      "model_artifact_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "deployment_id": "inference-v3",
+      "service_account_identity": "system:serviceaccount:ml:inference-sa",
+      "owning_system": "risk-scoring-platform"
+    }
+  },
+  "lineage": {
+    "model_artifact_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "deployment_id": "inference-v3",
+    "service_account_identity": "system:serviceaccount:ml:inference-sa",
+    "owning_system": "risk-scoring-platform"
+  }
+}
