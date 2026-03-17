@@ -1,39 +1,52 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
 from typing import Any
 
-EXTERNAL_PROVIDER_MODELS = {"OpenAI", "ChatOpenAI", "ChatAnthropic"}
-EXFIL_TOOLS = {"Requests", "ReadFileTool", "WriteFileTool", "SerpAPI"}
+from aibom.risk.rules import load_builtin_rulepack
+from aibom.risk.rules.base import NormalizedEntity, RuleMatch
 
+DEFAULT_SCORING_WEIGHTS = {
+    "confidence": 0.35,
+    "exposure": 0.4,
+    "provenance": 0.25,
+}
 
-@dataclass(frozen=True)
-class NormalizedEntity:
-    entity_type: str
-    name: str
-    source_file: str
-
-
-@dataclass(frozen=True)
-class RuleMatch:
-    base_rule_id: str
-    category: str
-    owasp_llm: str
-    default_severity: str
-    rationale: str
-    entity: NormalizedEntity
+SEVERITY_BANDS = (
+    (0.8, "critical"),
+    (0.6, "high"),
+    (0.4, "medium"),
+    (0.0, "low"),
+)
 
 
 def _stable_json(payload: Any) -> str:
     return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
 
+def _normalize_weights(policy_weights: dict[str, Any] | None) -> dict[str, float]:
+    merged = dict(DEFAULT_SCORING_WEIGHTS)
+    if isinstance(policy_weights, dict):
+        for key in merged:
+            value = policy_weights.get(key)
+            if isinstance(value, (int, float)) and value >= 0:
+                merged[key] = float(value)
+    total = sum(merged.values())
+    if total <= 0:
+        return dict(DEFAULT_SCORING_WEIGHTS)
+    return {key: value / total for key, value in merged.items()}
+
+
 def _load_policy_file(policy_path: Path | None) -> tuple[dict[str, Any], dict[str, Any]]:
     if policy_path is None:
-        default_policy = {"policy_id": "builtin-default", "version": "1", "rule_overrides": {}}
+        default_policy = {
+            "policy_id": "builtin-default",
+            "version": "1",
+            "rule_overrides": {},
+            "scoring": {"weights": DEFAULT_SCORING_WEIGHTS},
+        }
         provenance = {
             "policy_id": default_policy["policy_id"],
             "version": default_policy["version"],
@@ -64,6 +77,7 @@ def _load_policy_file(policy_path: Path | None) -> tuple[dict[str, Any], dict[st
         "policy_id": str(data.get("policy_id", "custom-policy")),
         "version": str(data.get("version", "1")),
         "rule_overrides": data.get("rule_overrides", {}),
+        "scoring": data.get("scoring", {"weights": DEFAULT_SCORING_WEIGHTS}),
     }
     provenance = {
         "policy_id": policy["policy_id"],
@@ -104,52 +118,6 @@ def _normalize_entities(aibom: dict[str, Any]) -> dict[str, list[NormalizedEntit
     }
 
 
-def _evaluate_external_provider_rule(
-    entities: dict[str, list[NormalizedEntity]]
-) -> list[RuleMatch]:
-    return [
-        RuleMatch(
-            base_rule_id="third-party-provider",
-            category="third-party dependency",
-            owasp_llm="LLM07 Insecure Plugin Design",
-            default_severity="medium",
-            rationale="External model provider detected.",
-            entity=entity,
-        )
-        for entity in entities["models"]
-        if entity.name in EXTERNAL_PROVIDER_MODELS
-    ]
-
-
-def _evaluate_exfil_rule(entities: dict[str, list[NormalizedEntity]]) -> list[RuleMatch]:
-    return [
-        RuleMatch(
-            base_rule_id="exfil-surface",
-            category="exfil surface",
-            owasp_llm="LLM06 Sensitive Information Disclosure",
-            default_severity="high",
-            rationale="Tool may read/write data or access web.",
-            entity=entity,
-        )
-        for entity in entities["tools"]
-        if entity.name in EXFIL_TOOLS
-    ]
-
-
-def _evaluate_prompt_surface_rule(entities: dict[str, list[NormalizedEntity]]) -> list[RuleMatch]:
-    return [
-        RuleMatch(
-            base_rule_id="prompt-injection-surface",
-            category="prompt injection surface",
-            owasp_llm="LLM01 Prompt Injection",
-            default_severity="medium",
-            rationale="Prompt templates detected; review source trust boundaries.",
-            entity=entity,
-        )
-        for entity in entities["prompts"]
-    ]
-
-
 def _match_allowlist(
     entity: NormalizedEntity, allowlist: list[dict[str, Any]]
 ) -> dict[str, Any] | None:
@@ -167,22 +135,35 @@ def _match_allowlist(
     return None
 
 
+def _score_to_severity(weighted_score: float) -> str:
+    for threshold, severity in SEVERITY_BANDS:
+        if weighted_score >= threshold:
+            return severity
+    return "low"
+
+
+def _weighted_score(match: RuleMatch, weights: dict[str, float]) -> float:
+    return (
+        (match.confidence * weights["confidence"])
+        + (match.exposure * weights["exposure"])
+        + (match.provenance_completeness * weights["provenance"])
+    )
+
+
 def evaluate_risk(
     aibom: dict[str, Any], policy_path: Path | None = None
 ) -> tuple[list[dict[str, str]], dict[str, Any]]:
     policy, provenance = _load_policy_file(policy_path)
     overrides = policy.get("rule_overrides", {})
+    scoring = policy.get("scoring", {}) if isinstance(policy, dict) else {}
+    global_weights = _normalize_weights(scoring.get("weights", {}))
 
     entities = _normalize_entities(aibom)
-    matches = [
-        *_evaluate_external_provider_rule(entities),
-        *_evaluate_exfil_rule(entities),
-        *_evaluate_prompt_surface_rule(entities),
-    ]
+    rules = load_builtin_rulepack()
 
     grouped: dict[str, list[RuleMatch]] = {}
-    for match in matches:
-        grouped.setdefault(match.base_rule_id, []).append(match)
+    for rule in rules.values():
+        grouped[rule.metadata.base_rule_id] = rule.evaluate(entities)
 
     findings: list[dict[str, str]] = []
     suppressed: list[dict[str, str]] = []
@@ -190,10 +171,30 @@ def evaluate_risk(
 
     for base_rule_id, rule_matches in sorted(grouped.items()):
         override = overrides.get(base_rule_id, {}) if isinstance(overrides, dict) else {}
-        threshold = int(override.get("threshold", 1))
-        allowlist = override.get("allowlist", [])
+        if isinstance(override, dict) and override.get("enabled") is False:
+            suppressed.append(
+                {
+                    "base_rule_id": base_rule_id,
+                    "rule_id": str(override.get("rule_id", base_rule_id)),
+                    "entity_type": "rule",
+                    "name": base_rule_id,
+                    "source_file": "",
+                    "reason": "disabled-by-policy",
+                }
+            )
+            continue
+
+        threshold = int(override.get("threshold", 1)) if isinstance(override, dict) else 1
+        allowlist = override.get("allowlist", []) if isinstance(override, dict) else []
         if not isinstance(allowlist, list):
             allowlist = []
+
+        rule_weights = _normalize_weights(
+            override.get("weights", {}) if isinstance(override, dict) else {}
+        )
+        effective_weights = {
+            key: rule_weights.get(key, global_weights[key]) for key in DEFAULT_SCORING_WEIGHTS
+        }
 
         kept_matches: list[RuleMatch] = []
         for match in rule_matches:
@@ -212,14 +213,21 @@ def evaluate_risk(
                 continue
             kept_matches.append(match)
 
+        metadata = rules[base_rule_id].metadata
         applied_rules.append(
             {
                 "base_rule_id": base_rule_id,
                 "rule_id": str(override.get("rule_id", base_rule_id)),
-                "severity": str(override.get("severity", rule_matches[0].default_severity)),
+                "severity": str(override.get("severity", metadata.default_severity)),
                 "threshold": threshold,
                 "candidate_count": len(rule_matches),
                 "post_allowlist_count": len(kept_matches),
+                "enabled": True,
+                "category": metadata.category,
+                "rationale": metadata.rationale,
+                "evidence_requirements": list(metadata.evidence_requirements),
+                "control_mappings": list(metadata.control_mappings),
+                "effective_weights": effective_weights,
             }
         )
 
@@ -237,18 +245,30 @@ def evaluate_risk(
             continue
 
         rule_id = str(override.get("rule_id", base_rule_id))
-        severity = str(override.get("severity", kept_matches[0].default_severity))
+        control_mapping_tags = override.get("control_mapping_tags", [])
+        if not isinstance(control_mapping_tags, list):
+            control_mapping_tags = []
+
         for match in kept_matches:
+            weighted_score = _weighted_score(match, effective_weights)
+            severity = str(override.get("severity", _score_to_severity(weighted_score)))
             findings.append(
                 {
                     "id": f"{rule_id}:{match.entity.name}:{match.entity.source_file}",
                     "rule_id": rule_id,
                     "base_rule_id": base_rule_id,
-                    "category": match.category,
-                    "owasp_llm": match.owasp_llm,
+                    "category": match.metadata.category,
+                    "owasp_llm": match.metadata.owasp_llm,
                     "severity": severity,
-                    "rationale": match.rationale,
+                    "rationale": match.metadata.rationale,
                     "heuristic": "true",
+                    "confidence": f"{match.confidence:.2f}",
+                    "exposure": f"{match.exposure:.2f}",
+                    "provenance_completeness": f"{match.provenance_completeness:.2f}",
+                    "weighted_score": f"{weighted_score:.3f}",
+                    "control_mappings": list(match.metadata.control_mappings),
+                    "control_mapping_tags": [str(tag) for tag in control_mapping_tags],
+                    "evidence_requirements": list(match.metadata.evidence_requirements),
                 }
             )
 
@@ -264,6 +284,7 @@ def evaluate_risk(
                 item["source_file"],
             ),
         ),
+        "scoring": {"weights": global_weights},
     }
     return sorted(findings, key=lambda item: item["id"]), audit
 

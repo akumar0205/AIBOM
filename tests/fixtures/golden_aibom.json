@@ -518,7 +518,20 @@
       "owasp_llm": "LLM01 Prompt Injection",
       "severity": "medium",
       "rationale": "Prompt templates detected; review source trust boundaries.",
-      "heuristic": "true"
+      "heuristic": "true",
+      "confidence": "0.65",
+      "exposure": "0.60",
+      "provenance_completeness": "0.50",
+      "weighted_score": "0.593",
+      "control_mappings": [
+        "OWASP-LLM-01",
+        "NIST-AI-RMF-MAP"
+      ],
+      "control_mapping_tags": [],
+      "evidence_requirements": [
+        "prompt template presence",
+        "originating file or unresolved source marker"
+      ]
     },
     {
       "id": "third-party-provider:ChatOpenAI:alias_wrappers.py",
@@ -526,9 +539,22 @@
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
       "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "medium",
+      "severity": "critical",
       "rationale": "External model provider detected.",
-      "heuristic": "true"
+      "heuristic": "true",
+      "confidence": "0.80",
+      "exposure": "0.70",
+      "provenance_completeness": "1.00",
+      "weighted_score": "0.810",
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_mapping_tags": [],
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ]
     },
     {
       "id": "third-party-provider:ChatOpenAI:alias_wrappers.py",
@@ -536,9 +562,22 @@
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
       "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "medium",
+      "severity": "critical",
       "rationale": "External model provider detected.",
-      "heuristic": "true"
+      "heuristic": "true",
+      "confidence": "0.80",
+      "exposure": "0.70",
+      "provenance_completeness": "1.00",
+      "weighted_score": "0.810",
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_mapping_tags": [],
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ]
     },
     {
       "id": "third-party-provider:ChatOpenAI:app.py",
@@ -546,9 +585,22 @@
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
       "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "medium",
+      "severity": "critical",
       "rationale": "External model provider detected.",
-      "heuristic": "true"
+      "heuristic": "true",
+      "confidence": "0.80",
+      "exposure": "0.70",
+      "provenance_completeness": "1.00",
+      "weighted_score": "0.810",
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_mapping_tags": [],
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ]
     },
     {
       "id": "third-party-provider:ChatOpenAI:demo.ipynb#cell-0",
@@ -556,9 +608,22 @@
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
       "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "medium",
+      "severity": "critical",
       "rationale": "External model provider detected.",
-      "heuristic": "true"
+      "heuristic": "true",
+      "confidence": "0.80",
+      "exposure": "0.70",
+      "provenance_completeness": "1.00",
+      "weighted_score": "0.810",
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_mapping_tags": [],
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ]
     },
     {
       "id": "third-party-provider:ChatOpenAI:edge_cases.ts:6",
@@ -566,9 +631,22 @@
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
       "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "medium",
+      "severity": "critical",
       "rationale": "External model provider detected.",
-      "heuristic": "true"
+      "heuristic": "true",
+      "confidence": "0.80",
+      "exposure": "0.70",
+      "provenance_completeness": "1.00",
+      "weighted_score": "0.810",
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_mapping_tags": [],
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ]
     },
     {
       "id": "third-party-provider:OpenAI:Assistant.cs:6",
@@ -576,9 +654,22 @@
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
       "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "medium",
+      "severity": "critical",
       "rationale": "External model provider detected.",
-      "heuristic": "true"
+      "heuristic": "true",
+      "confidence": "0.80",
+      "exposure": "0.70",
+      "provenance_completeness": "1.00",
+      "weighted_score": "0.810",
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_mapping_tags": [],
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ]
     },
     {
       "id": "third-party-provider:OpenAI:assistant.go:9",
@@ -586,9 +677,22 @@
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
       "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "medium",
+      "severity": "critical",
       "rationale": "External model provider detected.",
-      "heuristic": "true"
+      "heuristic": "true",
+      "confidence": "0.80",
+      "exposure": "0.70",
+      "provenance_completeness": "1.00",
+      "weighted_score": "0.810",
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_mapping_tags": [],
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ]
     },
     {
       "id": "third-party-provider:OpenAI:assistant.java:1",
@@ -596,9 +700,22 @@
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
       "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "medium",
+      "severity": "critical",
       "rationale": "External model provider detected.",
-      "heuristic": "true"
+      "heuristic": "true",
+      "confidence": "0.80",
+      "exposure": "0.70",
+      "provenance_completeness": "1.00",
+      "weighted_score": "0.810",
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_mapping_tags": [],
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ]
     },
     {
       "id": "third-party-provider:OpenAI:assistant.java:7",
@@ -606,9 +723,22 @@
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
       "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "medium",
+      "severity": "critical",
       "rationale": "External model provider detected.",
-      "heuristic": "true"
+      "heuristic": "true",
+      "confidence": "0.80",
+      "exposure": "0.70",
+      "provenance_completeness": "1.00",
+      "weighted_score": "0.810",
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_mapping_tags": [],
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ]
     },
     {
       "id": "third-party-provider:OpenAI:script.ts:5",
@@ -616,9 +746,22 @@
       "base_rule_id": "third-party-provider",
       "category": "third-party dependency",
       "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "medium",
+      "severity": "critical",
       "rationale": "External model provider detected.",
-      "heuristic": "true"
+      "heuristic": "true",
+      "confidence": "0.80",
+      "exposure": "0.70",
+      "provenance_completeness": "1.00",
+      "weighted_score": "0.810",
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_mapping_tags": [],
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ]
     }
   ],
   "risk_policy": {
@@ -626,16 +769,56 @@
       "policy_id": "builtin-default",
       "version": "1",
       "source": "builtin",
-      "sha256": "cce9851d3aae4c7a1e5d364e0af054db66af01930f76035e1fdac87727dee91a"
+      "sha256": "b94861bace2c7f431f7b3bfacac35af1ab2e59fa43e4d05bd4a3445613f3ac81"
     },
     "applied_rules": [
+      {
+        "base_rule_id": "exfil-surface",
+        "rule_id": "exfil-surface",
+        "severity": "high",
+        "threshold": 1,
+        "candidate_count": 0,
+        "post_allowlist_count": 0,
+        "enabled": true,
+        "category": "exfil surface",
+        "rationale": "Tool may read/write data or access web.",
+        "evidence_requirements": [
+          "tool invocation or import evidence",
+          "source file path with exfil-capable tool"
+        ],
+        "control_mappings": [
+          "OWASP-LLM-06",
+          "SOC2-CC6.1"
+        ],
+        "effective_weights": {
+          "confidence": 0.35,
+          "exposure": 0.4,
+          "provenance": 0.25
+        }
+      },
       {
         "base_rule_id": "prompt-injection-surface",
         "rule_id": "prompt-injection-surface",
         "severity": "medium",
         "threshold": 1,
         "candidate_count": 1,
-        "post_allowlist_count": 1
+        "post_allowlist_count": 1,
+        "enabled": true,
+        "category": "prompt injection surface",
+        "rationale": "Prompt templates detected; review source trust boundaries.",
+        "evidence_requirements": [
+          "prompt template presence",
+          "originating file or unresolved source marker"
+        ],
+        "control_mappings": [
+          "OWASP-LLM-01",
+          "NIST-AI-RMF-MAP"
+        ],
+        "effective_weights": {
+          "confidence": 0.35,
+          "exposure": 0.4,
+          "provenance": 0.25
+        }
       },
       {
         "base_rule_id": "third-party-provider",
@@ -643,9 +826,41 @@
         "severity": "medium",
         "threshold": 1,
         "candidate_count": 10,
-        "post_allowlist_count": 10
+        "post_allowlist_count": 10,
+        "enabled": true,
+        "category": "third-party dependency",
+        "rationale": "External model provider detected.",
+        "evidence_requirements": [
+          "model type from static analysis",
+          "source file path where provider is referenced"
+        ],
+        "control_mappings": [
+          "OWASP-LLM-07",
+          "NIST-AI-RMF-GOVERN"
+        ],
+        "effective_weights": {
+          "confidence": 0.35,
+          "exposure": 0.4,
+          "provenance": 0.25
+        }
       }
     ],
-    "suppressed": []
+    "suppressed": [
+      {
+        "base_rule_id": "exfil-surface",
+        "rule_id": "exfil-surface",
+        "entity_type": "rule",
+        "name": "exfil-surface",
+        "source_file": "",
+        "reason": "threshold-not-met: 0 < 1"
+      }
+    ],
+    "scoring": {
+      "weights": {
+        "confidence": 0.35,
+        "exposure": 0.4,
+        "provenance": 0.25
+      }
+    }
   }
 }
