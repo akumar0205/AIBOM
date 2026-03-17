@@ -5,9 +5,10 @@ import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any
 
-from aibom.detectors import JSTSAstDetector
+from aibom.detectors import DotNetAstDetector, GoAstDetector, JSTSAstDetector, JavaAstDetector
+from aibom.detectors.protocol import SourceDetector
 from aibom.risk.heuristics import generate_risk_findings
 from aibom.utils import git_sha, sha256_bytes, stable_json, utc_now
 
@@ -108,12 +109,6 @@ class ScanContext:
     include_prompts: bool
     include_runtime_manifests: bool
     redaction_policy: str = "strict"
-
-
-class Detector(Protocol):
-    source_type: str
-
-    def scan(self, context: ScanContext) -> ScanResult: ...
 
 
 class AIBOMVisitor(ast.NodeVisitor):
@@ -517,7 +512,7 @@ def generate_aibom(
     include_runtime_manifests: bool = False,
     redaction_policy: str = "strict",
     risk_policy_path: Path | None = None,
-    extra_detectors: list[Detector] | None = None,
+    extra_detectors: list[SourceDetector] | None = None,
 ) -> dict[str, Any]:
     normalized_policy = redaction_policy.lower()
     if normalized_policy not in REDUCTION_POLICIES:
@@ -530,13 +525,16 @@ def generate_aibom(
         include_runtime_manifests=include_runtime_manifests,
         redaction_policy=normalized_policy,
     )
-    detectors: list[Detector] = [
+    detectors: list[SourceDetector] = [
         PythonAstDetector(),
         NotebookDetector(),
         ConfigFileDetector(),
         RuntimeManifestDetector(),
         JSTSPackageManifestDetector(),
         JSTSAstDetector(),
+        JavaAstDetector(),
+        GoAstDetector(),
+        DotNetAstDetector(),
     ]
     detectors.extend(extra_detectors or [])
 
@@ -609,6 +607,9 @@ def generate_aibom(
                 "default_severity": "medium",
                 "default_confidence": "medium",
             },
+            {"name": "java_ast", "default_severity": "medium", "default_confidence": "medium"},
+            {"name": "go_ast", "default_severity": "medium", "default_confidence": "medium"},
+            {"name": "dotnet_ast", "default_severity": "medium", "default_confidence": "medium"},
         ],
         "runtime_context": runtime_context,
     }

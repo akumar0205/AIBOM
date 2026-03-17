@@ -3,11 +3,14 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 PROVENANCE_UNKNOWN = "unknown"
 
 JS_TS_EXTENSIONS = {".js", ".jsx", ".ts", ".tsx"}
+if TYPE_CHECKING:
+    from aibom.analyzer import ScanContext
+
 IGNORED_DIRS = {".venv", "venv", "__pycache__", ".git", ".aibom"}
 
 FRAMEWORK_IMPORTS = {
@@ -59,7 +62,7 @@ class JSTSScanResult:
 class JSTSAstDetector:
     source_type = "js_ts_ast"
 
-    def scan(self, context: Any) -> JSTSScanResult:
+    def scan(self, context: ScanContext) -> JSTSScanResult:
         result = JSTSScanResult()
         candidates = _find_js_ts_source_files(context.target_dir)
         scanned = 0
