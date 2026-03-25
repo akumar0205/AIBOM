@@ -32,6 +32,8 @@ AIBOM is a standards-first, CI-native AI Bill of Materials (AIBOM) generator for
 │   ├── diffing.py            # Drift detection between AIBOM versions
 │   ├── storage.py            # Persistence utilities (runs, snapshots, history)
 │   ├── utils.py              # Utility functions with security validations
+│   ├── github_scan.py        # GitHub repository scanning
+│   ├── presentation.py       # AI BOM-like profile generation and summaries
 │   ├── detectors/            # Detector plugins package
 │   │   ├── __init__.py       # Detector exports
 │   │   ├── protocol.py       # SourceDetector Protocol interface
@@ -54,6 +56,8 @@ AIBOM is a standards-first, CI-native AI Bill of Materials (AIBOM) generator for
 │   ├── test_cli.py           # Comprehensive CLI and integration tests
 │   ├── test_exporters.py     # SPDX/CycloneDX/SARIF/VEX export tests
 │   ├── test_risk_rules.py    # Risk rule and policy tests
+│   ├── test_github_scan.py   # GitHub scanning tests
+│   ├── test_presentation.py  # Profile and summary tests
 │   └── fixtures/             # Test fixtures
 │       ├── sample_project/   # Representative AI project for testing
 │       ├── runtime_project/  # Project with runtime manifests for testing
@@ -74,7 +78,9 @@ AIBOM is a standards-first, CI-native AI Bill of Materials (AIBOM) generator for
 ├── docs/                     # Documentation
 │   ├── FOR_AUDITORS.md       # Auditor verification procedures
 │   ├── SOC_DEPLOYMENT_GUIDE.md  # SOC compliance deployment guide
-│   └── COMPLIANCE_MAPPING.md    # Regulatory compliance mappings
+│   ├── COMPLIANCE_MAPPING.md    # Regulatory compliance mappings
+│   ├── GITHUB_SCANNER_GUIDE.md  # GitHub scanning usage guide
+│   └── RISK_POLICY_FORMAT.md    # Risk policy format documentation
 ├── examples/                 # Usage examples
 │   ├── langchain_demo/       # LangChain integration demo
 │   └── github_repo_samples/  # Sample scans of public repos
@@ -173,6 +179,27 @@ aibom generate . --fail-on-unsupported-threshold 0
 
 # Custom risk policy
 aibom generate . --risk-policy risk-policy.json
+
+# AI BOM-like profile output
+aibom generate . --profile ai-bom-like -o AI_BOM.json
+```
+
+### Scan GitHub
+```bash
+# Scan a single repository
+aibom scan-github --repo openai/openai-quickstart-python --output-dir out
+
+# Scan multiple repositories
+aibom scan-github --repo owner/repo1 --repo owner/repo2 --output-dir out
+
+# Scan from file
+aibom scan-github --repos-file repos.txt --output-dir out
+
+# With risk gates
+aibom scan-github --repo owner/repo --max-high-risk 5 --max-unsupported 10
+
+# With drift detection
+aibom scan-github --repo owner/repo --baseline baseline.json --fail-on new-model,new-tool
 ```
 
 ### Periodic Scan
@@ -250,6 +277,15 @@ aibom risk --input AI_BOM.json
 
 # With custom risk policy
 aibom risk --input AI_BOM.json --risk-policy risk-policy.json
+```
+
+### Summarize
+```bash
+# Print text summary
+aibom summarize --input AI_BOM.json
+
+# JSON output
+aibom summarize --input AI_BOM.json --json
 ```
 
 ## Architecture
@@ -349,6 +385,31 @@ The `confidence.py` module provides signal-based confidence scoring:
 }
 ```
 
+### AI BOM-Like Profile
+The `presentation.py` module provides an alternative profile format:
+
+```json
+{
+  "profile": "ai-bom-like",
+  "schema_version": "1.0",
+  "metadata": {...},
+  "executive_summary": {
+    "models": 3,
+    "tools": 2,
+    "datasets": 1,
+    "frameworks": 2,
+    "prompts": 0,
+    "risk_findings": 5,
+    "high_or_critical_risks": 2,
+    "unsupported_artifacts": 0
+  },
+  "ai_assets": {...},
+  "risk_highlights": [...],
+  "provenance_and_compliance": {...},
+  "detector_coverage": {...}
+}
+```
+
 ### Risk Analysis System
 The risk analysis engine (`risk/heuristics.py`) provides:
 
@@ -369,6 +430,29 @@ The risk analysis engine (`risk/heuristics.py`) provides:
    - Allowlist-based suppression with audit trail
    - Control mapping tags
 
+### GitHub Scanning
+The `github_scan.py` module provides bulk repository scanning:
+
+```python
+@dataclass
+class RepoScanRecord:
+    repo: str
+    status: str  # "ok" or "error"
+    output_json: str
+    output_profile_json: str | None
+    counts: dict[str, int]
+    gate_verdict: str  # "pass" or "fail"
+    gate_failures: list[str]
+    error: str | None
+```
+
+Features:
+- Clone repos to temp workspace
+- Parallel-ready architecture
+- Aggregate summary output (JSON + Markdown)
+- Drift gate evaluation per repo
+- Risk threshold enforcement
+
 ### Security Features
 - **Path Validation**: All paths passed to subprocess are validated via `validate_safe_path()` to prevent path traversal and shell injection
 - **Evidence Redaction**: Configurable policies (strict/default/off) for masking sensitive values in config files
@@ -387,6 +471,8 @@ The `storage.py` module provides:
 - **Unit Tests**: `tests/test_cli.py` covers all major CLI commands and edge cases
 - **Export Tests**: `tests/test_exporters.py` validates SPDX/CycloneDX/SARIF/VEX output
 - **Risk Rule Tests**: `tests/test_risk_rules.py` validates risk policy and rule evaluation
+- **GitHub Scan Tests**: `tests/test_github_scan.py` validates repository scanning
+- **Presentation Tests**: `tests/test_presentation.py` validates profile generation
 - **Golden File Testing**: Compare generated AIBOM against `tests/fixtures/golden_aibom.json`
 - **Schema Validation Tests**: Verify valid/invalid AIBOM documents
 - **Integration Tests**: Full CLI subprocess invocations
