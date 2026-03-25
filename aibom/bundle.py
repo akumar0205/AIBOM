@@ -18,7 +18,6 @@ from aibom.utils import (
     sha256_bytes,
     stable_json,
     validate_safe_path,
-    PathSecurityError,
 )
 
 
@@ -91,9 +90,7 @@ def _parse_openssl_time(value: str) -> datetime:
 def _certificate_sans(cert_path: Path) -> list[str]:
     # Validate certificate path before passing to openssl
     safe_cert_path = validate_safe_path(cert_path, must_exist=True, must_be_file=True)
-    ext = _openssl(
-        ["x509", "-in", str(safe_cert_path), "-noout", "-ext", "subjectAltName"]
-    ).stdout
+    ext = _openssl(["x509", "-in", str(safe_cert_path), "-noout", "-ext", "subjectAltName"]).stdout
     return re.findall(r"DNS:([^,\n]+)", ext)
 
 
@@ -106,7 +103,7 @@ def _verify_chain(
 ) -> None:
     # Validate signing certificate path
     safe_signing_cert = validate_safe_path(signing_cert, must_exist=True, must_be_file=True)
-    
+
     if not ca_bundle and not trusted_roots:
         return
 
@@ -215,7 +212,7 @@ def sign_bundle(
     safe_bundle_path = validate_safe_path(bundle_path, must_exist=True, must_be_file=True)
     safe_signing_key = validate_safe_path(signing_key, must_exist=True, must_be_file=True)
     safe_signing_cert = validate_safe_path(signing_cert, must_exist=True, must_be_file=True)
-    
+
     signature_path = signature_path or bundle_path.with_suffix(bundle_path.suffix + ".sig")
     provenance_path = provenance_path or bundle_path.with_name("provenance.json")
 
@@ -247,7 +244,7 @@ def sign_bundle(
             "sha256": sha256_bytes(signature_path.read_bytes()),
             "algorithm": "RSA-SHA256",
         },
-        "certificate": _cert_metadata(signing_cert),
+        "certificate": _cert_metadata(safe_signing_cert),
         "policy_evaluation": {
             "status": "not_evaluated",
             "checks": {},
@@ -273,13 +270,13 @@ def verify_bundle_signature(
     safe_bundle_path = validate_safe_path(bundle_path, must_exist=True, must_be_file=True)
     safe_signature_path = validate_safe_path(signature_path, must_exist=True, must_be_file=True)
     safe_signing_cert = validate_safe_path(signing_cert, must_exist=True, must_be_file=True)
-    
+
     # Validate optional paths
     safe_ca_bundle: Path | None = None
     safe_crl_file: Path | None = None
     safe_trusted_roots: list[Path] | None = None
     safe_provenance_path: Path | None = None
-    
+
     if ca_bundle is not None:
         safe_ca_bundle = validate_safe_path(ca_bundle, must_exist=True, must_be_file=True)
     if crl_file is not None:
@@ -289,16 +286,22 @@ def verify_bundle_signature(
             validate_safe_path(p, must_exist=True, must_be_file=True) for p in trusted_roots
         ]
     if provenance_path is not None and provenance_path.exists():
-        safe_provenance_path = validate_safe_path(provenance_path, must_exist=True, must_be_file=True)
-    
+        safe_provenance_path = validate_safe_path(
+            provenance_path, must_exist=True, must_be_file=True
+        )
+
     _enforce_validity_window(safe_signing_cert)
-    _verify_chain(safe_signing_cert, safe_ca_bundle, safe_trusted_roots, safe_crl_file, revocation_policy)
+    _verify_chain(
+        safe_signing_cert, safe_ca_bundle, safe_trusted_roots, safe_crl_file, revocation_policy
+    )
 
     policy_checks: dict[str, Any] = {
         "certificate_validity": {"status": "passed"},
         "certificate_chain": {
             "status": "passed" if (safe_ca_bundle or safe_trusted_roots) else "skipped",
-            "reason": "no trust anchors provided" if not (safe_ca_bundle or safe_trusted_roots) else None,
+            "reason": (
+                "no trust anchors provided" if not (safe_ca_bundle or safe_trusted_roots) else None
+            ),
         },
     }
 

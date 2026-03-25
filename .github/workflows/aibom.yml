@@ -1,17 +1,55 @@
-name: AIBOM Drift Gate
+name: AIBOM Drift Gate + GitHub Scanner
+
 on:
   pull_request:
+  schedule:
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
 jobs:
-  aibom:
+  drift-gate:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: "pip"
       - run: pip install -e .
-      - run: aibom generate . -o new_aibom.json
+      - run: aibom generate . -o new_aibom.json --profile ai-bom-like
       - run: |
           if [ -f .aibom/baseline.json ]; then
             aibom diff .aibom/baseline.json new_aibom.json --fail-on new-model,new-tool,new-external-provider
           fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aibom-pr-scan
+          path: |
+            new_aibom.json
+            new_aibom_ai_profile.json
+
+  scheduled-github-scan:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - run: pip install -e .
+      - name: Run multi-repo GitHub scan
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          aibom scan-github \
+            --repos-file examples/github_repo_samples/repos.txt \
+            --output-dir github-scan-out \
+            --profile ai-bom-like \
+            --max-repos 10 \
+            --timeout-sec 240
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aibom-github-scan
+          path: github-scan-out

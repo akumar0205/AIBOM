@@ -1,6 +1,6 @@
 # AIBOM (Living AI Bill of Materials)
 
-Standards-first, CI-native AIBOM generator for Python/LangChain projects with audit evidence bundling, drift detection, and heuristic risk overlay.
+Standards-first, CI-native AIBOM generator for Python/LangChain/JS-TS/Java/Go/.NET projects with SPDX/CycloneDX/SARIF/VEX exports, drift gates, and attestation workflows.
 
 ## Install
 
@@ -9,111 +9,84 @@ pip install -e .
 pip install -r requirements.txt
 ```
 
-## CLI
+## CLI quickstart
 
 ```bash
-aibom --version
-aibom --help
+aibom generate . -o AI_BOM.json
+aibom summarize --input AI_BOM.json
 ```
 
-Commands:
+## ai-bom-like compatibility profile
+
+AIBOM keeps the canonical `AI_BOM.json` schema stable by default. For ai-bom-style ergonomics, use `--profile ai-bom-like`.
+
+```bash
+aibom generate . -o AI_BOM.json --profile ai-bom-like
+# writes AI_BOM.json + AI_BOM_ai_profile.json and prints a concise terminal summary
+```
+
+This profile adds a companion presentation JSON with:
+- executive summary counts
+- grouped AI assets
+- risk highlights
+- provenance/compliance rollup
+- detector coverage stats
+
+## GitHub scanner quickstart
+
+```bash
+aibom scan-github \
+  --repo openai/openai-quickstart-python \
+  --output-dir out \
+  --profile ai-bom-like
+```
+
+Multi-repo scan:
+
+```bash
+aibom scan-github \
+  --repos-file repos.txt \
+  --output-dir out \
+  --max-repos 20 \
+  --timeout-sec 240 \
+  --fail-on new-model,new-tool,new-external-provider \
+  --max-high-risk 0 \
+  --max-unsupported 0
+```
+
+Output layout:
+- `out/<owner__repo>/AI_BOM.json`
+- `out/<owner__repo>/AI_BOM_ai_profile.json` (when `--profile ai-bom-like`)
+- `out/SUMMARY.md`
+- `out/summary.json`
+
+## Core commands
+
 - `aibom generate`
+- `aibom scan-github`
+- `aibom summarize`
 - `aibom validate`
 - `aibom export`
 - `aibom diff`
 - `aibom bundle`
+- `aibom attest`
 - `aibom risk`
 
-## Usage
+## Compatibility and migration notes
 
-### Generate AIBOM
+- `generate`, `validate`, `export`, `diff`, `bundle`, `attest`, and `risk` remain functional and backward compatible.
+- New `scan-github` and `summarize` commands are additive.
+- ai-bom-like output is opt-in (`--profile ai-bom-like`) to avoid schema-breaking changes to canonical AIBOM consumers.
+- `scan-github` returns nonzero when any repo scan errors or configured gates fail, while still producing aggregate summary files for partial failures.
 
-```bash
-aibom generate . -o AI_BOM.json
-# generation fails fast if JSON Schema validation fails
-```
+## Documentation
 
-Optional prompt-content collection (default is metadata-only):
+- [GitHub scanner guide](docs/GITHUB_SCANNER_GUIDE.md)
+- [For auditors](docs/FOR_AUDITORS.md)
+- [SOC deployment guide](docs/SOC_DEPLOYMENT_GUIDE.md)
+- [Compliance mapping](docs/COMPLIANCE_MAPPING.md)
 
-```bash
-aibom generate . -o AI_BOM.json --include-prompts
-```
+## Examples
 
-### Audit mode (end-to-end)
-
-```bash
-aibom generate . -o AI_BOM.json --audit-mode --bundle-out evidence.zip
-```
-
-### Validation
-
-```bash
-aibom generate --audit-mode --out AI_BOM.json
-aibom validate AI_BOM.json
-```
-
-`aibom generate` fails closed before writing output if schema validation fails. Validation errors include JSON-pointer-like paths to the failing field (for example `/metadata/generated_at`).
-
-### Standards Output
-
-```bash
-aibom export --input AI_BOM.json --format spdx-json -o SPDX.json
-aibom export --input AI_BOM.json --format cyclonedx-json -o CYCLONEDX.json
-aibom export --input AI_BOM.json --format sarif-json -o FINDINGS.sarif.json
-aibom export --input AI_BOM.json --format vex-json -o ADVISORIES.vex.json
-```
-
-Internal → SPDX/CycloneDX mapping (extended):
-- `models[].type` -> `packages[].name`
-- `models[].model` -> `packages[].versionInfo`
-- `tools[].name` -> `packages[].name`
-- `datasets[].type` -> `packages[].name`
-- `risk_findings[]` -> SPDX package advisory refs / CycloneDX `vulnerabilities[]`
-- detector metadata (`scan_findings[].confidence`, `severity`, `source_type`) -> external refs/properties
-- model `provenance` + `lineage` -> standards-compatible external refs/properties
-
-### Drift detection
-
-```bash
-aibom diff .aibom/baseline.json AI_BOM.json --fail-on new-model,new-tool,new-external-provider
-```
-
-### Evidence bundle
-
-```bash
-aibom bundle --input AI_BOM.json --out evidence.zip --baseline .aibom/baseline.json
-```
-
-Bundle contains:
-- `AIBOM.json`
-- `SPDX.json`
-- `DIFF.json` (if baseline exists)
-- `MANIFEST.json` (SHA256s)
-- `ENVIRONMENT.json`
-- `COMPLIANCE_MAPPING.md`
-
-### Risk summary
-
-```bash
-aibom risk --input AI_BOM.json
-```
-
-## For Auditors
-
-See [`docs/FOR_AUDITORS.md`](docs/FOR_AUDITORS.md) for verification procedure, manifest validation, and reproducibility notes.
-
-## SOC Deployment Guide
-
-See [`docs/SOC_DEPLOYMENT_GUIDE.md`](docs/SOC_DEPLOYMENT_GUIDE.md) for CI/CD integration and drift gate rollout.
-
-## Compliance Mapping
-
-See [`docs/COMPLIANCE_MAPPING.md`](docs/COMPLIANCE_MAPPING.md). This is a starter mapping only, not legal advice.
-
-## Example outputs for known repositories
-
-See [`examples/github_repo_samples/README.md`](examples/github_repo_samples/README.md) for sample output files and a script that scans smaller well-known GitHub AI repositories, with direct links to each scanned repo.
-
-## LangChain demo
-
-See [`examples/langchain_demo/README.md`](examples/langchain_demo/README.md).
+- [`examples/github_repo_samples/`](examples/github_repo_samples/)
+- [`examples/langchain_demo/`](examples/langchain_demo/)
