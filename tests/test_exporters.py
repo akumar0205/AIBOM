@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from aibom.exporters import export_cyclonedx, export_sarif, export_spdx, export_vex
+from aibom.presentation import build_ai_bom_like_profile
 
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -69,3 +70,10 @@ def test_export_vex_matches_golden_fixture() -> None:
     assert actual == expected
     assert actual["@context"].startswith("https://openvex.dev")
     assert actual["statements"]
+
+
+def test_ai_bom_like_profile_deterministic_rendering() -> None:
+    aibom_doc = _load_fixture("export_input_aibom.json")
+    first = build_ai_bom_like_profile(aibom_doc)
+    second = build_ai_bom_like_profile(aibom_doc)
+    assert first == second

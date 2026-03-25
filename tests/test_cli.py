@@ -932,3 +932,57 @@ def test_risk_policy_allowlist_suppression_with_audit_trace(tmp_path: Path) -> N
         and s["reason"] == "approved-external-provider"
         for s in doc["risk_policy"]["suppressed"]
     )
+
+
+def test_cli_summarize_outputs_text_and_json(tmp_path: Path) -> None:
+    doc = generate_aibom(_fixture_project())
+    input_path = tmp_path / "in.json"
+    input_path.write_text(json.dumps(doc), encoding="utf-8")
+
+    text_proc = subprocess.run(
+        [sys.executable, "-m", "aibom.cli", "summarize", "--input", str(input_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert text_proc.returncode == 0
+    assert "AIBOM scan summary" in text_proc.stdout
+
+    json_proc = subprocess.run(
+        [sys.executable, "-m", "aibom.cli", "summarize", "--input", str(input_path), "--json"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert json_proc.returncode == 0
+    payload = json.loads(json_proc.stdout)
+    assert payload["counts"]["models"] >= 1
+
+
+def test_cmd_scan_github_requires_repo_input() -> None:
+    from aibom import cli as cli_module
+
+    rc = cli_module.cmd_scan_github(
+        argparse.Namespace(
+            repo=[],
+            repos_file=None,
+            output_dir="out",
+            branch=None,
+            depth=1,
+            token_env="GITHUB_TOKEN",
+            max_repos=None,
+            timeout_sec=30,
+            profile="canonical",
+            include_prompts=False,
+            acknowledge_prompt_exposure_risk=False,
+            include_runtime_manifests=False,
+            redaction_policy="strict",
+            risk_policy=None,
+            baseline=None,
+            fail_on=None,
+            max_high_risk=None,
+            max_unsupported=None,
+            json=False,
+        )
+    )
+    assert rc == 2

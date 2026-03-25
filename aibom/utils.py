@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import platform
-import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -34,7 +33,7 @@ def validate_safe_path(
 ) -> Path:
     """
     Validate that a path is safe to use in subprocess calls.
-    
+
     Args:
         path: The path to validate
         must_exist: Whether the path must exist
@@ -42,30 +41,28 @@ def validate_safe_path(
         must_be_dir: Whether the path must be a directory
         allow_symlinks: Whether symlinks are allowed
         base_dir: If provided, path must resolve to be within this directory
-        
+
     Returns:
         The resolved, absolute path
-        
+
     Raises:
         PathSecurityError: If the path fails security validation
     """
     # Convert to Path if string
     path_obj = Path(path)
-    
+
     # Check for shell metacharacters in the path string
     path_str = str(path_obj)
     if any(c in _SHELL_METACHARACTERS for c in path_str):
         bad_chars = [c for c in path_str if c in _SHELL_METACHARACTERS]
-        raise PathSecurityError(
-            f"Path contains shell metacharacters: {bad_chars[:5]}"
-        )
-    
+        raise PathSecurityError(f"Path contains shell metacharacters: {bad_chars[:5]}")
+
     # Convert to absolute path and resolve symlinks
     try:
         abs_path = path_obj.resolve(strict=False)
     except (OSError, ValueError) as e:
         raise PathSecurityError(f"Cannot resolve path: {e}")
-    
+
     # Check if path is within base_dir (path traversal protection)
     if base_dir is not None:
         base_resolved = base_dir.resolve()
@@ -75,26 +72,26 @@ def validate_safe_path(
             raise PathSecurityError(
                 f"Path {abs_path} is outside allowed base directory {base_resolved}"
             )
-    
+
     # Check existence
     if must_exist and not abs_path.exists():
         raise PathSecurityError(f"Path does not exist: {abs_path}")
-    
+
     # Check if it's a symlink
     if not allow_symlinks and abs_path.is_symlink():
         raise PathSecurityError(f"Symlinks are not allowed: {abs_path}")
-    
+
     # Check file type
     if must_be_file and must_exist and not abs_path.is_file():
         raise PathSecurityError(f"Path is not a file: {abs_path}")
-    
+
     if must_be_dir and must_exist and not abs_path.is_dir():
         raise PathSecurityError(f"Path is not a directory: {abs_path}")
-    
+
     # Additional check: ensure the path doesn't contain null bytes
     if b"\x00" in os.fsencode(abs_path):
         raise PathSecurityError("Path contains null bytes")
-    
+
     return abs_path
 
 
@@ -119,7 +116,7 @@ def git_sha(cwd: Path) -> str:
     try:
         # Validate the working directory path
         safe_cwd = validate_safe_path(cwd, must_exist=True, must_be_dir=True)
-        
+
         out = subprocess.check_output(
             ["git", "rev-parse", "HEAD"],
             cwd=str(safe_cwd),

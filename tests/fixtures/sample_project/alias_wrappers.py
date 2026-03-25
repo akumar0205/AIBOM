@@ -3,6 +3,7 @@ from langchain.agents import initialize_agent as init_agent
 
 PrimaryModel = ChatModel
 
+
 def model_factory(model_name: str):
     return PrimaryModel(model=model_name)
 
