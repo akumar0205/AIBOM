@@ -3,8 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AIBOM — AI Bill of Materials Generator</title>
-  <meta name="description" content="Generate an AI Bill of Materials for your AI applications. Scan codebases to detect models, agents, prompts, tools, and datasets in Python, JavaScript/TypeScript, Java, Go, and .NET.">
+  <title>AIBOM - Bulk AI Security Scanner for GitHub Organizations</title>
+  <meta name="description" content="The only AI Bill of Materials tool with bulk GitHub scanning. Inventory AI models, agents, and security risks across hundreds of repos in one command.">
+  <meta name="keywords" content="AI security, AIBOM, GitHub scanning, AI inventory, OWASP LLM, bulk repository scan, AI supply chain">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="AIBOM - Bulk AI Security Scanner for GitHub Organizations">
+  <meta property="og:description" content="The only AI Bill of Materials tool with bulk GitHub scanning. Inventory AI models and risks across hundreds of repos in one command.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://aibom.dev">
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -44,8 +51,8 @@
       </a>
       
       <div class="nav-links">
+        <a href="#github-scan" class="nav-link">GitHub Scanning</a>
         <a href="#features" class="nav-link">Features</a>
-        <a href="#languages" class="nav-link">Languages</a>
         <a href="#how-it-works" class="nav-link">How it works</a>
         <a href="docs.html" class="nav-link">Docs</a>
         <a href="https://github.com/akumar0205/AIBOM" class="nav-link nav-link-github" target="_blank" rel="noopener">
@@ -77,29 +84,29 @@
       
       <!-- Headline -->
       <h1 class="hero-title">
-        AI Inventory & Risk Analyzer
+        Bulk AI Security Scanning<br>for GitHub Organizations
       </h1>
       
       <!-- Subtext -->
       <p class="hero-subtitle">
-        Generate an AI Bill of Materials for your AI codebase. Automatically detect models, agents, 
-        prompts, tools, and APIs across <strong>Python</strong>, <strong>JavaScript/TypeScript</strong>, 
-        <strong>Java</strong>, <strong>Go</strong>, and <strong>.NET</strong> with built-in OWASP LLM risk analysis.
+        The only AI Bill of Materials tool that <strong>bulk scans entire GitHub organizations</strong>. 
+        Inventory AI models, agents, and risks across hundreds of repos with drift detection, 
+        compliance exports, and automated gating. Works with Python, JavaScript, Java, Go, and .NET.
       </p>
       
       <!-- Clone Box -->
       <div class="hero-clone-box">
-        <div class="clone-label">Clone & Get Started</div>
+        <div class="clone-label">Scan Your First Repo in 30 Seconds</div>
         <div class="clone-command-wrapper">
-          <code class="clone-command">git clone https://github.com/akumar0205/AIBOM.git && cd AIBOM</code>
-          <button class="clone-copy-btn" data-copy-text="git clone https://github.com/akumar0205/AIBOM.git && cd AIBOM" aria-label="Copy clone command">
+          <code class="clone-command">aibom scan-github --repo owner/repo --output-dir results</code>
+          <button class="clone-copy-btn" data-copy-text="aibom scan-github --repo owner/repo --output-dir results" aria-label="Copy scan command">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
             </svg>
           </button>
         </div>
-        <div class="clone-hint">Then run: <code>pip install -e . && aibom generate .</code></div>
+        <div class="clone-hint">Or scan locally: <code>aibom generate .</code></div>
       </div>
       
       <!-- CTA Buttons -->
@@ -108,20 +115,21 @@
           <svg viewBox="0 0 16 16" fill="currentColor" width="18" height="18">
             <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
           </svg>
-          View on GitHub
+          Get Started on GitHub
         </a>
-        <a href="#example-output" class="btn btn-secondary">See Example Output</a>
+        <a href="#how-it-works" class="btn btn-secondary">See How It Works</a>
       </div>
       
-      <!-- New: GitHub Scan Badge -->
+      <!-- Trust Badge -->
       <div class="hero-scan-badge">
         <span class="hero-scan-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
           </svg>
         </span>
-        <span>New: Bulk scan GitHub repos with <code>aibom scan-github</code></span>
-        <a href="#github-scan" class="hero-scan-link">Learn more →</a>
+        <span>Also works locally with <code>aibom generate .</code></span>
+        <a href="#features" class="hero-scan-link">View all features →</a>
       </div>
       
       <!-- Stats -->
@@ -170,6 +178,141 @@
             </svg>
           </span>
           <span>.NET</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GitHub Scan Feature Section -->
+  <section class="github-feature" id="github-scan">
+    <div class="section-container">
+      <div class="section-header">
+        <div class="section-badge">Competitive Edge</div>
+        <h2 class="section-title">The Only AIBOM Tool with<br>Bulk GitHub Scanning</h2>
+        <p class="section-description">
+          Stop scanning repositories one by one. AIBOM clones, analyzes, and aggregates AI inventories 
+          across your entire GitHub organization in one command.
+        </p>
+      </div>
+      
+      <div class="github-showcase">
+        <div class="github-terminal">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="terminal-dot terminal-dot-red"></span>
+              <span class="terminal-dot terminal-dot-yellow"></span>
+              <span class="terminal-dot terminal-dot-green"></span>
+            </div>
+            <span class="terminal-title">aibom scan-github --repos-file repos.txt --output-dir audit/</span>
+          </div>
+          <div class="terminal-content github-terminal-content">
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-success">→</span> Reading 47 repositories from repos.txt
+            </div>
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-success">✓</span> [1/47] cloned: acme-corp/ai-gateway
+            </div>
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-success">✓</span> [2/47] cloned: acme-corp/rag-pipeline
+            </div>
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-success">✓</span> [3/47] cloned: acme-corp/chatbot-service
+            </div>
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-success">✓</span> [4/47] cloned: acme-corp/embedding-api
+            </div>
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-success">✓</span> [5/47] cloned: acme-corp/prompt-service
+            </div>
+            <div class="terminal-line terminal-line-output terminal-line-dim">
+              ... (40 more repositories)
+            </div>
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-success">✓</span> [46/47] cloned: acme-corp/nlp-service
+            </div>
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-success">✓</span> [47/47] cloned: acme-corp/ml-ops
+            </div>
+            <div class="terminal-line terminal-line-empty"></div>
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-success">→</span> Analyzing Python files...
+            </div>
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-success">→</span> Analyzing TypeScript files...
+            </div>
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-success">→</span> Evaluating risk policies...
+            </div>
+            <div class="terminal-line terminal-line-empty"></div>
+            <div class="terminal-line terminal-line-output terminal-line-highlight">
+              Scan Results Summary
+            </div>
+            <div class="terminal-line terminal-line-empty"></div>
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-key">Repositories Scanned:</span> 47
+            </div>
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-key">AI Models Found:</span> 156 (GPT-4, Claude, Llama)
+            </div>
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-key">External Providers:</span> 23 using OpenAI/Anthropic
+            </div>
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-key">High/Critical Risks:</span> 12 findings
+            </div>
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-key">Failed Drift Gates:</span> 3 new external providers
+            </div>
+            <div class="terminal-line terminal-line-empty"></div>
+            <div class="terminal-line terminal-line-output">
+              <span class="terminal-success">✓</span> Outputs written to audit/SUMMARY.md
+            </div>
+          </div>
+        </div>
+        
+        <div class="github-benefits">
+          <div class="github-benefit">
+            <div class="github-benefit-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <h4>Scan 100s of Repos in Minutes</h4>
+            <p>Parallel cloning and analysis. No more manual inventory of AI usage across your org.</p>
+          </div>
+          <div class="github-benefit">
+            <div class="github-benefit-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <h4>Organization-Wide Risk Gates</h4>
+            <p>Fail scans when high-risk AI usage exceeds thresholds. Enforce policies across all repos.</p>
+          </div>
+          <div class="github-benefit">
+            <div class="github-benefit-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+            </div>
+            <h4>Aggregate Reports</h4>
+            <p>One Markdown summary across all repos. Perfect for security reviews and compliance audits.</p>
+          </div>
+          <div class="github-benefit">
+            <div class="github-benefit-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                <polyline points="17 6 23 6 23 12"/>
+              </svg>
+            </div>
+            <h4>Drift Detection at Scale</h4>
+            <p>Compare current scan against baselines. Catch new AI providers and tools before they hit prod.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -529,9 +672,9 @@ search = Tool(
   <section class="capabilities" id="capabilities">
     <div class="section-container">
       <div class="section-header">
-        <h2 class="section-title">Key Capabilities</h2>
+        <h2 class="section-title">Enterprise-Grade AI Security</h2>
         <p class="section-description">
-          Beyond simple detection, AIBOM provides enterprise-grade features for AI supply chain security.
+          From single-repo scanning to organization-wide AI inventory, AIBOM scales with your needs.
         </p>
       </div>
       
@@ -613,15 +756,17 @@ search = Tool(
           </p>
         </div>
         
-        <div class="capability-card">
+        <div class="capability-card capability-card-featured">
+          <div class="capability-badge">Unique</div>
           <div class="capability-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
               <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
             </svg>
           </div>
-          <h3 class="capability-title">GitHub Scanning</h3>
+          <h3 class="capability-title">Bulk GitHub Scanning</h3>
           <p class="capability-description">
-            Bulk scan multiple GitHub repositories. Clone, analyze, and aggregate results with drift gates and risk thresholds.
+            The only AIBOM tool that scans entire GitHub organizations. Clone, analyze, and aggregate 
+            results across hundreds of repos with drift gates and risk thresholds.
           </p>
         </div>
         
@@ -642,13 +787,14 @@ search = Tool(
     </div>
   </section>
 
-  <!-- Why AIBOM Matters Section -->
+  <!-- Why AIBOM Section - Reframed -->
   <section class="why-matters" id="why-matters">
     <div class="section-container">
       <div class="section-header">
-        <h2 class="section-title">Why AIBOM Matters</h2>
+        <h2 class="section-title">Built for Security Teams at Scale</h2>
         <p class="section-description">
-          AI systems contain many hidden dependencies that traditional tooling cannot see.
+          Other AIBOM tools make you scan repos one by one. AIBOM is built for organizations 
+          that need visibility across hundreds of repositories without the manual work.
         </p>
       </div>
       
@@ -679,9 +825,10 @@ search = Tool(
         
         <div class="why-card">
           <div class="why-number">04</div>
-          <h3 class="why-title">Supply Chain</h3>
+          <h3 class="why-title">Scale Problem</h3>
           <p class="why-description">
-            Third-party models and APIs introduce supply chain risks that must be audited and monitored continuously.
+            Large organizations have AI spread across hundreds of repos. Manual inventory is impossible. 
+            AIBOM scans them all in one command.
           </p>
         </div>
       </div>
@@ -782,7 +929,7 @@ search = Tool(
       <div class="section-header">
         <h2 class="section-title">How It Works</h2>
         <p class="section-description">
-          Three simple steps to complete AI supply chain visibility.
+          Scale from a single repo to your entire GitHub organization in minutes.
         </p>
       </div>
       
@@ -791,26 +938,31 @@ search = Tool(
         <div class="step">
           <div class="step-number">1</div>
           <div class="step-content">
-            <h3 class="step-title">Clone & Install</h3>
+            <h3 class="step-title">Install AIBOM</h3>
             <p class="step-description">
-              Get the code from GitHub and install with pip. It's just a few commands to get started.
+              One command to install. Works locally or in CI/CD pipelines.
             </p>
             <div class="step-code">
-              <code>git clone https://github.com/akumar0205/AIBOM.git && cd AIBOM && pip install -e .</code>
+              <code>pip install aibom</code>
             </div>
           </div>
         </div>
         
-        <!-- Step 2 -->
-        <div class="step">
+        <!-- Step 2 - Featured: GitHub Scan -->
+        <div class="step step-featured">
           <div class="step-number">2</div>
           <div class="step-content">
-            <h3 class="step-title">Scan Your Codebase</h3>
+            <div class="step-badge">Bulk Scanning</div>
+            <h3 class="step-title">Scan One Repo or Hundreds</h3>
             <p class="step-description">
-              Run AIBOM against your project. It analyzes Python, TypeScript, Java, Go, and .NET files to detect AI components.
+              Scan a single repo locally, or bulk scan your entire GitHub organization. 
+              AIBOM clones, analyzes, and aggregates results automatically.
             </p>
             <div class="step-code">
-              <code>aibom generate . --output AI_BOM.json</code>
+              <code># Single repo</code><br>
+              <code>aibom generate .</code><br><br>
+              <code># Bulk GitHub scan</code><br>
+              <code>aibom scan-github --repos-file org-repos.txt --output-dir audit/</code>
             </div>
           </div>
         </div>
@@ -819,12 +971,13 @@ search = Tool(
         <div class="step">
           <div class="step-number">3</div>
           <div class="step-content">
-            <h3 class="step-title">Review & Export</h3>
+            <h3 class="step-title">Enforce & Export</h3>
             <p class="step-description">
-              Get a structured JSON document with risk findings. Export to SPDX, CycloneDX, SARIF, or VEX formats for your compliance tools.
+              Set risk thresholds, detect drift, and export to SPDX, CycloneDX, SARIF, or VEX for compliance.
             </p>
             <div class="step-code">
-              <code>aibom export --input AI_BOM.json --format spdx-json -o spdx.json</code>
+              <code># Fail on new external AI providers</code><br>
+              <code>aibom diff baseline.json new.json --fail-on new-external-provider</code>
             </div>
           </div>
         </div>
@@ -838,77 +991,61 @@ search = Tool(
       <div class="section-header">
         <h2 class="section-title">Get Started in Seconds</h2>
         <p class="section-description">
-          Clone the repo and scan your first AI project in under a minute.
+          One tool. Two workflows. Scan locally or bulk scan your entire GitHub organization.
         </p>
       </div>
       
-      <div class="install-grid">
-        <!-- Clone Command -->
-        <div class="install-card install-card-primary">
-          <h3 class="install-card-title">1. Clone Repository</h3>
+      <div class="install-grid install-grid-2col">
+        <!-- Local Scan -->
+        <div class="install-card">
+          <div class="install-card-badge">Local</div>
+          <h3 class="install-card-title">Scan a Single Repository</h3>
           <div class="code-block">
-            <button class="code-block-copy" data-copy-target="clone-code" aria-label="Copy to clipboard">
+            <button class="code-block-copy" data-copy-target="local-code" aria-label="Copy to clipboard">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
             </button>
-            <code class="code-block-content" id="clone-code">git clone https://github.com/akumar0205/AIBOM.git</code>
+            <code class="code-block-content" id="local-code">pip install aibom && aibom generate .</code>
           </div>
         </div>
         
-        <!-- Install Command -->
-        <div class="install-card">
-          <h3 class="install-card-title">2. Install</h3>
+        <!-- GitHub Bulk Scan - Featured -->
+        <div class="install-card install-card-featured">
+          <div class="install-card-badge install-card-badge-featured">Scale</div>
+          <h3 class="install-card-title">Bulk Scan GitHub Organization</h3>
           <div class="code-block">
-            <button class="code-block-copy" data-copy-target="install-code" aria-label="Copy to clipboard">
+            <button class="code-block-copy" data-copy-target="github-code" aria-label="Copy to clipboard">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
             </button>
-            <code class="code-block-content" id="install-code">cd AIBOM && pip install -e .</code>
-          </div>
-        </div>
-        
-        <!-- Scan Command -->
-        <div class="install-card">
-          <h3 class="install-card-title">3. Generate</h3>
-          <div class="code-block">
-            <button class="code-block-copy" data-copy-target="scan-code" aria-label="Copy to clipboard">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
-            </button>
-            <code class="code-block-content" id="scan-code">aibom generate .</code>
+            <code class="code-block-content" id="github-code">aibom scan-github --repos-file repos.txt --output-dir results/</code>
           </div>
         </div>
       </div>
       
       <!-- Advanced Commands -->
       <div class="advanced-commands">
-        <h3 class="advanced-title">Advanced Usage</h3>
+        <h3 class="advanced-title">Common Workflows</h3>
         <div class="command-list">
+          <div class="command-item command-item-featured">
+            <code class="command-code">aibom scan-github --repos-file repos.txt</code>
+            <span class="command-desc"><strong>Use case:</strong> Bulk scan with risk gates</span>
+          </div>
+          <div class="command-item">
+            <code class="command-code">aibom scan-github --repos-file repos.txt --baseline base.json</code>
+            <span class="command-desc"><strong>Use case:</strong> Organization audit with drift detection</span>
+          </div>
           <div class="command-item">
             <code class="command-code">aibom generate . --audit-mode --bundle-out evidence.zip</code>
-            <span class="command-desc">Create signed evidence bundle</span>
+            <span class="command-desc"><strong>Use case:</strong> Create signed compliance bundle</span>
           </div>
           <div class="command-item">
-            <code class="command-code">aibom diff baseline.json new.json --fail-on new-model</code>
-            <span class="command-desc">Detect drift between versions</span>
-          </div>
-          <div class="command-item">
-            <code class="command-code">aibom periodic-scan . --interval daily</code>
-            <span class="command-desc">Schedule recurring scans</span>
-          </div>
-          <div class="command-item" id="github-scan">
-            <code class="command-code">aibom scan-github --repo owner/repo --output-dir out</code>
-            <span class="command-desc">Bulk scan GitHub repositories</span>
-          </div>
-          <div class="command-item">
-            <code class="command-code">aibom generate . --profile ai-bom-like</code>
-            <span class="command-desc">Generate executive-friendly profile</span>
+            <code class="command-code">aibom export --input AI_BOM.json --format spdx-json</code>
+            <span class="command-desc"><strong>Use case:</strong> Export to SPDX for compliance tools</span>
           </div>
         </div>
       </div>
@@ -919,9 +1056,11 @@ search = Tool(
   <section class="contribute" id="contribute">
     <div class="section-container">
       <div class="contribute-content">
-        <h2 class="contribute-title">Contribute to AIBOM</h2>
+        <h2 class="contribute-title">Built for Scale. Open Source.</h2>
         <p class="contribute-description">
-          AIBOM is built by and for the AI security community. We're looking for contributors to help us support more languages, frameworks, and risk detection rules. Whether you're an AI security researcher, ML engineer, or developer — your contributions are welcome!
+          AIBOM is the only open-source AIBOM tool with native bulk GitHub scanning. 
+          Join us in building the future of AI supply chain security, whether you are 
+          adding new language detectors, risk rules, or scaling features for enterprise use.
         </p>
         
         <div class="contribute-areas">
@@ -996,9 +1135,10 @@ search = Tool(
   <section class="opensource" id="opensource">
     <div class="section-container">
       <div class="opensource-content">
-        <h2 class="opensource-title">Open Source</h2>
+        <h2 class="opensource-title">Free. Open Source. Enterprise-Ready.</h2>
         <p class="opensource-description">
-          AIBOM is MIT licensed and free to use. Join our growing community of AI security practitioners.
+          AIBOM is MIT licensed and free forever. Get started with a single repo, 
+          or scale to scan your entire GitHub organization with no licensing tiers, no limits.
         </p>
         <div class="opensource-cta">
           <a href="https://github.com/akumar0205/AIBOM" class="btn btn-primary btn-large" target="_blank" rel="noopener">
@@ -1040,7 +1180,7 @@ search = Tool(
             <span class="footer-logo-text">AIBOM</span>
           </a>
           <p class="footer-tagline">
-            AI Bill of Materials generator for secure AI supply chains.
+            The only AIBOM tool with bulk GitHub scanning. Inventory AI across your entire organization in one command.
           </p>
         </div>
         
