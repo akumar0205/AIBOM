@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
   "metadata": {
-    "generated_at": "DYNAMIC",
-    "git_sha": "DYNAMIC",
+    "generated_at": "2026-01-02T03:04:05Z",
+    "git_sha": "0123456789abcdef0123456789abcdef01234567",
     "artifact_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
   },
   "models": [
@@ -16,11 +16,51 @@
         "immutable_version": "ghcr.io/acme/serving@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "environment": "prod",
         "region": "us-east-1",
+        "evidence": {
+          "provider_endpoint": {
+            "status": "observed",
+            "method": "observed:static-fixture"
+          },
+          "registry_uri": {
+            "status": "observed",
+            "method": "observed:static-fixture"
+          },
+          "immutable_version": {
+            "status": "observed",
+            "method": "observed:static-fixture"
+          },
+          "environment": {
+            "status": "observed",
+            "method": "observed:static-fixture"
+          },
+          "region": {
+            "status": "observed",
+            "method": "observed:static-fixture"
+          }
+        },
         "lineage": {
           "model_artifact_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
           "deployment_id": "inference-v3",
           "service_account_identity": "system:serviceaccount:ml:inference-sa",
-          "owning_system": "risk-scoring-platform"
+          "owning_system": "risk-scoring-platform",
+          "evidence": {
+            "model_artifact_digest": {
+              "status": "observed",
+              "method": "observed:static-fixture"
+            },
+            "deployment_id": {
+              "status": "observed",
+              "method": "observed:static-fixture"
+            },
+            "service_account_identity": {
+              "status": "observed",
+              "method": "observed:static-fixture"
+            },
+            "owning_system": {
+              "status": "observed",
+              "method": "observed:static-fixture"
+            }
+          }
         }
       }
     }
@@ -49,17 +89,75 @@
     "immutable_version": "ghcr.io/acme/serving@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "environment": "prod",
     "region": "us-east-1",
+    "evidence": {
+      "provider_endpoint": {
+        "status": "observed",
+        "method": "observed:static-fixture"
+      },
+      "registry_uri": {
+        "status": "observed",
+        "method": "observed:static-fixture"
+      },
+      "immutable_version": {
+        "status": "observed",
+        "method": "observed:static-fixture"
+      },
+      "environment": {
+        "status": "observed",
+        "method": "observed:static-fixture"
+      },
+      "region": {
+        "status": "observed",
+        "method": "observed:static-fixture"
+      }
+    },
     "lineage": {
       "model_artifact_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
       "deployment_id": "inference-v3",
       "service_account_identity": "system:serviceaccount:ml:inference-sa",
-      "owning_system": "risk-scoring-platform"
+      "owning_system": "risk-scoring-platform",
+      "evidence": {
+        "model_artifact_digest": {
+          "status": "observed",
+          "method": "observed:static-fixture"
+        },
+        "deployment_id": {
+          "status": "observed",
+          "method": "observed:static-fixture"
+        },
+        "service_account_identity": {
+          "status": "observed",
+          "method": "observed:static-fixture"
+        },
+        "owning_system": {
+          "status": "observed",
+          "method": "observed:static-fixture"
+        }
+      }
     }
   },
   "lineage": {
     "model_artifact_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "deployment_id": "inference-v3",
     "service_account_identity": "system:serviceaccount:ml:inference-sa",
-    "owning_system": "risk-scoring-platform"
+    "owning_system": "risk-scoring-platform",
+    "evidence": {
+      "model_artifact_digest": {
+        "status": "observed",
+        "method": "observed:static-fixture"
+      },
+      "deployment_id": {
+        "status": "observed",
+        "method": "observed:static-fixture"
+      },
+      "service_account_identity": {
+        "status": "observed",
+        "method": "observed:static-fixture"
+      },
+      "owning_system": {
+        "status": "observed",
+        "method": "observed:static-fixture"
+      }
+    }
   }
 }

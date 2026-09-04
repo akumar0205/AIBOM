@@ -1,0 +1,43 @@
+[
+  {
+    "source_file": "wrapper_factory.py",
+    "expect_models": [
+      {"type": "ChatOpenAI", "evidence_class": "inferred_dependency"},
+      {"type": "Factory:build_llm", "evidence_class": "inferred_dependency"}
+    ]
+  },
+  {
+    "source_file": "dynamic_imports.py",
+    "expect_models": [
+      {"type": "OpenAI", "evidence_class": "inferred_dependency"}
+    ]
+  },
+  {
+    "source_file": "env_driven.py",
+    "expect_models": [
+      {"type": "ChatOpenAI", "evidence_class": "inferred_dependency"}
+    ]
+  },
+  {
+    "source_file": "wrapper_factory.ts:6",
+    "expect_models": [
+      {"type": "OpenAI", "evidence_class": "inferred_dependency"}
+    ]
+  },
+  {
+    "source_file": "wrapper_factory.ts:12",
+    "expect_models": [
+      {"type": "OpenAI", "evidence_class": "inferred_dependency"}
+    ]
+  },
+  {
+    "source_file": "misleading_config.yaml",
+    "expect_models": [],
+    "expect_no_models": ["ConfigModelHint"]
+  },
+  {
+    "source_file": "blind_spots.py",
+    "expect_models": [],
+    "note": "known gap: raw HTTP provider calls have no SDK surface"
+  }
+]

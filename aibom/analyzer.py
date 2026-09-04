@@ -7,11 +7,20 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from aibom.confidence import score_confidence
+from aibom.confidence import score_confidence, score_confidence_with_evidence
 from aibom.detectors import DotNetAstDetector, GoAstDetector, JSTSAstDetector, JavaAstDetector
 from aibom.detectors.protocol import SourceDetector
+from aibom.provenance import (
+    _lineage,
+    _merge_lineage,
+    _merge_provenance,
+    _observed_or_inferred_evidence,
+    _provenance,
+    _set_lineage_field,
+    _set_provenance_field,
+)
 from aibom.risk.heuristics import generate_risk_findings
-from aibom.utils import git_sha, sha256_bytes, stable_json, utc_now
+from aibom.utils import git_sha, sha256_bytes, stable_json, utc_now_iso
 
 FRAMEWORK_ALIASES: dict[str, set[str]] = {
     "langchain": {"langchain", "langchain_openai", "langchain_community", "langchain_core"},
@@ -34,7 +43,7 @@ CONFIG_KEY_HINTS = {
     "huggingfacehub_api_token": "provider credential",
     "azure_openai_api_key": "provider credential",
 }
-PROVENANCE_UNKNOWN = "unknown"
+EVIDENCE_STATUSES = ("observed", "inferred", "missing")
 PROVENANCE_FIELDS = (
     "provider_endpoint",
     "registry_uri",
@@ -151,7 +160,7 @@ class ScanResult:
     frameworks: set[str] = field(default_factory=set)
     scan_findings: list[dict[str, Any]] = field(default_factory=list)
     coverage: dict[str, Any] = field(default_factory=dict)
-    runtime_context: dict[str, str] = field(default_factory=dict)
+    runtime_context: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -173,6 +182,13 @@ class AIBOMVisitor(ast.NodeVisitor):
         self.imported_frameworks: set[str] = set()
         self.import_aliases: dict[str, str] = {}
         self.bindings: dict[str, str] = {}
+        # Name -> (literal string value, collection method) for config-dataflow
+        # tracking (plain string assignments and os.getenv defaults).
+        self.string_bindings: dict[str, tuple[str, str]] = {}
+        # Names defined as factories/wrappers returning model constructors.
+        self.factory_names: set[str] = set()
+        # Stack of enclosing function definitions (for factory-context detection).
+        self._function_stack: list[str] = []
 
     def visit_Import(self, node: ast.Import) -> Any:
         for alias in node.names:
@@ -197,6 +213,12 @@ class AIBOMVisitor(ast.NodeVisitor):
             for target in node.targets:
                 for target_name in self._target_names(target):
                     self.bindings[target_name] = bound
+        literal = self._string_literal_source(node.value)
+        if literal is not None:
+            value, method = literal
+            for target in node.targets:
+                for target_name in self._target_names(target):
+                    self.string_bindings[target_name] = (value, method)
         self.generic_visit(node)
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> Any:
@@ -204,22 +226,121 @@ class AIBOMVisitor(ast.NodeVisitor):
         if bound:
             for target_name in self._target_names(node.target):
                 self.bindings[target_name] = bound
+        literal = self._string_literal_source(node.value)
+        if literal is not None:
+            value, method = literal
+            for target_name in self._target_names(node.target):
+                self.string_bindings[target_name] = (value, method)
         self.generic_visit(node)
 
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> Any:
+        self._function_stack.append(node.name)
+        if self._returns_model_constructor(node):
+            self.factory_names.add(node.name)
+        self.generic_visit(node)
+        self._function_stack.pop()
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> Any:
+        self._function_stack.append(node.name)
+        if self._returns_model_constructor(node):
+            self.factory_names.add(node.name)
+        self.generic_visit(node)
+        self._function_stack.pop()
+
+    def _returns_model_constructor(self, node: ast.AST) -> bool:
+        for child in ast.walk(node):
+            if isinstance(child, ast.Return) and isinstance(child.value, ast.Call):
+                leaf = self._resolve_symbol(self._name_of(child.value.func)).split(".")[-1]
+                if leaf in MODEL_CLASS_HINTS:
+                    return True
+        return False
+
+    def _string_literal_source(self, value: ast.AST | None) -> tuple[str, str] | None:
+        """Resolve string-y config sources: literals and os.getenv defaults."""
+        if value is None:
+            return None
+        if isinstance(value, ast.Constant) and isinstance(value.value, str):
+            return value.value, "observed:string-literal"
+        if isinstance(value, ast.Call):
+            func_name = self._name_of(value.func)
+            if func_name.split(".")[-1] == "getenv":
+                for arg in value.args[1:2]:
+                    if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                        return arg.value, "observed:environ-default"
+                return None
+            if func_name.split(".")[-1] == "get":
+                method = (
+                    "observed:environ-default"
+                    if "environ" in func_name
+                    else "observed:config-dict-default"
+                )
+                for arg in value.args[1:2]:
+                    if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                        return arg.value, method
+        if isinstance(value, ast.Name) and value.id in self.string_bindings:
+            bound_value, _ = self.string_bindings[value.id]
+            return bound_value, f"inferred:variable-dataflow:{value.id}"
+        return None
+
     def visit_Call(self, node: ast.Call) -> Any:
-        resolved_name = self._resolve_symbol(self._name_of(node.func))
+        raw_name = self._name_of(node.func)
+        resolved_name, via_binding = self._resolve_symbol_with_origin(raw_name)
         leaf = resolved_name.split(".")[-1]
         source_ref = f"{self.file_path}:{getattr(node, 'lineno', 0)}"
         file_ref = str(self.file_path)
+        dynamic_hit = self._dynamic_import_target(node, leaf)
+        if dynamic_hit is not None:
+            self.tools.append(
+                {
+                    "name": f"dynamic-import:{dynamic_hit}",
+                    "source_file": file_ref,
+                    "evidence_class": "suspected_usage",
+                    "detection_method": "dynamic-import-hook",
+                }
+            )
         if leaf in MODEL_CLASS_HINTS:
-            provider_endpoint = MODEL_PROVIDER_ENDPOINTS.get(leaf, PROVENANCE_UNKNOWN)
+            model_provenance = _provenance()
+            endpoint = MODEL_PROVIDER_ENDPOINTS.get(leaf)
+            if endpoint:
+                _set_provenance_field(
+                    model_provenance,
+                    "provider_endpoint",
+                    endpoint,
+                    "inferred:model-class-default",
+                )
+            model_name, name_method = self._model_name_with_dataflow(node)
+            evidence_class = "observed_call"
+            detection_method = "direct-constructor"
+            if via_binding:
+                evidence_class = "inferred_dependency"
+                detection_method = f"alias-resolution:{resolved_name}"
+            if name_method is not None:
+                evidence_class = "inferred_dependency"
+                detection_method = name_method
+            if self._function_stack and self._function_stack[-1] in self.factory_names:
+                evidence_class = "inferred_dependency"
+                detection_method = f"factory:{self._function_stack[-1]}"
             self.models.append(
                 {
                     "type": leaf,
-                    "model": self._arg_or_kw(node, "model", "model_name"),
+                    "model": model_name,
                     "source_file": file_ref,
                     "signals": sorted(self._classification_signals(resolved_name, node)),
-                    "provenance": _provenance(provider_endpoint=provider_endpoint),
+                    "provenance": model_provenance,
+                    "evidence_class": evidence_class,
+                    "detection_method": detection_method,
+                }
+            )
+        elif raw_name.split(".")[-1] in self.factory_names or leaf in self.factory_names:
+            self.models.append(
+                {
+                    "type": f"Factory:{raw_name.split('.')[-1]}",
+                    "model": self._model_name_with_dataflow(node)[0],
+                    "source_file": file_ref,
+                    "signals": sorted({"constructor"}),
+                    "provenance": _provenance(),
+                    "evidence_class": "inferred_dependency",
+                    "detection_method": f"factory-invocation:{raw_name}",
                 }
             )
         if leaf in TOOL_HINTS or "agent" in leaf.lower():
@@ -242,15 +363,79 @@ class AIBOMVisitor(ast.NodeVisitor):
         return ""
 
     def _resolve_symbol(self, name: str) -> str:
+        resolved, _ = self._resolve_symbol_with_origin(name)
+        return resolved
+
+    def _resolve_symbol_with_origin(self, name: str) -> tuple[str, bool]:
+        """Resolve a symbol, reporting whether assignment/factory bindings were used.
+
+        Explicit import aliases count as observed (direct) usage; only
+        assignment-derived bindings (aliases, factory locals) mark inference.
+        """
         if not name:
-            return ""
+            return "", False
         parts = name.split(".")
         root = parts[0]
         if root in self.bindings:
-            return ".".join(self.bindings[root].split(".") + parts[1:])
+            return ".".join(self.bindings[root].split(".") + parts[1:]), True
         if root in self.import_aliases:
-            return ".".join(self.import_aliases[root].split(".") + parts[1:])
-        return name
+            return ".".join(self.import_aliases[root].split(".") + parts[1:]), False
+        return name, False
+
+    def _model_name_with_dataflow(self, node: ast.Call) -> tuple[str, str | None]:
+        """Extract the model name, following variable/config dataflow.
+
+        Returns ``(model_name, dataflow_method)`` where ``dataflow_method`` is
+        ``None`` for direct literals (observed) and a ``observed:|inferred:``
+        method string when the value flows through a variable, environment
+        lookup, or config mapping.
+        """
+        for kw in node.keywords:
+            if kw.arg in {"model", "model_name"}:
+                if isinstance(kw.value, ast.Constant) and isinstance(kw.value.value, str):
+                    return kw.value.value, None
+                if isinstance(kw.value, ast.Name) and kw.value.id in self.string_bindings:
+                    bound_value, method = self.string_bindings[kw.value.id]
+                    if method.startswith("observed:"):
+                        method = f"inferred:config-dataflow:{kw.value.id}:{method}"
+                    return bound_value, method
+                if isinstance(kw.value, ast.Name):
+                    return "unknown", f"inferred:unresolved-variable:{kw.value.id}"
+                if isinstance(kw.value, ast.Call):
+                    literal = self._string_literal_source(kw.value)
+                    if literal is not None:
+                        value, method = literal
+                        return value, f"inferred:config-dataflow:call:{method}"
+                return "unknown", "inferred:non-literal-model-arg"
+        if (
+            node.args
+            and isinstance(node.args[0], ast.Constant)
+            and isinstance(node.args[0].value, str)
+        ):
+            return node.args[0].value, None
+        if node.args and isinstance(node.args[0], ast.Name):
+            arg = node.args[0]
+            if arg.id in self.string_bindings:
+                bound_value, method = self.string_bindings[arg.id]
+                return bound_value, f"inferred:config-dataflow:{arg.id}:{method}"
+            return "unknown", f"inferred:unresolved-variable:{arg.id}"
+        return "unknown", None
+
+    def _dynamic_import_target(self, node: ast.Call, leaf: str) -> str | None:
+        """Detect dynamic imports (importlib/``__import__``) of AI frameworks."""
+        if leaf not in {"import_module", "__import__"}:
+            return None
+        if not node.args:
+            return None
+        first = node.args[0]
+        if not (isinstance(first, ast.Constant) and isinstance(first.value, str)):
+            return "non-literal"
+        module = first.value
+        root = module.split(".")[0]
+        for framework, aliases in FRAMEWORK_ALIASES.items():
+            if root in aliases or module in aliases:
+                return framework
+        return None
 
     def _bound_symbol(self, value: ast.AST | None) -> str:
         if value is None:
@@ -315,10 +500,12 @@ class PythonAstDetector:
         result = ScanResult()
         candidates = find_python_files(context.target_dir)
         scanned = 0
+        failed = 0
         for py_file in candidates:
             try:
                 tree = ast.parse(py_file.read_text(encoding="utf-8"))
             except Exception:
+                failed += 1
                 continue
             scanned += 1
             rel = py_file.relative_to(context.target_dir)
@@ -326,6 +513,7 @@ class PythonAstDetector:
             visitor.visit(tree)
             for model in visitor.models:
                 model_signals = set(model.get("signals", []))
+                evidence_class = str(model.get("evidence_class", "observed_call"))
                 clean_model = {k: v for k, v in model.items() if k != "signals"}
                 result.models.append(clean_model)
                 result.scan_findings.append(
@@ -335,10 +523,37 @@ class PythonAstDetector:
                         source_type=self.source_type,
                         source_file=model["source_file"],
                         severity="medium",
-                        confidence=score_confidence(model_signals),
-                        evidence=f"Model class {model['type']} detected in Python source.",
+                        confidence=score_confidence_with_evidence(
+                            model_signals, evidence_class
+                        ),
+                        evidence=(
+                            f"Model class {model['type']} detected in Python source "
+                            f"({evidence_class} via {model.get('detection_method', 'unknown')})."
+                        ),
+                        evidence_class=evidence_class,
+                        detection_method=str(model.get("detection_method", "")),
                     )
                 )
+            for tool in visitor.tools:
+                if str(tool.get("evidence_class", "")) == "suspected_usage":
+                    result.scan_findings.append(
+                        _finding(
+                            finding_id=(
+                                f"python-dynamic-import:{tool['name']}:{tool['source_file']}"
+                            ),
+                            category="dynamic import",
+                            source_type=self.source_type,
+                            source_file=tool["source_file"],
+                            severity="medium",
+                            confidence="low",
+                            evidence=(
+                                f"Dynamic import of {tool['name']} detected; "
+                                "usage is suspected, not observed."
+                            ),
+                            evidence_class="suspected_usage",
+                            detection_method="dynamic-import-hook",
+                        )
+                    )
             result.datasets.extend(visitor.datasets)
             result.tools.extend(visitor.tools)
             result.prompts.extend(visitor.prompts)
@@ -347,6 +562,7 @@ class PythonAstDetector:
             "source_type": self.source_type,
             "artifacts_seen": len(candidates),
             "artifacts_scanned": scanned,
+            "artifacts_failed": failed,
             "default_confidence": "high",
         }
         return result
@@ -359,10 +575,12 @@ class NotebookDetector:
         result = ScanResult()
         candidates = sorted(context.target_dir.rglob("*.ipynb"))
         scanned = 0
+        failed = 0
         for notebook in candidates:
             try:
                 payload = json.loads(notebook.read_text(encoding="utf-8"))
             except Exception:
+                failed += 1
                 continue
             scanned += 1
             rel = notebook.relative_to(context.target_dir)
@@ -392,6 +610,7 @@ class NotebookDetector:
             "source_type": self.source_type,
             "artifacts_seen": len(candidates),
             "artifacts_scanned": scanned,
+            "artifacts_failed": failed,
             "default_confidence": "medium",
         }
         return result
@@ -418,41 +637,55 @@ class ConfigFileDetector:
                 normalized = key.lower()
 
                 if normalized in PROVIDER_ENDPOINT_KEYS and value:
-                    detector_runtime_context["provider_endpoint"] = value
-                    model_provenance["provider_endpoint"] = value
+                    for prov in (detector_runtime_context, model_provenance):
+                        _set_provenance_field(
+                            prov, "provider_endpoint", value, "observed:config-file"
+                        )
                 if normalized in REGISTRY_URI_KEYS and value:
-                    detector_runtime_context["registry_uri"] = value
-                    model_provenance["registry_uri"] = value
+                    for prov in (detector_runtime_context, model_provenance):
+                        _set_provenance_field(
+                            prov, "registry_uri", value, "observed:config-file"
+                        )
                 if normalized in IMMUTABLE_VERSION_KEYS and value:
-                    detector_runtime_context["immutable_version"] = value
-                    model_provenance["immutable_version"] = value
+                    for prov in (detector_runtime_context, model_provenance):
+                        _set_provenance_field(
+                            prov, "immutable_version", value, "observed:config-file"
+                        )
                 if normalized in ENVIRONMENT_KEYS and value:
-                    detector_runtime_context["environment"] = value
-                    model_provenance["environment"] = value
+                    for prov in (detector_runtime_context, model_provenance):
+                        _set_provenance_field(
+                            prov, "environment", value, "observed:config-file"
+                        )
                 if normalized in REGION_KEYS and value:
-                    detector_runtime_context["region"] = value
-                    model_provenance["region"] = value
+                    for prov in (detector_runtime_context, model_provenance):
+                        _set_provenance_field(prov, "region", value, "observed:config-file")
 
                 if normalized in DEPLOYMENT_ID_KEYS and value:
-                    detector_runtime_context.setdefault("lineage", _lineage())
-                    model_provenance.setdefault("lineage", _lineage())
-                    detector_runtime_context["lineage"]["deployment_id"] = value
-                    model_provenance["lineage"]["deployment_id"] = value
+                    for prov in (detector_runtime_context, model_provenance):
+                        _set_lineage_field(
+                            prov, "deployment_id", value, "observed:config-file"
+                        )
                 if normalized in SERVICE_ACCOUNT_IDENTITY_KEYS and value:
-                    detector_runtime_context.setdefault("lineage", _lineage())
-                    model_provenance.setdefault("lineage", _lineage())
-                    detector_runtime_context["lineage"]["service_account_identity"] = value
-                    model_provenance["lineage"]["service_account_identity"] = value
+                    for prov in (detector_runtime_context, model_provenance):
+                        _set_lineage_field(
+                            prov,
+                            "service_account_identity",
+                            value,
+                            "observed:config-file",
+                        )
                 if normalized in OWNING_SYSTEM_KEYS and value:
-                    detector_runtime_context.setdefault("lineage", _lineage())
-                    model_provenance.setdefault("lineage", _lineage())
-                    detector_runtime_context["lineage"]["owning_system"] = value
-                    model_provenance["lineage"]["owning_system"] = value
+                    for prov in (detector_runtime_context, model_provenance):
+                        _set_lineage_field(
+                            prov, "owning_system", value, "observed:config-file"
+                        )
                 if normalized in MODEL_ARTIFACT_DIGEST_KEYS and value and "sha256:" in value:
-                    detector_runtime_context.setdefault("lineage", _lineage())
-                    model_provenance.setdefault("lineage", _lineage())
-                    detector_runtime_context["lineage"]["model_artifact_digest"] = value
-                    model_provenance["lineage"]["model_artifact_digest"] = value
+                    for prov in (detector_runtime_context, model_provenance):
+                        _set_lineage_field(
+                            prov,
+                            "model_artifact_digest",
+                            value,
+                            "observed:config-file",
+                        )
 
                 if normalized not in CONFIG_KEY_HINTS:
                     continue
@@ -462,7 +695,6 @@ class ConfigFileDetector:
                 signals = {"config_key"}
                 if normalized in {"model", "model_name", "provider"}:
                     signals.add("import")
-                confidence = score_confidence(signals)
                 result.scan_findings.append(
                     _finding(
                         finding_id=f"config:{normalized}:{rel}",
@@ -470,8 +702,12 @@ class ConfigFileDetector:
                         source_type=self.source_type,
                         source_file=str(rel),
                         severity=severity,
-                        confidence=confidence,
+                        confidence=score_confidence_with_evidence(
+                            signals, "inferred_dependency"
+                        ),
                         evidence=_config_evidence(key, value, normalized, context.redaction_policy),
+                        evidence_class="inferred_dependency",
+                        detection_method="config-key",
                     )
                 )
 
@@ -482,8 +718,12 @@ class ConfigFileDetector:
                             "model": value,
                             "source_file": str(rel),
                             "source_type": self.source_type,
-                            "confidence": score_confidence({"config_key"}),
+                            "confidence": score_confidence_with_evidence(
+                                {"config_key"}, "inferred_dependency"
+                            ),
                             "provenance": model_provenance,
+                            "evidence_class": "inferred_dependency",
+                            "detection_method": "config-key",
                         }
                     )
                 if normalized == "provider" and value:
@@ -735,7 +975,7 @@ def generate_aibom(
     doc: dict[str, Any] = {
         "schema_version": "1.0",
         "metadata": {
-            "generated_at": utc_now(),
+            "generated_at": utc_now_iso(),
             "git_sha": git_sha(target_dir),
         },
         "models": model_entries,
@@ -956,8 +1196,10 @@ def _finding(
     severity: str,
     confidence: str,
     evidence: str,
+    evidence_class: str = "observed_call",
+    detection_method: str = "",
 ) -> dict[str, str]:
-    return {
+    finding: dict[str, str] = {
         "id": finding_id,
         "category": category,
         "source_type": source_type,
@@ -966,75 +1208,15 @@ def _finding(
         "confidence": confidence,
         "evidence": evidence,
     }
-
-
-def _provenance(
-    provider_endpoint: str = PROVENANCE_UNKNOWN,
-    registry_uri: str = PROVENANCE_UNKNOWN,
-    immutable_version: str = PROVENANCE_UNKNOWN,
-    environment: str = PROVENANCE_UNKNOWN,
-    region: str = PROVENANCE_UNKNOWN,
-) -> dict[str, str]:
-    return {
-        "provider_endpoint": provider_endpoint,
-        "registry_uri": registry_uri,
-        "immutable_version": immutable_version,
-        "environment": environment,
-        "region": region,
-    }
-
-
-def _lineage(
-    model_artifact_digest: str = PROVENANCE_UNKNOWN,
-    deployment_id: str = PROVENANCE_UNKNOWN,
-    service_account_identity: str = PROVENANCE_UNKNOWN,
-    owning_system: str = PROVENANCE_UNKNOWN,
-) -> dict[str, str]:
-    return {
-        "model_artifact_digest": model_artifact_digest,
-        "deployment_id": deployment_id,
-        "service_account_identity": service_account_identity,
-        "owning_system": owning_system,
-    }
-
-
-def _merge_lineage(
-    base: dict[str, str] | None, overlay: dict[str, str] | None
-) -> dict[str, str] | None:
-    merged = dict(base) if isinstance(base, dict) else _lineage()
-    has_known = False
-    for lineage_field in LINEAGE_FIELDS:
-        value = PROVENANCE_UNKNOWN
-        if isinstance(overlay, dict):
-            value = overlay.get(lineage_field, PROVENANCE_UNKNOWN)
-        if value and value != PROVENANCE_UNKNOWN:
-            merged[lineage_field] = value
-        elif lineage_field not in merged:
-            merged[lineage_field] = PROVENANCE_UNKNOWN
-        if merged.get(lineage_field) != PROVENANCE_UNKNOWN:
-            has_known = True
-    return merged if has_known else None
-
-
-def _merge_provenance(base: dict[str, str], overlay: dict[str, str]) -> dict[str, str]:
-    merged = dict(base) if base else _provenance()
-    for provenance_field in PROVENANCE_FIELDS:
-        value = overlay.get(provenance_field, PROVENANCE_UNKNOWN)
-        if value and value != PROVENANCE_UNKNOWN:
-            merged[provenance_field] = value
-        elif provenance_field not in merged:
-            merged[provenance_field] = PROVENANCE_UNKNOWN
-    merged_lineage = _merge_lineage(
-        base.get("lineage") if isinstance(base.get("lineage"), dict) else None,
-        overlay.get("lineage") if isinstance(overlay.get("lineage"), dict) else None,
-    )
-    if merged_lineage:
-        merged["lineage"] = merged_lineage
-    return merged
+    if evidence_class != "observed_call":
+        finding["evidence_class"] = evidence_class
+    if detection_method:
+        finding["detection_method"] = detection_method
+    return finding
 
 
 def _with_model_provenance(
-    model: dict[str, Any], runtime_context: dict[str, str]
+    model: dict[str, Any], runtime_context: dict[str, Any]
 ) -> dict[str, Any]:
     model_copy = dict(model)
     model_provenance = model_copy.get("provenance")
@@ -1045,43 +1227,79 @@ def _with_model_provenance(
     return model_copy
 
 
-def _runtime_context_from_manifest(filename: str, text: str) -> dict[str, str]:
+def _runtime_context_from_manifest(filename: str, text: str) -> dict[str, Any]:
     runtime_context = _provenance()
     if filename.lower().startswith("docker"):
         from_match = re.search(r"^\s*FROM\s+([^\s]+)", text, re.MULTILINE | re.IGNORECASE)
         if from_match:
             image = from_match.group(1).strip()
-            runtime_context["immutable_version"] = image
+            _set_provenance_field(
+                runtime_context, "immutable_version", image, "observed:dockerfile-from"
+            )
             if "/" in image:
-                runtime_context["registry_uri"] = image.rsplit(":", 1)[0]
+                _set_provenance_field(
+                    runtime_context,
+                    "registry_uri",
+                    image.rsplit(":", 1)[0],
+                    "inferred:dockerfile-from",
+                )
 
     immutable_refs = _extract_immutable_image_refs(filename, text)
     if immutable_refs:
-        runtime_context["immutable_version"] = immutable_refs[0]
-        runtime_context["registry_uri"] = immutable_refs[0].split("@", 1)[0]
+        _set_provenance_field(
+            runtime_context, "immutable_version", immutable_refs[0], "observed:image-digest"
+        )
+        _set_provenance_field(
+            runtime_context,
+            "registry_uri",
+            immutable_refs[0].split("@", 1)[0],
+            "inferred:image-digest",
+        )
 
     for key, value in _extract_runtime_ai_service_config(filename, text):
         if key in PROVIDER_ENDPOINT_KEYS and value:
-            runtime_context["provider_endpoint"] = value
+            _set_provenance_field(
+                runtime_context, "provider_endpoint", value, "observed:runtime-manifest"
+            )
         elif key in IMMUTABLE_VERSION_KEYS and value:
-            runtime_context["immutable_version"] = value
+            _set_provenance_field(
+                runtime_context, "immutable_version", value, "observed:runtime-manifest"
+            )
         elif key in REGISTRY_URI_KEYS and value:
-            runtime_context["registry_uri"] = value
+            _set_provenance_field(
+                runtime_context, "registry_uri", value, "observed:runtime-manifest"
+            )
         elif key in ENVIRONMENT_KEYS and value:
-            runtime_context["environment"] = value
+            _set_provenance_field(
+                runtime_context, "environment", value, "observed:runtime-manifest"
+            )
         elif key in REGION_KEYS and value:
-            runtime_context["region"] = value
+            _set_provenance_field(
+                runtime_context, "region", value, "observed:runtime-manifest"
+            )
 
     lineage = _lineage()
     for key, value in _extract_lineage_key_values(filename, text):
         if key in DEPLOYMENT_ID_KEYS and value:
             lineage["deployment_id"] = value
+            lineage.setdefault("evidence", {})["deployment_id"] = (
+                _observed_or_inferred_evidence("observed:runtime-manifest")
+            )
         elif key in SERVICE_ACCOUNT_IDENTITY_KEYS and value:
             lineage["service_account_identity"] = value
+            lineage.setdefault("evidence", {})["service_account_identity"] = (
+                _observed_or_inferred_evidence("observed:runtime-manifest")
+            )
         elif key in OWNING_SYSTEM_KEYS and value:
             lineage["owning_system"] = value
+            lineage.setdefault("evidence", {})["owning_system"] = (
+                _observed_or_inferred_evidence("observed:runtime-manifest")
+            )
         elif key in MODEL_ARTIFACT_DIGEST_KEYS and value and "sha256:" in value:
             lineage["model_artifact_digest"] = value
+            lineage.setdefault("evidence", {})["model_artifact_digest"] = (
+                _observed_or_inferred_evidence("observed:runtime-manifest")
+            )
     merged_lineage = _merge_lineage(None, lineage)
     if merged_lineage:
         runtime_context["lineage"] = merged_lineage

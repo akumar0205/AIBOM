@@ -6,17 +6,33 @@
 
 ## Authentication
 
-By default the scanner reads `GITHUB_TOKEN` from the environment.
+By default the scanner reads `GITHUB_TOKEN` from the environment. A set token
+is **never** embedded into clone URLs unless you explicitly opt in with
+`--allow-tokenized-clone` (fail-closed default avoids credential leakage into
+logs or process tables).
 
 ```bash
 export GITHUB_TOKEN=ghp_xxx
-aibom scan-github --repo owner/name --output-dir out
+aibom scan-github --repo owner/name --output-dir out --allow-tokenized-clone
 ```
 
 Use a custom env var with `--token-env`:
 
 ```bash
-aibom scan-github --repo owner/name --token-env AIBOM_GH_TOKEN --output-dir out
+aibom scan-github --repo owner/name --token-env AIBOM_GH_TOKEN --output-dir out --allow-tokenized-clone
+```
+
+## Reproducible scans
+
+Every scan record captures `repo_origin`, the exact `resolved_commit`,
+`branch`, and `scanned_at` timestamp in `summary.json`.
+
+```bash
+# Pin every repo to the same commit SHA.
+aibom scan-github --repo owner/name --commit abc123def456 --output-dir out
+
+# Preferred mode: scan already-checked-out local mirrors (no clone, no network).
+aibom scan-github --repo owner/name --local-mirrors-dir ./mirrors --output-dir out
 ```
 
 ## Rate limits and reliability

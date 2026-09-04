@@ -1,150 +1,1859 @@
 {
-  "schema_version": "1.0",
+  "coverage_summary": {
+    "detectors": [
+      {
+        "artifacts_scanned": 3,
+        "artifacts_seen": 3,
+        "default_confidence": "medium",
+        "source_type": "config"
+      },
+      {
+        "artifacts_scanned": 1,
+        "artifacts_seen": 1,
+        "default_confidence": "medium",
+        "source_type": "dotnet_ast"
+      },
+      {
+        "artifacts_scanned": 1,
+        "artifacts_seen": 1,
+        "default_confidence": "medium",
+        "source_type": "go_ast"
+      },
+      {
+        "artifacts_scanned": 1,
+        "artifacts_seen": 1,
+        "default_confidence": "medium",
+        "source_type": "java_ast"
+      },
+      {
+        "artifacts_scanned": 2,
+        "artifacts_seen": 2,
+        "default_confidence": "medium",
+        "source_type": "js_ts_ast"
+      },
+      {
+        "artifacts_scanned": 1,
+        "artifacts_seen": 1,
+        "default_confidence": "medium",
+        "source_type": "js_ts_manifest"
+      },
+      {
+        "artifacts_failed": 0,
+        "artifacts_scanned": 1,
+        "artifacts_seen": 1,
+        "default_confidence": "medium",
+        "source_type": "jupyter_notebook"
+      },
+      {
+        "artifacts_failed": 0,
+        "artifacts_scanned": 2,
+        "artifacts_seen": 2,
+        "default_confidence": "high",
+        "source_type": "python"
+      },
+      {
+        "artifacts_scanned": 2,
+        "artifacts_seen": 2,
+        "default_confidence": "medium",
+        "source_type": "runtime_manifest"
+      }
+    ],
+    "unsupported_total": 0
+  },
+  "datasets": [
+    {
+      "source_file": "app.py",
+      "type": "langchain.vectorstores.FAISS.from_texts"
+    }
+  ],
+  "frameworks": [
+    {
+      "name": "anthropic"
+    },
+    {
+      "name": "langchain"
+    },
+    {
+      "name": "openai"
+    }
+  ],
   "metadata": {
+    "artifact_sha256": "DYNAMIC",
     "generated_at": "DYNAMIC",
-    "git_sha": "DYNAMIC",
-    "artifact_sha256": "DYNAMIC"
+    "git_sha": "DYNAMIC"
   },
   "models": [
     {
-      "type": "ConfigModelHint",
+      "confidence": "medium",
+      "detection_method": "config-key",
+      "evidence_class": "inferred_dependency",
       "model": "gpt-4.1-mini",
+      "provenance": {
+        "environment": null,
+        "evidence": {
+          "environment": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "immutable_version": {
+            "method": "observed:dockerfile-from",
+            "status": "observed"
+          },
+          "provider_endpoint": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "region": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "registry_uri": {
+            "method": "not-observed",
+            "status": "missing"
+          }
+        },
+        "immutable_version": "python:3.11-slim",
+        "provider_endpoint": null,
+        "region": null,
+        "registry_uri": null
+      },
       "source_file": "settings.yaml",
       "source_type": "config",
-      "confidence": "medium",
-      "provenance": {
-        "provider_endpoint": "unknown",
-        "registry_uri": "unknown",
-        "immutable_version": "python:3.11-slim",
-        "environment": "unknown",
-        "region": "unknown"
-      }
+      "type": "ConfigModelHint"
     },
     {
-      "type": "ChatOpenAI",
+      "detection_method": "alias-resolution:langchain_openai.ChatOpenAI",
+      "evidence_class": "inferred_dependency",
       "model": "gpt-4.1-mini",
-      "source_file": "alias_wrappers.py",
       "provenance": {
-        "provider_endpoint": "https://api.openai.com",
-        "registry_uri": "unknown",
+        "environment": null,
+        "evidence": {
+          "environment": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "immutable_version": {
+            "method": "observed:dockerfile-from",
+            "status": "observed"
+          },
+          "provider_endpoint": {
+            "method": "inferred:model-class-default",
+            "status": "inferred"
+          },
+          "region": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "registry_uri": {
+            "method": "not-observed",
+            "status": "missing"
+          }
+        },
         "immutable_version": "python:3.11-slim",
-        "environment": "unknown",
-        "region": "unknown"
-      }
+        "provider_endpoint": "https://api.openai.com",
+        "region": null,
+        "registry_uri": null
+      },
+      "source_file": "alias_wrappers.py",
+      "type": "ChatOpenAI"
     },
     {
-      "type": "ChatOpenAI",
+      "detection_method": "direct-constructor",
+      "evidence_class": "observed_call",
       "model": "gpt-4o-mini",
+      "provenance": {
+        "environment": null,
+        "evidence": {
+          "environment": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "immutable_version": {
+            "method": "observed:dockerfile-from",
+            "status": "observed"
+          },
+          "provider_endpoint": {
+            "method": "inferred:model-class-default",
+            "status": "inferred"
+          },
+          "region": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "registry_uri": {
+            "method": "not-observed",
+            "status": "missing"
+          }
+        },
+        "immutable_version": "python:3.11-slim",
+        "provider_endpoint": "https://api.openai.com",
+        "region": null,
+        "registry_uri": null
+      },
       "source_file": "app.py",
-      "provenance": {
-        "provider_endpoint": "https://api.openai.com",
-        "registry_uri": "unknown",
-        "immutable_version": "python:3.11-slim",
-        "environment": "unknown",
-        "region": "unknown"
-      }
+      "type": "ChatOpenAI"
     },
     {
-      "type": "OpenAI",
+      "detection_method": "direct-constructor",
+      "evidence_class": "observed_call",
       "model": "gpt-4o-mini",
-      "source_file": "assistant.java:7",
       "provenance": {
-        "provider_endpoint": "https://api.openai.com",
-        "registry_uri": "unknown",
+        "environment": null,
+        "evidence": {
+          "environment": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "immutable_version": {
+            "method": "observed:dockerfile-from",
+            "status": "observed"
+          },
+          "provider_endpoint": {
+            "method": "inferred:model-class-default",
+            "status": "inferred"
+          },
+          "region": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "registry_uri": {
+            "method": "not-observed",
+            "status": "missing"
+          }
+        },
         "immutable_version": "python:3.11-slim",
-        "environment": "unknown",
-        "region": "unknown"
-      }
-    },
-    {
-      "type": "ChatOpenAI",
-      "model": "gpt-4o-mini",
+        "provider_endpoint": "https://api.openai.com",
+        "region": null,
+        "registry_uri": null
+      },
       "source_file": "demo.ipynb#cell-0",
-      "provenance": {
-        "provider_endpoint": "https://api.openai.com",
-        "registry_uri": "unknown",
-        "immutable_version": "python:3.11-slim",
-        "environment": "unknown",
-        "region": "unknown"
-      }
+      "type": "ChatOpenAI"
     },
     {
-      "type": "OpenAI",
+      "detection_method": "direct-constructor",
+      "evidence_class": "observed_call",
       "model": "gpt-4o-mini",
+      "provenance": {
+        "environment": null,
+        "evidence": {
+          "environment": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "immutable_version": {
+            "method": "observed:dockerfile-from",
+            "status": "observed"
+          },
+          "provider_endpoint": {
+            "method": "inferred:static-analysis-default",
+            "status": "inferred"
+          },
+          "region": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "registry_uri": {
+            "method": "not-observed",
+            "status": "missing"
+          }
+        },
+        "immutable_version": "python:3.11-slim",
+        "provider_endpoint": "https://api.openai.com",
+        "region": null,
+        "registry_uri": null
+      },
       "source_file": "script.ts:5",
-      "provenance": {
-        "provider_endpoint": "https://api.openai.com",
-        "registry_uri": "unknown",
-        "immutable_version": "python:3.11-slim",
-        "environment": "unknown",
-        "region": "unknown"
-      }
+      "type": "OpenAI"
     },
     {
-      "type": "OpenAI",
-      "model": "sk-local",
-      "source_file": "Assistant.cs:6",
+      "detection_method": "factory-invocation:model_factory",
+      "evidence_class": "inferred_dependency",
+      "model": "gpt-4o-mini",
       "provenance": {
-        "provider_endpoint": "https://api.openai.com",
-        "registry_uri": "unknown",
+        "environment": null,
+        "evidence": {
+          "environment": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "immutable_version": {
+            "method": "observed:dockerfile-from",
+            "status": "observed"
+          },
+          "provider_endpoint": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "region": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "registry_uri": {
+            "method": "not-observed",
+            "status": "missing"
+          }
+        },
         "immutable_version": "python:3.11-slim",
-        "environment": "unknown",
-        "region": "unknown"
-      }
-    },
-    {
-      "type": "ChatOpenAI",
-      "model": "unknown",
+        "provider_endpoint": null,
+        "region": null,
+        "registry_uri": null
+      },
       "source_file": "alias_wrappers.py",
-      "provenance": {
-        "provider_endpoint": "https://api.openai.com",
-        "registry_uri": "unknown",
-        "immutable_version": "python:3.11-slim",
-        "environment": "unknown",
-        "region": "unknown"
-      }
+      "type": "Factory:model_factory"
     },
     {
-      "type": "OpenAI",
+      "detection_method": "factory:mkModel",
+      "evidence_class": "inferred_dependency",
       "model": "unknown",
-      "source_file": "assistant.go:9",
       "provenance": {
-        "provider_endpoint": "https://api.openai.com",
-        "registry_uri": "unknown",
+        "environment": null,
+        "evidence": {
+          "environment": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "immutable_version": {
+            "method": "observed:dockerfile-from",
+            "status": "observed"
+          },
+          "provider_endpoint": {
+            "method": "inferred:static-analysis-default",
+            "status": "inferred"
+          },
+          "region": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "registry_uri": {
+            "method": "not-observed",
+            "status": "missing"
+          }
+        },
         "immutable_version": "python:3.11-slim",
-        "environment": "unknown",
-        "region": "unknown"
-      }
-    },
-    {
-      "type": "OpenAI",
-      "model": "unknown",
-      "source_file": "assistant.java:1",
-      "provenance": {
         "provider_endpoint": "https://api.openai.com",
-        "registry_uri": "unknown",
-        "immutable_version": "python:3.11-slim",
-        "environment": "unknown",
-        "region": "unknown"
-      }
-    },
-    {
-      "type": "ChatOpenAI",
-      "model": "unknown",
+        "region": null,
+        "registry_uri": null
+      },
       "source_file": "edge_cases.ts:6",
+      "type": "ChatOpenAI"
+    },
+    {
+      "detection_method": "factory:model_factory",
+      "evidence_class": "inferred_dependency",
+      "model": "unknown",
       "provenance": {
-        "provider_endpoint": "https://api.openai.com",
-        "registry_uri": "unknown",
+        "environment": null,
+        "evidence": {
+          "environment": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "immutable_version": {
+            "method": "observed:dockerfile-from",
+            "status": "observed"
+          },
+          "provider_endpoint": {
+            "method": "inferred:model-class-default",
+            "status": "inferred"
+          },
+          "region": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "registry_uri": {
+            "method": "not-observed",
+            "status": "missing"
+          }
+        },
         "immutable_version": "python:3.11-slim",
-        "environment": "unknown",
-        "region": "unknown"
-      }
+        "provider_endpoint": "https://api.openai.com",
+        "region": null,
+        "registry_uri": null
+      },
+      "source_file": "alias_wrappers.py",
+      "type": "ChatOpenAI"
+    },
+    {
+      "detection_method": "pattern-match:single-line-regex",
+      "evidence_class": "inferred_dependency",
+      "model": "gpt-4o-mini",
+      "provenance": {
+        "environment": null,
+        "evidence": {
+          "environment": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "immutable_version": {
+            "method": "observed:dockerfile-from",
+            "status": "observed"
+          },
+          "provider_endpoint": {
+            "method": "inferred:static-analysis-default",
+            "status": "inferred"
+          },
+          "region": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "registry_uri": {
+            "method": "not-observed",
+            "status": "missing"
+          }
+        },
+        "immutable_version": "python:3.11-slim",
+        "provider_endpoint": "https://api.openai.com",
+        "region": null,
+        "registry_uri": null
+      },
+      "source_file": "assistant.java:7",
+      "type": "OpenAI"
+    },
+    {
+      "detection_method": "pattern-match:single-line-regex",
+      "evidence_class": "inferred_dependency",
+      "model": "sk-local",
+      "provenance": {
+        "environment": null,
+        "evidence": {
+          "environment": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "immutable_version": {
+            "method": "observed:dockerfile-from",
+            "status": "observed"
+          },
+          "provider_endpoint": {
+            "method": "inferred:static-analysis-default",
+            "status": "inferred"
+          },
+          "region": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "registry_uri": {
+            "method": "not-observed",
+            "status": "missing"
+          }
+        },
+        "immutable_version": "python:3.11-slim",
+        "provider_endpoint": "https://api.openai.com",
+        "region": null,
+        "registry_uri": null
+      },
+      "source_file": "Assistant.cs:6",
+      "type": "OpenAI"
+    },
+    {
+      "detection_method": "pattern-match:single-line-regex",
+      "evidence_class": "inferred_dependency",
+      "model": "unknown",
+      "provenance": {
+        "environment": null,
+        "evidence": {
+          "environment": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "immutable_version": {
+            "method": "observed:dockerfile-from",
+            "status": "observed"
+          },
+          "provider_endpoint": {
+            "method": "inferred:static-analysis-default",
+            "status": "inferred"
+          },
+          "region": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "registry_uri": {
+            "method": "not-observed",
+            "status": "missing"
+          }
+        },
+        "immutable_version": "python:3.11-slim",
+        "provider_endpoint": "https://api.openai.com",
+        "region": null,
+        "registry_uri": null
+      },
+      "source_file": "assistant.go:9",
+      "type": "OpenAI"
+    },
+    {
+      "detection_method": "pattern-match:single-line-regex",
+      "evidence_class": "inferred_dependency",
+      "model": "unknown",
+      "provenance": {
+        "environment": null,
+        "evidence": {
+          "environment": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "immutable_version": {
+            "method": "observed:dockerfile-from",
+            "status": "observed"
+          },
+          "provider_endpoint": {
+            "method": "inferred:static-analysis-default",
+            "status": "inferred"
+          },
+          "region": {
+            "method": "not-observed",
+            "status": "missing"
+          },
+          "registry_uri": {
+            "method": "not-observed",
+            "status": "missing"
+          }
+        },
+        "immutable_version": "python:3.11-slim",
+        "provider_endpoint": "https://api.openai.com",
+        "region": null,
+        "registry_uri": null
+      },
+      "source_file": "assistant.java:1",
+      "type": "OpenAI"
     }
   ],
-  "datasets": [
+  "prompts": [
     {
-      "type": "langchain.vectorstores.FAISS.from_texts",
+      "id": "Assistant.cs:8",
+      "source_file": "Assistant.cs:8"
+    },
+    {
+      "id": "app.py:9",
       "source_file": "app.py"
+    },
+    {
+      "id": "assistant.go:11",
+      "source_file": "assistant.go:11"
+    },
+    {
+      "id": "assistant.java:3",
+      "source_file": "assistant.java:3"
+    },
+    {
+      "id": "assistant.java:9",
+      "source_file": "assistant.java:9"
+    },
+    {
+      "id": "edge_cases.ts:8",
+      "source_file": "edge_cases.ts:8"
+    },
+    {
+      "id": "script.ts:7",
+      "source_file": "script.ts:7"
+    }
+  ],
+  "risk_findings": [
+    {
+      "base_rule_id": "model-version-drift",
+      "category": "model version drift",
+      "confidence": "0.80",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-05",
+        "NIST-AI-RMF-MANAGE"
+      ],
+      "control_objective": "Pin every model reference to an immutable version or digest.",
+      "evidence_requirements": [
+        "model identity from static analysis",
+        "missing or floating version pin"
+      ],
+      "exposure": "0.50",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "model-version-drift:ChatOpenAI:alias_wrappers.py",
+      "owasp_llm": "LLM05 Supply-Chain Vulnerabilities",
+      "provenance_completeness": "0.30",
+      "rationale": "Model reference is unpinned; provider-side updates can change behavior silently.",
+      "remediation": "Pin model versions or digests, subscribe to provider change notices, and re-validate on drift.",
+      "rule_id": "model-version-drift",
+      "severity": "medium",
+      "weighted_score": "0.555"
+    },
+    {
+      "base_rule_id": "model-version-drift",
+      "category": "model version drift",
+      "confidence": "0.80",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-05",
+        "NIST-AI-RMF-MANAGE"
+      ],
+      "control_objective": "Pin every model reference to an immutable version or digest.",
+      "evidence_requirements": [
+        "model identity from static analysis",
+        "missing or floating version pin"
+      ],
+      "exposure": "0.50",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "model-version-drift:ChatOpenAI:edge_cases.ts:6",
+      "owasp_llm": "LLM05 Supply-Chain Vulnerabilities",
+      "provenance_completeness": "0.30",
+      "rationale": "Model reference is unpinned; provider-side updates can change behavior silently.",
+      "remediation": "Pin model versions or digests, subscribe to provider change notices, and re-validate on drift.",
+      "rule_id": "model-version-drift",
+      "severity": "medium",
+      "weighted_score": "0.555"
+    },
+    {
+      "base_rule_id": "model-version-drift",
+      "category": "model version drift",
+      "confidence": "0.80",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-05",
+        "NIST-AI-RMF-MANAGE"
+      ],
+      "control_objective": "Pin every model reference to an immutable version or digest.",
+      "evidence_requirements": [
+        "model identity from static analysis",
+        "missing or floating version pin"
+      ],
+      "exposure": "0.50",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "model-version-drift:OpenAI:assistant.go:9",
+      "owasp_llm": "LLM05 Supply-Chain Vulnerabilities",
+      "provenance_completeness": "0.30",
+      "rationale": "Model reference is unpinned; provider-side updates can change behavior silently.",
+      "remediation": "Pin model versions or digests, subscribe to provider change notices, and re-validate on drift.",
+      "rule_id": "model-version-drift",
+      "severity": "medium",
+      "weighted_score": "0.555"
+    },
+    {
+      "base_rule_id": "model-version-drift",
+      "category": "model version drift",
+      "confidence": "0.80",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-05",
+        "NIST-AI-RMF-MANAGE"
+      ],
+      "control_objective": "Pin every model reference to an immutable version or digest.",
+      "evidence_requirements": [
+        "model identity from static analysis",
+        "missing or floating version pin"
+      ],
+      "exposure": "0.50",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "model-version-drift:OpenAI:assistant.java:1",
+      "owasp_llm": "LLM05 Supply-Chain Vulnerabilities",
+      "provenance_completeness": "0.30",
+      "rationale": "Model reference is unpinned; provider-side updates can change behavior silently.",
+      "remediation": "Pin model versions or digests, subscribe to provider change notices, and re-validate on drift.",
+      "rule_id": "model-version-drift",
+      "severity": "medium",
+      "weighted_score": "0.555"
+    },
+    {
+      "base_rule_id": "prompt-injection-surface",
+      "category": "prompt injection surface",
+      "confidence": "0.65",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-01",
+        "NIST-AI-RMF-MAP"
+      ],
+      "control_objective": "Treat prompt inputs as untrusted and bound their influence.",
+      "evidence_requirements": [
+        "prompt template presence",
+        "originating file or unresolved source marker"
+      ],
+      "exposure": "0.60",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "prompt-injection-surface:prompt_templates:",
+      "owasp_llm": "LLM01 Prompt Injection",
+      "provenance_completeness": "0.50",
+      "rationale": "Prompt templates detected; review source trust boundaries.",
+      "remediation": "Validate and sanitize untrusted prompt content, isolate tool actions, and monitor for injection patterns.",
+      "rule_id": "prompt-injection-surface",
+      "severity": "medium",
+      "weighted_score": "0.593"
+    },
+    {
+      "base_rule_id": "prompt-logging",
+      "category": "prompt logging",
+      "confidence": "0.60",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-02",
+        "SOC2-CC6.1"
+      ],
+      "control_objective": "Ensure prompts and completions are logged safely or not at all.",
+      "evidence_requirements": [
+        "prompt template presence",
+        "originating file or unresolved source marker"
+      ],
+      "exposure": "0.60",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "prompt-logging:prompt_templates:",
+      "owasp_llm": "LLM02 Insecure Output Handling",
+      "provenance_completeness": "0.50",
+      "rationale": "Prompt templates detected; template content and completions may be logged without redaction.",
+      "remediation": "Disable prompt logging by default, redact PII/secrets in logged templates, and set retention limits.",
+      "rule_id": "prompt-logging",
+      "severity": "medium",
+      "weighted_score": "0.575"
+    },
+    {
+      "base_rule_id": "retrieval-augmentation",
+      "category": "retrieval augmentation",
+      "confidence": "0.75",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-03",
+        "NIST-AI-RMF-MEASURE"
+      ],
+      "control_objective": "Govern retrieval corpora that ground model outputs.",
+      "evidence_requirements": [
+        "vector store invocation evidence",
+        "source file path with retrieval usage"
+      ],
+      "exposure": "0.65",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "retrieval-augmentation:langchain.vectorstores.FAISS.from_texts:app.py",
+      "owasp_llm": "LLM03 Training Data Poisoning",
+      "provenance_completeness": "1.00",
+      "rationale": "Vector store / retrieval usage detected; poisoned or stale passages can steer outputs.",
+      "remediation": "Version and sign retrieval snapshots, scan ingested content, and monitor for poisoning or staleness.",
+      "rule_id": "retrieval-augmentation",
+      "severity": "high",
+      "weighted_score": "0.772"
+    },
+    {
+      "base_rule_id": "secret-exposure",
+      "category": "secret exposure",
+      "confidence": "0.85",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-06",
+        "SOC2-CC6.1"
+      ],
+      "control_objective": "Prevent AI provider credentials from living in source or config.",
+      "evidence_requirements": [
+        "redacted credential finding from config scan",
+        "source file path containing the credential reference"
+      ],
+      "exposure": "0.90",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "secret-exposure:config:anthropic_api_key:.env:.env",
+      "owasp_llm": "LLM06 Sensitive Information Disclosure",
+      "provenance_completeness": "0.60",
+      "rationale": "Provider credential material detected in scanned configuration.",
+      "remediation": "Move the credential to a managed secret store, rotate the exposed value, and block commits containing secrets.",
+      "rule_id": "secret-exposure",
+      "severity": "critical",
+      "weighted_score": "0.807"
+    },
+    {
+      "base_rule_id": "secret-exposure",
+      "category": "secret exposure",
+      "confidence": "0.85",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-06",
+        "SOC2-CC6.1"
+      ],
+      "control_objective": "Prevent AI provider credentials from living in source or config.",
+      "evidence_requirements": [
+        "redacted credential finding from config scan",
+        "source file path containing the credential reference"
+      ],
+      "exposure": "0.90",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "secret-exposure:config:openai_api_key:.env:.env",
+      "owasp_llm": "LLM06 Sensitive Information Disclosure",
+      "provenance_completeness": "0.60",
+      "rationale": "Provider credential material detected in scanned configuration.",
+      "remediation": "Move the credential to a managed secret store, rotate the exposed value, and block commits containing secrets.",
+      "rule_id": "secret-exposure",
+      "severity": "critical",
+      "weighted_score": "0.807"
+    },
+    {
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "confidence": "0.80",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Approve and monitor external model providers handling data.",
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ],
+      "exposure": "0.70",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "third-party-provider:ChatOpenAI:alias_wrappers.py",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "provenance_completeness": "1.00",
+      "rationale": "External model provider detected.",
+      "remediation": "Confirm the provider is on the approved-vendor list, pin the model version, and review data-sharing terms.",
+      "rule_id": "third-party-provider",
+      "severity": "critical",
+      "weighted_score": "0.810"
+    },
+    {
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "confidence": "0.80",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Approve and monitor external model providers handling data.",
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ],
+      "exposure": "0.70",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "third-party-provider:ChatOpenAI:alias_wrappers.py",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "provenance_completeness": "1.00",
+      "rationale": "External model provider detected.",
+      "remediation": "Confirm the provider is on the approved-vendor list, pin the model version, and review data-sharing terms.",
+      "rule_id": "third-party-provider",
+      "severity": "critical",
+      "weighted_score": "0.810"
+    },
+    {
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "confidence": "0.80",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Approve and monitor external model providers handling data.",
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ],
+      "exposure": "0.70",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "third-party-provider:ChatOpenAI:app.py",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "provenance_completeness": "1.00",
+      "rationale": "External model provider detected.",
+      "remediation": "Confirm the provider is on the approved-vendor list, pin the model version, and review data-sharing terms.",
+      "rule_id": "third-party-provider",
+      "severity": "critical",
+      "weighted_score": "0.810"
+    },
+    {
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "confidence": "0.80",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Approve and monitor external model providers handling data.",
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ],
+      "exposure": "0.70",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "third-party-provider:ChatOpenAI:demo.ipynb#cell-0",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "provenance_completeness": "1.00",
+      "rationale": "External model provider detected.",
+      "remediation": "Confirm the provider is on the approved-vendor list, pin the model version, and review data-sharing terms.",
+      "rule_id": "third-party-provider",
+      "severity": "critical",
+      "weighted_score": "0.810"
+    },
+    {
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "confidence": "0.80",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Approve and monitor external model providers handling data.",
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ],
+      "exposure": "0.70",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "third-party-provider:ChatOpenAI:edge_cases.ts:6",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "provenance_completeness": "1.00",
+      "rationale": "External model provider detected.",
+      "remediation": "Confirm the provider is on the approved-vendor list, pin the model version, and review data-sharing terms.",
+      "rule_id": "third-party-provider",
+      "severity": "critical",
+      "weighted_score": "0.810"
+    },
+    {
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "confidence": "0.80",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Approve and monitor external model providers handling data.",
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ],
+      "exposure": "0.70",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "third-party-provider:OpenAI:Assistant.cs:6",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "provenance_completeness": "1.00",
+      "rationale": "External model provider detected.",
+      "remediation": "Confirm the provider is on the approved-vendor list, pin the model version, and review data-sharing terms.",
+      "rule_id": "third-party-provider",
+      "severity": "critical",
+      "weighted_score": "0.810"
+    },
+    {
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "confidence": "0.80",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Approve and monitor external model providers handling data.",
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ],
+      "exposure": "0.70",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "third-party-provider:OpenAI:assistant.go:9",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "provenance_completeness": "1.00",
+      "rationale": "External model provider detected.",
+      "remediation": "Confirm the provider is on the approved-vendor list, pin the model version, and review data-sharing terms.",
+      "rule_id": "third-party-provider",
+      "severity": "critical",
+      "weighted_score": "0.810"
+    },
+    {
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "confidence": "0.80",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Approve and monitor external model providers handling data.",
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ],
+      "exposure": "0.70",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "third-party-provider:OpenAI:assistant.java:1",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "provenance_completeness": "1.00",
+      "rationale": "External model provider detected.",
+      "remediation": "Confirm the provider is on the approved-vendor list, pin the model version, and review data-sharing terms.",
+      "rule_id": "third-party-provider",
+      "severity": "critical",
+      "weighted_score": "0.810"
+    },
+    {
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "confidence": "0.80",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Approve and monitor external model providers handling data.",
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ],
+      "exposure": "0.70",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "third-party-provider:OpenAI:assistant.java:7",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "provenance_completeness": "1.00",
+      "rationale": "External model provider detected.",
+      "remediation": "Confirm the provider is on the approved-vendor list, pin the model version, and review data-sharing terms.",
+      "rule_id": "third-party-provider",
+      "severity": "critical",
+      "weighted_score": "0.810"
+    },
+    {
+      "base_rule_id": "third-party-provider",
+      "category": "third-party dependency",
+      "confidence": "0.80",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-07",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Approve and monitor external model providers handling data.",
+      "evidence_requirements": [
+        "model type from static analysis",
+        "source file path where provider is referenced"
+      ],
+      "exposure": "0.70",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "third-party-provider:OpenAI:script.ts:5",
+      "owasp_llm": "LLM07 Insecure Plugin Design",
+      "provenance_completeness": "1.00",
+      "rationale": "External model provider detected.",
+      "remediation": "Confirm the provider is on the approved-vendor list, pin the model version, and review data-sharing terms.",
+      "rule_id": "third-party-provider",
+      "severity": "critical",
+      "weighted_score": "0.810"
+    },
+    {
+      "base_rule_id": "tool-execution",
+      "category": "tool execution",
+      "confidence": "0.70",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-08",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Bound what agentic tools can do on the model's behalf.",
+      "evidence_requirements": [
+        "tool invocation evidence",
+        "source file path with tool wiring"
+      ],
+      "exposure": "0.85",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "tool-execution:builder:assistant.java:8",
+      "owasp_llm": "LLM08 Excessive Agency",
+      "provenance_completeness": "1.00",
+      "rationale": "Agentic tool surface detected; the model can trigger side effects.",
+      "remediation": "Require human approval for high-impact tools, sandbox execution, and audit every tool call.",
+      "rule_id": "tool-execution",
+      "severity": "critical",
+      "weighted_score": "0.835"
+    },
+    {
+      "base_rule_id": "tool-execution",
+      "category": "tool execution",
+      "confidence": "0.70",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-08",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Bound what agentic tools can do on the model's behalf.",
+      "evidence_requirements": [
+        "tool invocation evidence",
+        "source file path with tool wiring"
+      ],
+      "exposure": "0.85",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "tool-execution:initialize_agent:alias_wrappers.py",
+      "owasp_llm": "LLM08 Excessive Agency",
+      "provenance_completeness": "1.00",
+      "rationale": "Agentic tool surface detected; the model can trigger side effects.",
+      "remediation": "Require human approval for high-impact tools, sandbox execution, and audit every tool call.",
+      "rule_id": "tool-execution",
+      "severity": "critical",
+      "weighted_score": "0.835"
+    },
+    {
+      "base_rule_id": "tool-execution",
+      "category": "tool execution",
+      "confidence": "0.70",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-08",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Bound what agentic tools can do on the model's behalf.",
+      "evidence_requirements": [
+        "tool invocation evidence",
+        "source file path with tool wiring"
+      ],
+      "exposure": "0.85",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "tool-execution:initialize_agent:app.py",
+      "owasp_llm": "LLM08 Excessive Agency",
+      "provenance_completeness": "1.00",
+      "rationale": "Agentic tool surface detected; the model can trigger side effects.",
+      "remediation": "Require human approval for high-impact tools, sandbox execution, and audit every tool call.",
+      "rule_id": "tool-execution",
+      "severity": "critical",
+      "weighted_score": "0.835"
+    },
+    {
+      "base_rule_id": "tool-execution",
+      "category": "tool execution",
+      "confidence": "0.70",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-08",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Bound what agentic tools can do on the model's behalf.",
+      "evidence_requirements": [
+        "tool invocation evidence",
+        "source file path with tool wiring"
+      ],
+      "exposure": "0.85",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "tool-execution:java_tool:assistant.java:2",
+      "owasp_llm": "LLM08 Excessive Agency",
+      "provenance_completeness": "1.00",
+      "rationale": "Agentic tool surface detected; the model can trigger side effects.",
+      "remediation": "Require human approval for high-impact tools, sandbox execution, and audit every tool call.",
+      "rule_id": "tool-execution",
+      "severity": "critical",
+      "weighted_score": "0.835"
+    },
+    {
+      "base_rule_id": "tool-execution",
+      "category": "tool execution",
+      "confidence": "0.70",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-08",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Bound what agentic tools can do on the model's behalf.",
+      "evidence_requirements": [
+        "tool invocation evidence",
+        "source file path with tool wiring"
+      ],
+      "exposure": "0.85",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "tool-execution:tool:assistant.go:10",
+      "owasp_llm": "LLM08 Excessive Agency",
+      "provenance_completeness": "1.00",
+      "rationale": "Agentic tool surface detected; the model can trigger side effects.",
+      "remediation": "Require human approval for high-impact tools, sandbox execution, and audit every tool call.",
+      "rule_id": "tool-execution",
+      "severity": "critical",
+      "weighted_score": "0.835"
+    },
+    {
+      "base_rule_id": "tool-execution",
+      "category": "tool execution",
+      "confidence": "0.70",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-08",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Bound what agentic tools can do on the model's behalf.",
+      "evidence_requirements": [
+        "tool invocation evidence",
+        "source file path with tool wiring"
+      ],
+      "exposure": "0.85",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "tool-execution:tool:edge_cases.ts:7",
+      "owasp_llm": "LLM08 Excessive Agency",
+      "provenance_completeness": "1.00",
+      "rationale": "Agentic tool surface detected; the model can trigger side effects.",
+      "remediation": "Require human approval for high-impact tools, sandbox execution, and audit every tool call.",
+      "rule_id": "tool-execution",
+      "severity": "critical",
+      "weighted_score": "0.835"
+    },
+    {
+      "base_rule_id": "tool-execution",
+      "category": "tool execution",
+      "confidence": "0.70",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-08",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Bound what agentic tools can do on the model's behalf.",
+      "evidence_requirements": [
+        "tool invocation evidence",
+        "source file path with tool wiring"
+      ],
+      "exposure": "0.85",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "tool-execution:tool:script.ts:6",
+      "owasp_llm": "LLM08 Excessive Agency",
+      "provenance_completeness": "1.00",
+      "rationale": "Agentic tool surface detected; the model can trigger side effects.",
+      "remediation": "Require human approval for high-impact tools, sandbox execution, and audit every tool call.",
+      "rule_id": "tool-execution",
+      "severity": "critical",
+      "weighted_score": "0.835"
+    },
+    {
+      "base_rule_id": "tool-execution",
+      "category": "tool execution",
+      "confidence": "0.70",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-08",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Bound what agentic tools can do on the model's behalf.",
+      "evidence_requirements": [
+        "tool invocation evidence",
+        "source file path with tool wiring"
+      ],
+      "exposure": "0.85",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "tool-execution:var:Assistant.cs:7",
+      "owasp_llm": "LLM08 Excessive Agency",
+      "provenance_completeness": "1.00",
+      "rationale": "Agentic tool surface detected; the model can trigger side effects.",
+      "remediation": "Require human approval for high-impact tools, sandbox execution, and audit every tool call.",
+      "rule_id": "tool-execution",
+      "severity": "critical",
+      "weighted_score": "0.835"
+    },
+    {
+      "base_rule_id": "unsupported-provider-use",
+      "category": "unsupported provider",
+      "confidence": "0.60",
+      "control_mapping_tags": [],
+      "control_mappings": [
+        "OWASP-LLM-05",
+        "NIST-AI-RMF-GOVERN"
+      ],
+      "control_objective": "Inventory and approve every model provider, including wrappers.",
+      "evidence_requirements": [
+        "model identity from static analysis",
+        "provider or wrapper classification"
+      ],
+      "exposure": "0.60",
+      "finding_kind": "risk",
+      "heuristic": "true",
+      "id": "unsupported-provider-use:Factory:model_factory:alias_wrappers.py",
+      "owasp_llm": "LLM05 Supply-Chain Vulnerabilities",
+      "provenance_completeness": "0.40",
+      "rationale": "Model surface uses a provider or wrapper outside the assessed inventory.",
+      "remediation": "Register the provider in the approved-vendor list or migrate to an assessed provider.",
+      "rule_id": "unsupported-provider-use",
+      "severity": "medium",
+      "weighted_score": "0.550"
+    }
+  ],
+  "risk_policy": {
+    "applied_rules": [
+      {
+        "base_rule_id": "exfil-surface",
+        "candidate_count": 0,
+        "category": "exfil surface",
+        "control_mappings": [
+          "OWASP-LLM-06",
+          "SOC2-CC6.1"
+        ],
+        "control_objective": "Block unmediated exfiltration paths from AI tooling.",
+        "effective_weights": {
+          "confidence": 0.35,
+          "exposure": 0.4,
+          "provenance": 0.25
+        },
+        "enabled": true,
+        "evidence_requirements": [
+          "tool invocation or import evidence",
+          "source file path with exfil-capable tool"
+        ],
+        "post_allowlist_count": 0,
+        "rationale": "Tool may read/write data or access web.",
+        "remediation": "Restrict file and network tools to least privilege, review tool scopes, and alert on anomalous reads.",
+        "rule_id": "exfil-surface",
+        "severity": "high",
+        "threshold": 1
+      },
+      {
+        "base_rule_id": "internet-egress",
+        "candidate_count": 0,
+        "category": "internet egress",
+        "control_mappings": [
+          "OWASP-LLM-06",
+          "SOC2-CC6.1"
+        ],
+        "control_objective": "Constrain which AI tools can initiate outbound network calls.",
+        "effective_weights": {
+          "confidence": 0.35,
+          "exposure": 0.4,
+          "provenance": 0.25
+        },
+        "enabled": true,
+        "evidence_requirements": [
+          "tool invocation or import evidence",
+          "source file path with network-capable tool"
+        ],
+        "post_allowlist_count": 0,
+        "rationale": "Network-capable tool detected; prompts or data may leave the boundary.",
+        "remediation": "Allowlist egress destinations, enforce egress proxying, and log outbound calls.",
+        "rule_id": "internet-egress",
+        "severity": "medium",
+        "threshold": 1
+      },
+      {
+        "base_rule_id": "model-version-drift",
+        "candidate_count": 4,
+        "category": "model version drift",
+        "control_mappings": [
+          "OWASP-LLM-05",
+          "NIST-AI-RMF-MANAGE"
+        ],
+        "control_objective": "Pin every model reference to an immutable version or digest.",
+        "effective_weights": {
+          "confidence": 0.35,
+          "exposure": 0.4,
+          "provenance": 0.25
+        },
+        "enabled": true,
+        "evidence_requirements": [
+          "model identity from static analysis",
+          "missing or floating version pin"
+        ],
+        "post_allowlist_count": 4,
+        "rationale": "Model reference is unpinned; provider-side updates can change behavior silently.",
+        "remediation": "Pin model versions or digests, subscribe to provider change notices, and re-validate on drift.",
+        "rule_id": "model-version-drift",
+        "severity": "medium",
+        "threshold": 1
+      },
+      {
+        "base_rule_id": "prompt-injection-surface",
+        "candidate_count": 1,
+        "category": "prompt injection surface",
+        "control_mappings": [
+          "OWASP-LLM-01",
+          "NIST-AI-RMF-MAP"
+        ],
+        "control_objective": "Treat prompt inputs as untrusted and bound their influence.",
+        "effective_weights": {
+          "confidence": 0.35,
+          "exposure": 0.4,
+          "provenance": 0.25
+        },
+        "enabled": true,
+        "evidence_requirements": [
+          "prompt template presence",
+          "originating file or unresolved source marker"
+        ],
+        "post_allowlist_count": 1,
+        "rationale": "Prompt templates detected; review source trust boundaries.",
+        "remediation": "Validate and sanitize untrusted prompt content, isolate tool actions, and monitor for injection patterns.",
+        "rule_id": "prompt-injection-surface",
+        "severity": "medium",
+        "threshold": 1
+      },
+      {
+        "base_rule_id": "prompt-logging",
+        "candidate_count": 1,
+        "category": "prompt logging",
+        "control_mappings": [
+          "OWASP-LLM-02",
+          "SOC2-CC6.1"
+        ],
+        "control_objective": "Ensure prompts and completions are logged safely or not at all.",
+        "effective_weights": {
+          "confidence": 0.35,
+          "exposure": 0.4,
+          "provenance": 0.25
+        },
+        "enabled": true,
+        "evidence_requirements": [
+          "prompt template presence",
+          "originating file or unresolved source marker"
+        ],
+        "post_allowlist_count": 1,
+        "rationale": "Prompt templates detected; template content and completions may be logged without redaction.",
+        "remediation": "Disable prompt logging by default, redact PII/secrets in logged templates, and set retention limits.",
+        "rule_id": "prompt-logging",
+        "severity": "medium",
+        "threshold": 1
+      },
+      {
+        "base_rule_id": "retrieval-augmentation",
+        "candidate_count": 1,
+        "category": "retrieval augmentation",
+        "control_mappings": [
+          "OWASP-LLM-03",
+          "NIST-AI-RMF-MEASURE"
+        ],
+        "control_objective": "Govern retrieval corpora that ground model outputs.",
+        "effective_weights": {
+          "confidence": 0.35,
+          "exposure": 0.4,
+          "provenance": 0.25
+        },
+        "enabled": true,
+        "evidence_requirements": [
+          "vector store invocation evidence",
+          "source file path with retrieval usage"
+        ],
+        "post_allowlist_count": 1,
+        "rationale": "Vector store / retrieval usage detected; poisoned or stale passages can steer outputs.",
+        "remediation": "Version and sign retrieval snapshots, scan ingested content, and monitor for poisoning or staleness.",
+        "rule_id": "retrieval-augmentation",
+        "severity": "medium",
+        "threshold": 1
+      },
+      {
+        "base_rule_id": "secret-exposure",
+        "candidate_count": 2,
+        "category": "secret exposure",
+        "control_mappings": [
+          "OWASP-LLM-06",
+          "SOC2-CC6.1"
+        ],
+        "control_objective": "Prevent AI provider credentials from living in source or config.",
+        "effective_weights": {
+          "confidence": 0.35,
+          "exposure": 0.4,
+          "provenance": 0.25
+        },
+        "enabled": true,
+        "evidence_requirements": [
+          "redacted credential finding from config scan",
+          "source file path containing the credential reference"
+        ],
+        "post_allowlist_count": 2,
+        "rationale": "Provider credential material detected in scanned configuration.",
+        "remediation": "Move the credential to a managed secret store, rotate the exposed value, and block commits containing secrets.",
+        "rule_id": "secret-exposure",
+        "severity": "high",
+        "threshold": 1
+      },
+      {
+        "base_rule_id": "third-party-provider",
+        "candidate_count": 10,
+        "category": "third-party dependency",
+        "control_mappings": [
+          "OWASP-LLM-07",
+          "NIST-AI-RMF-GOVERN"
+        ],
+        "control_objective": "Approve and monitor external model providers handling data.",
+        "effective_weights": {
+          "confidence": 0.35,
+          "exposure": 0.4,
+          "provenance": 0.25
+        },
+        "enabled": true,
+        "evidence_requirements": [
+          "model type from static analysis",
+          "source file path where provider is referenced"
+        ],
+        "post_allowlist_count": 10,
+        "rationale": "External model provider detected.",
+        "remediation": "Confirm the provider is on the approved-vendor list, pin the model version, and review data-sharing terms.",
+        "rule_id": "third-party-provider",
+        "severity": "medium",
+        "threshold": 1
+      },
+      {
+        "base_rule_id": "tool-execution",
+        "candidate_count": 8,
+        "category": "tool execution",
+        "control_mappings": [
+          "OWASP-LLM-08",
+          "NIST-AI-RMF-GOVERN"
+        ],
+        "control_objective": "Bound what agentic tools can do on the model's behalf.",
+        "effective_weights": {
+          "confidence": 0.35,
+          "exposure": 0.4,
+          "provenance": 0.25
+        },
+        "enabled": true,
+        "evidence_requirements": [
+          "tool invocation evidence",
+          "source file path with tool wiring"
+        ],
+        "post_allowlist_count": 8,
+        "rationale": "Agentic tool surface detected; the model can trigger side effects.",
+        "remediation": "Require human approval for high-impact tools, sandbox execution, and audit every tool call.",
+        "rule_id": "tool-execution",
+        "severity": "high",
+        "threshold": 1
+      },
+      {
+        "base_rule_id": "unsupported-provider-use",
+        "candidate_count": 1,
+        "category": "unsupported provider",
+        "control_mappings": [
+          "OWASP-LLM-05",
+          "NIST-AI-RMF-GOVERN"
+        ],
+        "control_objective": "Inventory and approve every model provider, including wrappers.",
+        "effective_weights": {
+          "confidence": 0.35,
+          "exposure": 0.4,
+          "provenance": 0.25
+        },
+        "enabled": true,
+        "evidence_requirements": [
+          "model identity from static analysis",
+          "provider or wrapper classification"
+        ],
+        "post_allowlist_count": 1,
+        "rationale": "Model surface uses a provider or wrapper outside the assessed inventory.",
+        "remediation": "Register the provider in the approved-vendor list or migrate to an assessed provider.",
+        "rule_id": "unsupported-provider-use",
+        "severity": "medium",
+        "threshold": 1
+      }
+    ],
+    "policy": {
+      "policy_id": "builtin-default",
+      "sha256": "b94861bace2c7f431f7b3bfacac35af1ab2e59fa43e4d05bd4a3445613f3ac81",
+      "source": "builtin",
+      "version": "1"
+    },
+    "scoring": {
+      "weights": {
+        "confidence": 0.35,
+        "exposure": 0.4,
+        "provenance": 0.25
+      }
+    },
+    "suppressed": [
+      {
+        "base_rule_id": "exfil-surface",
+        "entity_type": "rule",
+        "name": "exfil-surface",
+        "reason": "threshold-not-met: 0 < 1",
+        "rule_id": "exfil-surface",
+        "source_file": ""
+      },
+      {
+        "base_rule_id": "internet-egress",
+        "entity_type": "rule",
+        "name": "internet-egress",
+        "reason": "threshold-not-met: 0 < 1",
+        "rule_id": "internet-egress",
+        "source_file": ""
+      }
+    ]
+  },
+  "runtime_context": {
+    "environment": null,
+    "evidence": {
+      "environment": {
+        "method": "not-observed",
+        "status": "missing"
+      },
+      "immutable_version": {
+        "method": "observed:dockerfile-from",
+        "status": "observed"
+      },
+      "provider_endpoint": {
+        "method": "not-observed",
+        "status": "missing"
+      },
+      "region": {
+        "method": "not-observed",
+        "status": "missing"
+      },
+      "registry_uri": {
+        "method": "not-observed",
+        "status": "missing"
+      }
+    },
+    "immutable_version": "python:3.11-slim",
+    "provider_endpoint": null,
+    "region": null,
+    "registry_uri": null
+  },
+  "scan_findings": [
+    {
+      "category": "container metadata",
+      "confidence": "medium",
+      "evidence": "Container/runtime metadata discovered.",
+      "id": "runtime-container:Dockerfile",
+      "severity": "low",
+      "source_file": "Dockerfile",
+      "source_type": "runtime_manifest"
+    },
+    {
+      "category": "dependency graph",
+      "confidence": "medium",
+      "evidence": "Detected JS/TS dependencies: langchain, openai",
+      "id": "js-ts-deps:package.json",
+      "severity": "medium",
+      "source_file": "package.json",
+      "source_type": "js_ts_manifest"
+    },
+    {
+      "category": "dependency graph",
+      "confidence": "medium",
+      "evidence": "Detected dependencies: anthropic, langchain",
+      "id": "runtime-deps:requirements.txt",
+      "severity": "medium",
+      "source_file": "requirements.txt",
+      "source_type": "runtime_manifest"
+    },
+    {
+      "category": "model configuration",
+      "confidence": "medium",
+      "detection_method": "config-key",
+      "evidence": "model=[masked:gp********ni hash:13a647d426a0]",
+      "evidence_class": "inferred_dependency",
+      "id": "config:model:settings.yaml",
+      "severity": "medium",
+      "source_file": "settings.yaml",
+      "source_type": "config"
+    },
+    {
+      "category": "model invocation",
+      "confidence": "high",
+      "detection_method": "direct-constructor",
+      "evidence": "JS/TS AST constructor detected: openai.default (imported=True, observed_call via direct-constructor).",
+      "id": "js-ts-model:OpenAI:script.ts:5",
+      "severity": "medium",
+      "source_file": "script.ts:5",
+      "source_type": "js_ts_ast"
+    },
+    {
+      "category": "model invocation",
+      "confidence": "high",
+      "detection_method": "direct-constructor",
+      "evidence": "Model class ChatOpenAI detected in Python source (observed_call via direct-constructor).",
+      "id": "python-model:ChatOpenAI:app.py",
+      "severity": "medium",
+      "source_file": "app.py",
+      "source_type": "python"
+    },
+    {
+      "category": "model invocation",
+      "confidence": "high",
+      "detection_method": "factory:mkModel",
+      "evidence": "JS/TS AST constructor detected: @langchain/openai.ChatOpenAI (imported=True, inferred_dependency via factory:mkModel).",
+      "evidence_class": "inferred_dependency",
+      "id": "js-ts-model:ChatOpenAI:edge_cases.ts:6",
+      "severity": "medium",
+      "source_file": "edge_cases.ts:6",
+      "source_type": "js_ts_ast"
+    },
+    {
+      "category": "model invocation",
+      "confidence": "high",
+      "detection_method": "factory:model_factory",
+      "evidence": "Model class ChatOpenAI detected in Python source (inferred_dependency via factory:model_factory).",
+      "evidence_class": "inferred_dependency",
+      "id": "python-model:ChatOpenAI:alias_wrappers.py",
+      "severity": "medium",
+      "source_file": "alias_wrappers.py",
+      "source_type": "python"
+    },
+    {
+      "category": "model invocation",
+      "confidence": "medium",
+      "detection_method": "factory-invocation:model_factory",
+      "evidence": "Model class Factory:model_factory detected in Python source (inferred_dependency via factory-invocation:model_factory).",
+      "evidence_class": "inferred_dependency",
+      "id": "python-model:Factory:model_factory:alias_wrappers.py",
+      "severity": "medium",
+      "source_file": "alias_wrappers.py",
+      "source_type": "python"
+    },
+    {
+      "category": "model invocation",
+      "confidence": "medium",
+      "detection_method": "pattern-match:single-line-regex",
+      "evidence": ".NET model usage detected: OpenAI (inferred_dependency via pattern-match:single-line-regex).",
+      "evidence_class": "inferred_dependency",
+      "id": "dotnet-model:OpenAI:Assistant.cs:6",
+      "severity": "medium",
+      "source_file": "Assistant.cs:6",
+      "source_type": "dotnet_ast"
+    },
+    {
+      "category": "model invocation",
+      "confidence": "medium",
+      "detection_method": "pattern-match:single-line-regex",
+      "evidence": "Go model usage detected: OpenAI (inferred_dependency via pattern-match:single-line-regex).",
+      "evidence_class": "inferred_dependency",
+      "id": "go-model:OpenAI:assistant.go:9",
+      "severity": "medium",
+      "source_file": "assistant.go:9",
+      "source_type": "go_ast"
+    },
+    {
+      "category": "model invocation",
+      "confidence": "medium",
+      "detection_method": "pattern-match:single-line-regex",
+      "evidence": "Java model usage detected: OpenAI (inferred_dependency via pattern-match:single-line-regex).",
+      "evidence_class": "inferred_dependency",
+      "id": "java-model:OpenAI:assistant.java:1",
+      "severity": "medium",
+      "source_file": "assistant.java:1",
+      "source_type": "java_ast"
+    },
+    {
+      "category": "model invocation",
+      "confidence": "medium",
+      "detection_method": "pattern-match:single-line-regex",
+      "evidence": "Java model usage detected: OpenAI (inferred_dependency via pattern-match:single-line-regex).",
+      "evidence_class": "inferred_dependency",
+      "id": "java-model:OpenAI:assistant.java:7",
+      "severity": "medium",
+      "source_file": "assistant.java:7",
+      "source_type": "java_ast"
+    },
+    {
+      "category": "prompt template",
+      "confidence": "high",
+      "evidence": "JS/TS AST prompt call detected: @langchain/core/prompts.ChatPromptTemplate.fromTemplate (context=method).",
+      "id": "js-ts-prompt:edge_cases.ts:8",
+      "severity": "medium",
+      "source_file": "edge_cases.ts:8",
+      "source_type": "js_ts_ast"
+    },
+    {
+      "category": "prompt template",
+      "confidence": "high",
+      "evidence": "JS/TS AST prompt call detected: @langchain/core/prompts.ChatPromptTemplate.fromTemplate (context=method).",
+      "id": "js-ts-prompt:script.ts:7",
+      "severity": "medium",
+      "source_file": "script.ts:7",
+      "source_type": "js_ts_ast"
+    },
+    {
+      "category": "provider configuration",
+      "confidence": "medium",
+      "detection_method": "config-key",
+      "evidence": "provider=[masked:op**ai hash:7d3194f79e64]",
+      "evidence_class": "inferred_dependency",
+      "id": "config:provider:settings.yaml",
+      "severity": "medium",
+      "source_file": "settings.yaml",
+      "source_type": "config"
+    },
+    {
+      "category": "provider credential",
+      "confidence": "medium",
+      "detection_method": "config-key",
+      "evidence": "ANTHROPIC_API_KEY=[masked:an*****st hash:25e2f144a82b]",
+      "evidence_class": "inferred_dependency",
+      "id": "config:anthropic_api_key:.env",
+      "severity": "high",
+      "source_file": ".env",
+      "source_type": "config"
+    },
+    {
+      "category": "provider credential",
+      "confidence": "medium",
+      "detection_method": "config-key",
+      "evidence": "OPENAI_API_KEY=[masked:sk*********ue hash:928d882b4239]",
+      "evidence_class": "inferred_dependency",
+      "id": "config:openai_api_key:.env",
+      "severity": "high",
+      "source_file": ".env",
+      "source_type": "config"
+    },
+    {
+      "category": "tool invocation",
+      "confidence": "high",
+      "evidence": "JS/TS AST call detected: @langchain/core/tools.tool (context=function).",
+      "id": "js-ts-tool:tool:edge_cases.ts:7",
+      "severity": "low",
+      "source_file": "edge_cases.ts:7",
+      "source_type": "js_ts_ast"
+    },
+    {
+      "category": "tool invocation",
+      "confidence": "high",
+      "evidence": "JS/TS AST call detected: @langchain/core/tools.tool (context=function).",
+      "id": "js-ts-tool:tool:script.ts:6",
+      "severity": "low",
+      "source_file": "script.ts:6",
+      "source_type": "js_ts_ast"
+    }
+  ],
+  "schema_version": "1.0",
+  "source_types": [
+    {
+      "default_confidence": "high",
+      "default_severity": "medium",
+      "name": "python"
+    },
+    {
+      "default_confidence": "medium",
+      "default_severity": "medium",
+      "name": "jupyter_notebook"
+    },
+    {
+      "default_confidence": "medium",
+      "default_severity": "medium",
+      "name": "config"
+    },
+    {
+      "default_confidence": "medium",
+      "default_severity": "medium",
+      "name": "runtime_manifest"
+    },
+    {
+      "default_confidence": "medium",
+      "default_severity": "medium",
+      "name": "js_ts_manifest"
+    },
+    {
+      "default_confidence": "medium",
+      "default_severity": "medium",
+      "name": "js_ts_ast"
+    },
+    {
+      "default_confidence": "medium",
+      "default_severity": "medium",
+      "name": "java_ast"
+    },
+    {
+      "default_confidence": "medium",
+      "default_severity": "medium",
+      "name": "go_ast"
+    },
+    {
+      "default_confidence": "medium",
+      "default_severity": "medium",
+      "name": "dotnet_ast"
     }
   ],
   "tools": [
@@ -181,686 +1890,5 @@
       "source_file": "Assistant.cs:7"
     }
   ],
-  "frameworks": [
-    {
-      "name": "anthropic"
-    },
-    {
-      "name": "langchain"
-    },
-    {
-      "name": "openai"
-    }
-  ],
-  "prompts": [
-    {
-      "id": "Assistant.cs:8",
-      "source_file": "Assistant.cs:8"
-    },
-    {
-      "id": "app.py:9",
-      "source_file": "app.py"
-    },
-    {
-      "id": "assistant.go:11",
-      "source_file": "assistant.go:11"
-    },
-    {
-      "id": "assistant.java:3",
-      "source_file": "assistant.java:3"
-    },
-    {
-      "id": "assistant.java:9",
-      "source_file": "assistant.java:9"
-    },
-    {
-      "id": "edge_cases.ts:8",
-      "source_file": "edge_cases.ts:8"
-    },
-    {
-      "id": "script.ts:7",
-      "source_file": "script.ts:7"
-    }
-  ],
-  "scan_findings": [
-    {
-      "id": "runtime-container:Dockerfile",
-      "category": "container metadata",
-      "source_type": "runtime_manifest",
-      "source_file": "Dockerfile",
-      "severity": "low",
-      "confidence": "medium",
-      "evidence": "Container/runtime metadata discovered."
-    },
-    {
-      "id": "js-ts-deps:package.json",
-      "category": "dependency graph",
-      "source_type": "js_ts_manifest",
-      "source_file": "package.json",
-      "severity": "medium",
-      "confidence": "medium",
-      "evidence": "Detected JS/TS dependencies: langchain, openai"
-    },
-    {
-      "id": "runtime-deps:requirements.txt",
-      "category": "dependency graph",
-      "source_type": "runtime_manifest",
-      "source_file": "requirements.txt",
-      "severity": "medium",
-      "confidence": "medium",
-      "evidence": "Detected dependencies: anthropic, langchain"
-    },
-    {
-      "id": "config:model:settings.yaml",
-      "category": "model configuration",
-      "source_type": "config",
-      "source_file": "settings.yaml",
-      "severity": "medium",
-      "confidence": "high",
-      "evidence": "model=[masked:gp********ni hash:13a647d426a0]"
-    },
-    {
-      "id": "js-ts-model:ChatOpenAI:edge_cases.ts:6",
-      "category": "model invocation",
-      "source_type": "js_ts_ast",
-      "source_file": "edge_cases.ts:6",
-      "severity": "medium",
-      "confidence": "high",
-      "evidence": "JS/TS AST constructor detected: @langchain/openai.ChatOpenAI (imported=True)."
-    },
-    {
-      "id": "js-ts-model:OpenAI:script.ts:5",
-      "category": "model invocation",
-      "source_type": "js_ts_ast",
-      "source_file": "script.ts:5",
-      "severity": "medium",
-      "confidence": "high",
-      "evidence": "JS/TS AST constructor detected: openai.default (imported=True)."
-    },
-    {
-      "id": "python-model:ChatOpenAI:alias_wrappers.py",
-      "category": "model invocation",
-      "source_type": "python",
-      "source_file": "alias_wrappers.py",
-      "severity": "medium",
-      "confidence": "high",
-      "evidence": "Model class ChatOpenAI detected in Python source."
-    },
-    {
-      "id": "python-model:ChatOpenAI:app.py",
-      "category": "model invocation",
-      "source_type": "python",
-      "source_file": "app.py",
-      "severity": "medium",
-      "confidence": "high",
-      "evidence": "Model class ChatOpenAI detected in Python source."
-    },
-    {
-      "id": "dotnet-model:OpenAI:Assistant.cs:6",
-      "category": "model invocation",
-      "source_type": "dotnet_ast",
-      "source_file": "Assistant.cs:6",
-      "severity": "medium",
-      "confidence": "medium",
-      "evidence": ".NET model usage detected: OpenAI."
-    },
-    {
-      "id": "go-model:OpenAI:assistant.go:9",
-      "category": "model invocation",
-      "source_type": "go_ast",
-      "source_file": "assistant.go:9",
-      "severity": "medium",
-      "confidence": "medium",
-      "evidence": "Go model usage detected: OpenAI."
-    },
-    {
-      "id": "java-model:OpenAI:assistant.java:1",
-      "category": "model invocation",
-      "source_type": "java_ast",
-      "source_file": "assistant.java:1",
-      "severity": "medium",
-      "confidence": "medium",
-      "evidence": "Java model usage detected: OpenAI."
-    },
-    {
-      "id": "java-model:OpenAI:assistant.java:7",
-      "category": "model invocation",
-      "source_type": "java_ast",
-      "source_file": "assistant.java:7",
-      "severity": "medium",
-      "confidence": "medium",
-      "evidence": "Java model usage detected: OpenAI."
-    },
-    {
-      "id": "js-ts-prompt:edge_cases.ts:8",
-      "category": "prompt template",
-      "source_type": "js_ts_ast",
-      "source_file": "edge_cases.ts:8",
-      "severity": "medium",
-      "confidence": "high",
-      "evidence": "JS/TS AST prompt call detected: @langchain/core/prompts.ChatPromptTemplate.fromTemplate (context=method)."
-    },
-    {
-      "id": "js-ts-prompt:script.ts:7",
-      "category": "prompt template",
-      "source_type": "js_ts_ast",
-      "source_file": "script.ts:7",
-      "severity": "medium",
-      "confidence": "high",
-      "evidence": "JS/TS AST prompt call detected: @langchain/core/prompts.ChatPromptTemplate.fromTemplate (context=method)."
-    },
-    {
-      "id": "config:provider:settings.yaml",
-      "category": "provider configuration",
-      "source_type": "config",
-      "source_file": "settings.yaml",
-      "severity": "medium",
-      "confidence": "high",
-      "evidence": "provider=[masked:op**ai hash:7d3194f79e64]"
-    },
-    {
-      "id": "config:anthropic_api_key:.env",
-      "category": "provider credential",
-      "source_type": "config",
-      "source_file": ".env",
-      "severity": "high",
-      "confidence": "medium",
-      "evidence": "ANTHROPIC_API_KEY=[masked:an*****st hash:25e2f144a82b]"
-    },
-    {
-      "id": "config:openai_api_key:.env",
-      "category": "provider credential",
-      "source_type": "config",
-      "source_file": ".env",
-      "severity": "high",
-      "confidence": "medium",
-      "evidence": "OPENAI_API_KEY=[masked:sk*********ue hash:928d882b4239]"
-    },
-    {
-      "id": "js-ts-tool:tool:edge_cases.ts:7",
-      "category": "tool invocation",
-      "source_type": "js_ts_ast",
-      "source_file": "edge_cases.ts:7",
-      "severity": "low",
-      "confidence": "high",
-      "evidence": "JS/TS AST call detected: @langchain/core/tools.tool (context=function)."
-    },
-    {
-      "id": "js-ts-tool:tool:script.ts:6",
-      "category": "tool invocation",
-      "source_type": "js_ts_ast",
-      "source_file": "script.ts:6",
-      "severity": "low",
-      "confidence": "high",
-      "evidence": "JS/TS AST call detected: @langchain/core/tools.tool (context=function)."
-    }
-  ],
-  "coverage_summary": {
-    "detectors": [
-      {
-        "source_type": "config",
-        "artifacts_seen": 3,
-        "artifacts_scanned": 3,
-        "default_confidence": "medium"
-      },
-      {
-        "source_type": "dotnet_ast",
-        "artifacts_seen": 1,
-        "artifacts_scanned": 1,
-        "default_confidence": "medium"
-      },
-      {
-        "source_type": "go_ast",
-        "artifacts_seen": 1,
-        "artifacts_scanned": 1,
-        "default_confidence": "medium"
-      },
-      {
-        "source_type": "java_ast",
-        "artifacts_seen": 1,
-        "artifacts_scanned": 1,
-        "default_confidence": "medium"
-      },
-      {
-        "source_type": "js_ts_ast",
-        "artifacts_seen": 2,
-        "artifacts_scanned": 2,
-        "default_confidence": "medium"
-      },
-      {
-        "source_type": "js_ts_manifest",
-        "artifacts_seen": 1,
-        "artifacts_scanned": 1,
-        "default_confidence": "medium"
-      },
-      {
-        "source_type": "jupyter_notebook",
-        "artifacts_seen": 1,
-        "artifacts_scanned": 1,
-        "default_confidence": "medium"
-      },
-      {
-        "source_type": "python",
-        "artifacts_seen": 2,
-        "artifacts_scanned": 2,
-        "default_confidence": "high"
-      },
-      {
-        "source_type": "runtime_manifest",
-        "artifacts_seen": 2,
-        "artifacts_scanned": 2,
-        "default_confidence": "medium"
-      }
-    ],
-    "unsupported_total": 0
-  },
-  "unsupported_artifacts": [],
-  "source_types": [
-    {
-      "name": "python",
-      "default_severity": "medium",
-      "default_confidence": "high"
-    },
-    {
-      "name": "jupyter_notebook",
-      "default_severity": "medium",
-      "default_confidence": "medium"
-    },
-    {
-      "name": "config",
-      "default_severity": "medium",
-      "default_confidence": "medium"
-    },
-    {
-      "name": "runtime_manifest",
-      "default_severity": "medium",
-      "default_confidence": "medium"
-    },
-    {
-      "name": "js_ts_manifest",
-      "default_severity": "medium",
-      "default_confidence": "medium"
-    },
-    {
-      "name": "js_ts_ast",
-      "default_severity": "medium",
-      "default_confidence": "medium"
-    },
-    {
-      "name": "java_ast",
-      "default_severity": "medium",
-      "default_confidence": "medium"
-    },
-    {
-      "name": "go_ast",
-      "default_severity": "medium",
-      "default_confidence": "medium"
-    },
-    {
-      "name": "dotnet_ast",
-      "default_severity": "medium",
-      "default_confidence": "medium"
-    }
-  ],
-  "runtime_context": {
-    "provider_endpoint": "unknown",
-    "registry_uri": "unknown",
-    "immutable_version": "python:3.11-slim",
-    "environment": "unknown",
-    "region": "unknown"
-  },
-  "risk_findings": [
-    {
-      "id": "prompt-injection-surface:prompt_templates:",
-      "rule_id": "prompt-injection-surface",
-      "base_rule_id": "prompt-injection-surface",
-      "category": "prompt injection surface",
-      "owasp_llm": "LLM01 Prompt Injection",
-      "severity": "medium",
-      "rationale": "Prompt templates detected; review source trust boundaries.",
-      "heuristic": "true",
-      "confidence": "0.65",
-      "exposure": "0.60",
-      "provenance_completeness": "0.50",
-      "weighted_score": "0.593",
-      "control_mappings": [
-        "OWASP-LLM-01",
-        "NIST-AI-RMF-MAP"
-      ],
-      "control_mapping_tags": [],
-      "evidence_requirements": [
-        "prompt template presence",
-        "originating file or unresolved source marker"
-      ]
-    },
-    {
-      "id": "third-party-provider:ChatOpenAI:alias_wrappers.py",
-      "rule_id": "third-party-provider",
-      "base_rule_id": "third-party-provider",
-      "category": "third-party dependency",
-      "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "critical",
-      "rationale": "External model provider detected.",
-      "heuristic": "true",
-      "confidence": "0.80",
-      "exposure": "0.70",
-      "provenance_completeness": "1.00",
-      "weighted_score": "0.810",
-      "control_mappings": [
-        "OWASP-LLM-07",
-        "NIST-AI-RMF-GOVERN"
-      ],
-      "control_mapping_tags": [],
-      "evidence_requirements": [
-        "model type from static analysis",
-        "source file path where provider is referenced"
-      ]
-    },
-    {
-      "id": "third-party-provider:ChatOpenAI:alias_wrappers.py",
-      "rule_id": "third-party-provider",
-      "base_rule_id": "third-party-provider",
-      "category": "third-party dependency",
-      "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "critical",
-      "rationale": "External model provider detected.",
-      "heuristic": "true",
-      "confidence": "0.80",
-      "exposure": "0.70",
-      "provenance_completeness": "1.00",
-      "weighted_score": "0.810",
-      "control_mappings": [
-        "OWASP-LLM-07",
-        "NIST-AI-RMF-GOVERN"
-      ],
-      "control_mapping_tags": [],
-      "evidence_requirements": [
-        "model type from static analysis",
-        "source file path where provider is referenced"
-      ]
-    },
-    {
-      "id": "third-party-provider:ChatOpenAI:app.py",
-      "rule_id": "third-party-provider",
-      "base_rule_id": "third-party-provider",
-      "category": "third-party dependency",
-      "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "critical",
-      "rationale": "External model provider detected.",
-      "heuristic": "true",
-      "confidence": "0.80",
-      "exposure": "0.70",
-      "provenance_completeness": "1.00",
-      "weighted_score": "0.810",
-      "control_mappings": [
-        "OWASP-LLM-07",
-        "NIST-AI-RMF-GOVERN"
-      ],
-      "control_mapping_tags": [],
-      "evidence_requirements": [
-        "model type from static analysis",
-        "source file path where provider is referenced"
-      ]
-    },
-    {
-      "id": "third-party-provider:ChatOpenAI:demo.ipynb#cell-0",
-      "rule_id": "third-party-provider",
-      "base_rule_id": "third-party-provider",
-      "category": "third-party dependency",
-      "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "critical",
-      "rationale": "External model provider detected.",
-      "heuristic": "true",
-      "confidence": "0.80",
-      "exposure": "0.70",
-      "provenance_completeness": "1.00",
-      "weighted_score": "0.810",
-      "control_mappings": [
-        "OWASP-LLM-07",
-        "NIST-AI-RMF-GOVERN"
-      ],
-      "control_mapping_tags": [],
-      "evidence_requirements": [
-        "model type from static analysis",
-        "source file path where provider is referenced"
-      ]
-    },
-    {
-      "id": "third-party-provider:ChatOpenAI:edge_cases.ts:6",
-      "rule_id": "third-party-provider",
-      "base_rule_id": "third-party-provider",
-      "category": "third-party dependency",
-      "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "critical",
-      "rationale": "External model provider detected.",
-      "heuristic": "true",
-      "confidence": "0.80",
-      "exposure": "0.70",
-      "provenance_completeness": "1.00",
-      "weighted_score": "0.810",
-      "control_mappings": [
-        "OWASP-LLM-07",
-        "NIST-AI-RMF-GOVERN"
-      ],
-      "control_mapping_tags": [],
-      "evidence_requirements": [
-        "model type from static analysis",
-        "source file path where provider is referenced"
-      ]
-    },
-    {
-      "id": "third-party-provider:OpenAI:Assistant.cs:6",
-      "rule_id": "third-party-provider",
-      "base_rule_id": "third-party-provider",
-      "category": "third-party dependency",
-      "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "critical",
-      "rationale": "External model provider detected.",
-      "heuristic": "true",
-      "confidence": "0.80",
-      "exposure": "0.70",
-      "provenance_completeness": "1.00",
-      "weighted_score": "0.810",
-      "control_mappings": [
-        "OWASP-LLM-07",
-        "NIST-AI-RMF-GOVERN"
-      ],
-      "control_mapping_tags": [],
-      "evidence_requirements": [
-        "model type from static analysis",
-        "source file path where provider is referenced"
-      ]
-    },
-    {
-      "id": "third-party-provider:OpenAI:assistant.go:9",
-      "rule_id": "third-party-provider",
-      "base_rule_id": "third-party-provider",
-      "category": "third-party dependency",
-      "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "critical",
-      "rationale": "External model provider detected.",
-      "heuristic": "true",
-      "confidence": "0.80",
-      "exposure": "0.70",
-      "provenance_completeness": "1.00",
-      "weighted_score": "0.810",
-      "control_mappings": [
-        "OWASP-LLM-07",
-        "NIST-AI-RMF-GOVERN"
-      ],
-      "control_mapping_tags": [],
-      "evidence_requirements": [
-        "model type from static analysis",
-        "source file path where provider is referenced"
-      ]
-    },
-    {
-      "id": "third-party-provider:OpenAI:assistant.java:1",
-      "rule_id": "third-party-provider",
-      "base_rule_id": "third-party-provider",
-      "category": "third-party dependency",
-      "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "critical",
-      "rationale": "External model provider detected.",
-      "heuristic": "true",
-      "confidence": "0.80",
-      "exposure": "0.70",
-      "provenance_completeness": "1.00",
-      "weighted_score": "0.810",
-      "control_mappings": [
-        "OWASP-LLM-07",
-        "NIST-AI-RMF-GOVERN"
-      ],
-      "control_mapping_tags": [],
-      "evidence_requirements": [
-        "model type from static analysis",
-        "source file path where provider is referenced"
-      ]
-    },
-    {
-      "id": "third-party-provider:OpenAI:assistant.java:7",
-      "rule_id": "third-party-provider",
-      "base_rule_id": "third-party-provider",
-      "category": "third-party dependency",
-      "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "critical",
-      "rationale": "External model provider detected.",
-      "heuristic": "true",
-      "confidence": "0.80",
-      "exposure": "0.70",
-      "provenance_completeness": "1.00",
-      "weighted_score": "0.810",
-      "control_mappings": [
-        "OWASP-LLM-07",
-        "NIST-AI-RMF-GOVERN"
-      ],
-      "control_mapping_tags": [],
-      "evidence_requirements": [
-        "model type from static analysis",
-        "source file path where provider is referenced"
-      ]
-    },
-    {
-      "id": "third-party-provider:OpenAI:script.ts:5",
-      "rule_id": "third-party-provider",
-      "base_rule_id": "third-party-provider",
-      "category": "third-party dependency",
-      "owasp_llm": "LLM07 Insecure Plugin Design",
-      "severity": "critical",
-      "rationale": "External model provider detected.",
-      "heuristic": "true",
-      "confidence": "0.80",
-      "exposure": "0.70",
-      "provenance_completeness": "1.00",
-      "weighted_score": "0.810",
-      "control_mappings": [
-        "OWASP-LLM-07",
-        "NIST-AI-RMF-GOVERN"
-      ],
-      "control_mapping_tags": [],
-      "evidence_requirements": [
-        "model type from static analysis",
-        "source file path where provider is referenced"
-      ]
-    }
-  ],
-  "risk_policy": {
-    "policy": {
-      "policy_id": "builtin-default",
-      "version": "1",
-      "source": "builtin",
-      "sha256": "b94861bace2c7f431f7b3bfacac35af1ab2e59fa43e4d05bd4a3445613f3ac81"
-    },
-    "applied_rules": [
-      {
-        "base_rule_id": "exfil-surface",
-        "rule_id": "exfil-surface",
-        "severity": "high",
-        "threshold": 1,
-        "candidate_count": 0,
-        "post_allowlist_count": 0,
-        "enabled": true,
-        "category": "exfil surface",
-        "rationale": "Tool may read/write data or access web.",
-        "evidence_requirements": [
-          "tool invocation or import evidence",
-          "source file path with exfil-capable tool"
-        ],
-        "control_mappings": [
-          "OWASP-LLM-06",
-          "SOC2-CC6.1"
-        ],
-        "effective_weights": {
-          "confidence": 0.35,
-          "exposure": 0.4,
-          "provenance": 0.25
-        }
-      },
-      {
-        "base_rule_id": "prompt-injection-surface",
-        "rule_id": "prompt-injection-surface",
-        "severity": "medium",
-        "threshold": 1,
-        "candidate_count": 1,
-        "post_allowlist_count": 1,
-        "enabled": true,
-        "category": "prompt injection surface",
-        "rationale": "Prompt templates detected; review source trust boundaries.",
-        "evidence_requirements": [
-          "prompt template presence",
-          "originating file or unresolved source marker"
-        ],
-        "control_mappings": [
-          "OWASP-LLM-01",
-          "NIST-AI-RMF-MAP"
-        ],
-        "effective_weights": {
-          "confidence": 0.35,
-          "exposure": 0.4,
-          "provenance": 0.25
-        }
-      },
-      {
-        "base_rule_id": "third-party-provider",
-        "rule_id": "third-party-provider",
-        "severity": "medium",
-        "threshold": 1,
-        "candidate_count": 10,
-        "post_allowlist_count": 10,
-        "enabled": true,
-        "category": "third-party dependency",
-        "rationale": "External model provider detected.",
-        "evidence_requirements": [
-          "model type from static analysis",
-          "source file path where provider is referenced"
-        ],
-        "control_mappings": [
-          "OWASP-LLM-07",
-          "NIST-AI-RMF-GOVERN"
-        ],
-        "effective_weights": {
-          "confidence": 0.35,
-          "exposure": 0.4,
-          "provenance": 0.25
-        }
-      }
-    ],
-    "suppressed": [
-      {
-        "base_rule_id": "exfil-surface",
-        "rule_id": "exfil-surface",
-        "entity_type": "rule",
-        "name": "exfil-surface",
-        "source_file": "",
-        "reason": "threshold-not-met: 0 < 1"
-      }
-    ],
-    "scoring": {
-      "weights": {
-        "confidence": 0.35,
-        "exposure": 0.4,
-        "provenance": 0.25
-      }
-    }
-  }
+  "unsupported_artifacts": []
 }

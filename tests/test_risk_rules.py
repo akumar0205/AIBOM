@@ -62,3 +62,119 @@ def test_legacy_policy_format_remains_supported(tmp_path: Path) -> None:
     ]
     assert provider_findings
     assert all(f["severity"] == "high" and f["rule_id"] == "LEG-01" for f in provider_findings)
+
+
+def _synthetic_aibom(**overrides: object) -> dict:
+    doc: dict = {
+        "models": [],
+        "tools": [],
+        "prompts": [],
+        "datasets": [],
+        "scan_findings": [],
+    }
+    doc.update(overrides)
+    return doc
+
+
+def test_soc_control_pack_has_ten_rules_with_objectives() -> None:
+    from aibom.risk.heuristics import evaluate_risk
+
+    rulepack = load_builtin_rulepack()
+    assert len(rulepack) >= 10
+    for rule_id, rule in rulepack.items():
+        assert rule.metadata.control_objective, rule_id
+        assert rule.metadata.remediation, rule_id
+        assert rule.metadata.owasp_llm, rule_id
+
+    findings, audit = evaluate_risk(_synthetic_aibom())
+    assert findings == []
+    assert len(audit["applied_rules"]) >= 10
+
+
+def test_secret_exposure_rule_fires_on_credential_findings() -> None:
+    from aibom.risk.heuristics import evaluate_risk
+
+    doc = _synthetic_aibom(
+        scan_findings=[
+            {
+                "id": "config:openai_api_key:.env",
+                "category": "provider credential",
+                "source_type": "config",
+                "source_file": ".env",
+                "severity": "high",
+                "confidence": "medium",
+                "evidence": "OPENAI_API_KEY=[masked]",
+            }
+        ]
+    )
+    findings, _ = evaluate_risk(doc)
+    secrets = [f for f in findings if f["base_rule_id"] == "secret-exposure"]
+    assert secrets
+    assert all(f["control_objective"] and f["remediation"] for f in secrets)
+    assert all(f["finding_kind"] == "risk" for f in secrets)
+
+
+def test_internet_egress_rule_fires_on_network_tools() -> None:
+    from aibom.risk.heuristics import evaluate_risk
+
+    doc = _synthetic_aibom(tools=[{"name": "Requests", "source_file": "app.py"}])
+    findings, _ = evaluate_risk(doc)
+    assert any(f["base_rule_id"] == "internet-egress" for f in findings)
+    quiet, _ = evaluate_risk(
+        _synthetic_aibom(tools=[{"name": "PromptTemplate", "source_file": "app.py"}])
+    )
+    assert not any(f["base_rule_id"] == "internet-egress" for f in quiet)
+
+
+def test_retrieval_augmentation_rule_fires_on_vectorstores() -> None:
+    from aibom.risk.heuristics import evaluate_risk
+
+    doc = _synthetic_aibom(
+        datasets=[{"type": "langchain.vectorstores.FAISS", "source_file": "app.py"}]
+    )
+    findings, _ = evaluate_risk(doc)
+    assert any(f["base_rule_id"] == "retrieval-augmentation" for f in findings)
+
+
+def test_tool_execution_rule_fires_on_tools() -> None:
+    from aibom.risk.heuristics import evaluate_risk
+
+    doc = _synthetic_aibom(tools=[{"name": "initialize_agent", "source_file": "app.py"}])
+    findings, _ = evaluate_risk(doc)
+    assert any(f["base_rule_id"] == "tool-execution" for f in findings)
+
+
+def test_prompt_logging_rule_fires_on_prompts() -> None:
+    from aibom.risk.heuristics import evaluate_risk
+
+    doc = _synthetic_aibom(prompts=[{"id": "app.py:9", "source_file": "app.py"}])
+    findings, _ = evaluate_risk(doc)
+    assert any(f["base_rule_id"] == "prompt-logging" for f in findings)
+
+
+def test_model_version_drift_rule_fires_on_unpinned_models() -> None:
+    from aibom.risk.heuristics import evaluate_risk
+
+    doc = _synthetic_aibom(
+        models=[
+            {"type": "ChatOpenAI", "model": "unknown", "source_file": "app.py"},
+            {"type": "ChatOpenAI", "model": "gpt-4o-mini", "source_file": "app.py"},
+        ]
+    )
+    findings, _ = evaluate_risk(doc)
+    drift = [f for f in findings if f["base_rule_id"] == "model-version-drift"]
+    assert len(drift) == 1
+
+
+def test_unsupported_provider_rule_fires_on_wrappers() -> None:
+    from aibom.risk.heuristics import evaluate_risk
+
+    doc = _synthetic_aibom(
+        models=[
+            {"type": "Factory:build_llm", "model": "unknown", "source_file": "app.py"},
+            {"type": "ChatOpenAI", "model": "gpt-4o-mini", "source_file": "app.py"},
+        ]
+    )
+    findings, _ = evaluate_risk(doc)
+    unsupported = [f for f in findings if f["base_rule_id"] == "unsupported-provider-use"]
+    assert len(unsupported) == 1

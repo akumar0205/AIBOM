@@ -89,12 +89,23 @@ def _load_policy_file(policy_path: Path | None) -> tuple[dict[str, Any], dict[st
 
 
 def _normalize_entities(aibom: dict[str, Any]) -> dict[str, list[NormalizedEntity]]:
+    secrets = [
+        NormalizedEntity(
+            entity_type="secret",
+            name=str(finding.get("id", "credential")),
+            source_file=str(finding.get("source_file", "")),
+            detail=str(finding.get("category", "provider credential")),
+        )
+        for finding in aibom.get("scan_findings", [])
+        if finding.get("category") == "provider credential"
+    ]
     return {
         "models": [
             NormalizedEntity(
                 entity_type="model",
                 name=str(model.get("type", "unknown")),
                 source_file=str(model.get("source_file", "")),
+                detail=str(model.get("model", "unknown")),
             )
             for model in aibom.get("models", [])
         ],
@@ -115,6 +126,15 @@ def _normalize_entities(aibom: dict[str, Any]) -> dict[str, list[NormalizedEntit
             if aibom.get("prompts")
             else []
         ),
+        "secrets": secrets,
+        "datasets": [
+            NormalizedEntity(
+                entity_type="dataset",
+                name=str(dataset.get("type", "unknown")),
+                source_file=str(dataset.get("source_file", "")),
+            )
+            for dataset in aibom.get("datasets", [])
+        ],
     }
 
 
@@ -227,6 +247,8 @@ def evaluate_risk(
                 "rationale": metadata.rationale,
                 "evidence_requirements": list(metadata.evidence_requirements),
                 "control_mappings": list(metadata.control_mappings),
+                "control_objective": metadata.control_objective,
+                "remediation": metadata.remediation,
                 "effective_weights": effective_weights,
             }
         )
@@ -257,6 +279,7 @@ def evaluate_risk(
                     "id": f"{rule_id}:{match.entity.name}:{match.entity.source_file}",
                     "rule_id": rule_id,
                     "base_rule_id": base_rule_id,
+                    "finding_kind": "risk",
                     "category": match.metadata.category,
                     "owasp_llm": match.metadata.owasp_llm,
                     "severity": severity,
@@ -268,6 +291,8 @@ def evaluate_risk(
                     "weighted_score": f"{weighted_score:.3f}",
                     "control_mappings": list(match.metadata.control_mappings),
                     "control_mapping_tags": [str(tag) for tag in control_mapping_tags],
+                    "control_objective": match.metadata.control_objective,
+                    "remediation": match.metadata.remediation,
                     "evidence_requirements": list(match.metadata.evidence_requirements),
                 }
             )

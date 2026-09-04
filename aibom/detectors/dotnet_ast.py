@@ -8,8 +8,9 @@ from typing import Any, TYPE_CHECKING
 if TYPE_CHECKING:
     from aibom.analyzer import ScanContext
 
+from aibom.provenance import _provenance
+
 IGNORED_DIRS = {".venv", "venv", "__pycache__", ".git", ".aibom"}
-PROVENANCE_UNKNOWN = "unknown"
 
 FRAMEWORK_IMPORTS = {
     "openai": "openai",
@@ -77,6 +78,8 @@ class DotNetAstDetector:
                                 "model": _extract_string_literal(line),
                                 "source_file": source_ref,
                                 "provenance": _provenance(provider_endpoint=provider_endpoint),
+                                "evidence_class": "inferred_dependency",
+                                "detection_method": "pattern-match:single-line-regex",
                             }
                         )
                         result.scan_findings.append(
@@ -87,7 +90,12 @@ class DotNetAstDetector:
                                 source_file=source_ref,
                                 severity="medium",
                                 confidence="medium",
-                                evidence=f".NET model usage detected: {model_type}.",
+                                evidence=(
+                                    f".NET model usage detected: {model_type} "
+                                    "(inferred_dependency via pattern-match:single-line-regex)."
+                                ),
+                                evidence_class="inferred_dependency",
+                                detection_method="pattern-match:single-line-regex",
                             )
                         )
 
@@ -149,8 +157,10 @@ def _finding(
     severity: str,
     confidence: str,
     evidence: str,
+    evidence_class: str = "observed_call",
+    detection_method: str = "",
 ) -> dict[str, str]:
-    return {
+    finding: dict[str, str] = {
         "id": finding_id,
         "category": category,
         "source_type": source_type,
@@ -159,19 +169,10 @@ def _finding(
         "confidence": confidence,
         "evidence": evidence,
     }
+    if evidence_class != "observed_call":
+        finding["evidence_class"] = evidence_class
+    if detection_method:
+        finding["detection_method"] = detection_method
+    return finding
 
 
-def _provenance(
-    provider_endpoint: str = PROVENANCE_UNKNOWN,
-    registry_uri: str = PROVENANCE_UNKNOWN,
-    immutable_version: str = PROVENANCE_UNKNOWN,
-    environment: str = PROVENANCE_UNKNOWN,
-    region: str = PROVENANCE_UNKNOWN,
-) -> dict[str, str]:
-    return {
-        "provider_endpoint": provider_endpoint,
-        "registry_uri": registry_uri,
-        "immutable_version": immutable_version,
-        "environment": environment,
-        "region": region,
-    }

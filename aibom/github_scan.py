@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -16,7 +17,7 @@ from aibom.presentation import (
     render_markdown_summary,
 )
 from aibom.storage import load_json
-from aibom.utils import stable_json, validate_safe_path
+from aibom.utils import stable_json, utc_now_iso, validate_safe_path
 from aibom.validation import validate_aibom
 
 
@@ -30,10 +31,33 @@ class RepoScanRecord:
     gate_verdict: str
     gate_failures: list[str]
     error: str | None = None
+    repo_origin: str = ""
+    resolved_commit: str = ""
+    branch: str | None = None
+    scanned_at: str = ""
 
 
 def _repo_slug(repo: str) -> str:
     return repo.replace("/", "__")
+
+
+def _canonical_origin(repo: str) -> str:
+    return f"https://github.com/{repo}.git"
+
+
+def _resolve_commit(source_dir: Path) -> str:
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=str(source_dir),
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        return out.stdout.strip()
+    except (subprocess.SubprocessError, OSError):
+        return "unknown"
 
 
 def _clone_repo(
@@ -43,8 +67,23 @@ def _clone_repo(
     depth: int,
     token: str | None,
     timeout_sec: int,
-) -> None:
-    url = f"https://github.com/{repo}.git"
+    commit: str | None = None,
+    allow_tokenized_clone: bool = False,
+) -> str:
+    """Clone a repo and return the resolved commit SHA.
+
+    Tokenized clone URLs require explicit ``allow_tokenized_clone`` opt-in so
+    credentials are never embedded by accident. When ``commit`` is provided,
+    the checkout is pinned to that SHA for reproducible scans.
+    """
+    if token and not allow_tokenized_clone:
+        raise ValueError(
+            "Refusing to embed a token in the clone URL without explicit opt-in "
+            "(--allow-tokenized-clone). Unset the token env var or pass the flag."
+        )
+    if commit and not re.fullmatch(r"[0-9a-fA-F]{4,64}", commit):
+        raise ValueError(f"Invalid commit SHA for pinning: {commit!r}")
+    url = _canonical_origin(repo)
     if token:
         url = f"https://x-access-token:{token}@github.com/{repo}.git"
 
@@ -54,6 +93,24 @@ def _clone_repo(
     cmd.extend([url, str(dest)])
 
     subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=timeout_sec)
+    if commit:
+        subprocess.run(
+            ["git", "fetch", "origin", commit],
+            cwd=str(dest),
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=timeout_sec,
+        )
+        subprocess.run(
+            ["git", "checkout", commit],
+            cwd=str(dest),
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=timeout_sec,
+        )
+    return _resolve_commit(dest)
 
 
 def _count_summary(aibom: dict[str, Any]) -> dict[str, int]:
@@ -107,6 +164,9 @@ def scan_github_repos(
     max_high_risk: int | None = None,
     max_unsupported: int | None = None,
     baseline_file: Path | None = None,
+    commit: str | None = None,
+    allow_tokenized_clone: bool = False,
+    local_mirrors_dir: Path | None = None,
 ) -> tuple[list[RepoScanRecord], int]:
     output_dir = validate_safe_path(output_dir, must_exist=False)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -124,63 +184,88 @@ def scan_github_repos(
         repo_dir.mkdir(parents=True, exist_ok=True)
         canonical_output = repo_dir / "AI_BOM.json"
         profile_output = repo_dir / "AI_BOM_ai_profile.json"
+        origin = _canonical_origin(repo)
+        scanned_at = utc_now_iso()
 
         try:
-            with tempfile.TemporaryDirectory(prefix="aibom-gh-") as temp_dir:
-                clone_dest = Path(temp_dir) / "repo"
-                _clone_repo(
-                    repo=repo,
-                    dest=clone_dest,
-                    branch=branch,
-                    depth=depth,
-                    token=token,
-                    timeout_sec=timeout_sec,
-                )
+            mirror_source: Path | None = None
+            if local_mirrors_dir is not None:
+                candidate = local_mirrors_dir / _repo_slug(repo)
+                if candidate.is_dir():
+                    mirror_source = candidate
+            if mirror_source is not None:
+                # Preferred mode: scan an already-checked-out local mirror
+                # (no clone, no network, fully attributable).
+                resolved_commit = _resolve_commit(mirror_source)
                 aibom = generate_aibom(
-                    clone_dest,
+                    mirror_source,
                     include_prompts=include_prompts,
                     include_runtime_manifests=include_runtime_manifests,
                     redaction_policy=redaction_policy,
                     risk_policy_path=risk_policy_path,
                 )
-                validate_aibom(aibom)
-                canonical_output.write_text(stable_json(aibom), encoding="utf-8")
-
-                profile_path_str: str | None = None
-                if profile == "ai-bom-like":
-                    ai_profile = build_ai_bom_like_profile(aibom)
-                    profile_output.write_text(profile_json_dumps(ai_profile), encoding="utf-8")
-                    profile_path_str = str(profile_output.relative_to(output_dir))
-
-                failures: list[str] = []
-                if baseline_doc is not None:
-                    failures.extend(gate_failures(diff_aibom(baseline_doc, aibom), fail_on_set))
-                if (
-                    max_high_risk is not None
-                    and _count_summary(aibom)["high_or_critical_risks"] > max_high_risk
-                ):
-                    failures.append("max-high-risk")
-                if (
-                    max_unsupported is not None
-                    and _count_summary(aibom)["unsupported_artifacts"] > max_unsupported
-                ):
-                    failures.append("max-unsupported")
-
-                gate_verdict = "pass" if not failures else "fail"
-                if failures:
-                    global_failures += 1
-
-                records.append(
-                    RepoScanRecord(
+            else:
+                with tempfile.TemporaryDirectory(prefix="aibom-gh-") as temp_dir:
+                    clone_dest = Path(temp_dir) / "repo"
+                    resolved_commit = _clone_repo(
                         repo=repo,
-                        status="ok",
-                        output_json=str(canonical_output.relative_to(output_dir)),
-                        output_profile_json=profile_path_str,
-                        counts=_count_summary(aibom),
-                        gate_verdict=gate_verdict,
-                        gate_failures=sorted(set(failures)),
+                        dest=clone_dest,
+                        branch=branch,
+                        depth=depth,
+                        token=token,
+                        timeout_sec=timeout_sec,
+                        commit=commit,
+                        allow_tokenized_clone=allow_tokenized_clone,
                     )
+                    aibom = generate_aibom(
+                        clone_dest,
+                        include_prompts=include_prompts,
+                        include_runtime_manifests=include_runtime_manifests,
+                        redaction_policy=redaction_policy,
+                        risk_policy_path=risk_policy_path,
+                    )
+            validate_aibom(aibom)
+            canonical_output.write_text(stable_json(aibom), encoding="utf-8")
+
+            profile_path_str: str | None = None
+            if profile == "ai-bom-like":
+                ai_profile = build_ai_bom_like_profile(aibom)
+                profile_output.write_text(profile_json_dumps(ai_profile), encoding="utf-8")
+                profile_path_str = str(profile_output.relative_to(output_dir))
+
+            failures: list[str] = []
+            if baseline_doc is not None:
+                failures.extend(gate_failures(diff_aibom(baseline_doc, aibom), fail_on_set))
+            if (
+                max_high_risk is not None
+                and _count_summary(aibom)["high_or_critical_risks"] > max_high_risk
+            ):
+                failures.append("max-high-risk")
+            if (
+                max_unsupported is not None
+                and _count_summary(aibom)["unsupported_artifacts"] > max_unsupported
+            ):
+                failures.append("max-unsupported")
+
+            gate_verdict = "pass" if not failures else "fail"
+            if failures:
+                global_failures += 1
+
+            records.append(
+                RepoScanRecord(
+                    repo=repo,
+                    status="ok",
+                    output_json=str(canonical_output.relative_to(output_dir)),
+                    output_profile_json=profile_path_str,
+                    counts=_count_summary(aibom),
+                    gate_verdict=gate_verdict,
+                    gate_failures=sorted(set(failures)),
+                    repo_origin=origin,
+                    resolved_commit=resolved_commit,
+                    branch=branch,
+                    scanned_at=scanned_at,
                 )
+            )
         except Exception as exc:
             global_failures += 1
             if repo_dir.exists() and not any(repo_dir.iterdir()):
@@ -203,6 +288,10 @@ def scan_github_repos(
                     gate_verdict="fail",
                     gate_failures=["scan-error"],
                     error=str(exc),
+                    repo_origin=origin,
+                    resolved_commit="",
+                    branch=branch,
+                    scanned_at=scanned_at,
                 )
             )
 

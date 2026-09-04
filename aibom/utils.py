@@ -111,6 +111,11 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
 
+def utc_now_iso() -> str:
+    """ISO-8601 UTC timestamp for schema `format: date-time` fields."""
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
 def git_sha(cwd: Path) -> str:
     """Get git SHA with path validation."""
     try:
@@ -133,7 +138,28 @@ def git_sha(cwd: Path) -> str:
 
 
 def environment_capture() -> dict[str, Any]:
+    from aibom import __version__ as aibom_version
+
     return {
         "python_version": sys.version,
         "platform": platform.platform(),
+        "aibom_version": aibom_version,
+        "collected_at": utc_now_iso(),
     }
+
+
+def git_worktree_status(cwd: Path) -> dict[str, Any]:
+    """Return dirty/clean worktree state for collection context."""
+    try:
+        safe_cwd = validate_safe_path(cwd, must_exist=True, must_be_dir=True)
+        out = subprocess.check_output(
+            ["git", "status", "--porcelain"],
+            cwd=str(safe_cwd),
+            text=True,
+            stderr=subprocess.PIPE,
+        )
+        dirty_files = [line for line in out.splitlines() if line.strip()]
+        return {"dirty": bool(dirty_files), "dirty_files": dirty_files[:50]}
+    except Exception as exc:  # noqa: BLE001 - best-effort collection context
+        logger.warning("Failed to capture git worktree status in %s: %s", cwd, exc)
+        return {"dirty": None, "dirty_files": [], "error": str(exc)[:200]}

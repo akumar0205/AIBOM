@@ -19,6 +19,8 @@ class ThirdPartyProviderRule(RiskRule):
         control_mappings=("OWASP-LLM-07", "NIST-AI-RMF-GOVERN"),
         default_confidence=0.8,
         default_exposure=0.7,
+        control_objective="Approve and monitor external model providers handling data.",
+        remediation="Confirm the provider is on the approved-vendor list, pin the model version, and review data-sharing terms.",
     )
 
     def evaluate(self, entities: dict[str, list]) -> list[RuleMatch]:

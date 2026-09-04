@@ -8,6 +8,7 @@ class NormalizedEntity:
     entity_type: str
     name: str
     source_file: str
+    detail: str = ""
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,8 @@ class RuleMetadata:
     control_mappings: tuple[str, ...]
     default_confidence: float
     default_exposure: float
+    control_objective: str = ""
+    remediation: str = ""
 
 
 @dataclass(frozen=True)

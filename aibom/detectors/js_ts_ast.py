@@ -5,9 +5,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from aibom.confidence import score_confidence
-
-PROVENANCE_UNKNOWN = "unknown"
+from aibom.confidence import score_confidence, score_confidence_with_evidence
+from aibom.provenance import _provenance
 
 JS_TS_EXTENSIONS = {".js", ".jsx", ".ts", ".tsx"}
 if TYPE_CHECKING:
@@ -99,18 +98,38 @@ class JSTSAstDetector:
                     model_type = "Anthropic"
                 if not model_type:
                     continue
+                # Factory-context detection: a constructor nested inside a
+                # function body is attributed to that wrapper (inference),
+                # not to a top-level direct call (observation).
+                factory = constructor.get("factory") or ""
                 source_ref = f"{rel}:{constructor['line']}"
                 signals = {"constructor"}
                 if constructor["imported"]:
                     signals.add("import")
                 if _contains_config_key(constructor["args"]):
                     signals.add("config_key")
+                model_name, name_method = _extract_model_name_with_dataflow(
+                    constructor["args"], parsed["string_bindings"]
+                )
+                evidence_class = "observed_call"
+                detection_method = "direct-constructor"
+                if constructor.get("via_bindings"):
+                    evidence_class = "inferred_dependency"
+                    detection_method = f"alias-resolution:{constructor['resolved']}"
+                if name_method is not None:
+                    evidence_class = "inferred_dependency"
+                    detection_method = name_method
+                if factory:
+                    evidence_class = "inferred_dependency"
+                    detection_method = f"factory:{factory}"
                 result.models.append(
                     {
                         "type": model_type,
-                        "model": _extract_model_name(constructor["args"]),
+                        "model": model_name,
                         "source_file": source_ref,
                         "provenance": _provenance(provider_endpoint=MODEL_CONSTRUCTORS[model_type]),
+                        "evidence_class": evidence_class,
+                        "detection_method": detection_method,
                     }
                 )
                 result.scan_findings.append(
@@ -120,11 +139,42 @@ class JSTSAstDetector:
                         source_type=self.source_type,
                         source_file=source_ref,
                         severity="medium",
-                        confidence=score_confidence(signals),
+                        confidence=score_confidence_with_evidence(signals, evidence_class),
                         evidence=(
                             f"JS/TS AST constructor detected: {constructor['resolved']}"
-                            f" (imported={constructor['imported']})."
+                            f" (imported={constructor['imported']}, {evidence_class}"
+                            f" via {detection_method})."
                         ),
+                        evidence_class=evidence_class,
+                        detection_method=detection_method,
+                    )
+                )
+            for factory_call in parsed["factory_calls"]:
+                factory_ref = f"{rel}:{factory_call['line']}"
+                result.models.append(
+                    {
+                        "type": f"Factory:{factory_call['name']}",
+                        "model": factory_call["model"],
+                        "source_file": factory_ref,
+                        "provenance": _provenance(),
+                        "evidence_class": "inferred_dependency",
+                        "detection_method": f"factory-invocation:{factory_call['name']}",
+                    }
+                )
+                result.scan_findings.append(
+                    _finding(
+                        finding_id=f"js-ts-factory:{factory_call['name']}:{factory_ref}",
+                        category="model invocation",
+                        source_type=self.source_type,
+                        source_file=factory_ref,
+                        severity="medium",
+                        confidence="medium",
+                        evidence=(
+                            f"Model factory invoked: {factory_call['name']} "
+                            f"constructs {factory_call['model_type']}."
+                        ),
+                        evidence_class="inferred_dependency",
+                        detection_method=f"factory-invocation:{factory_call['name']}",
                     )
                 )
 
@@ -188,7 +238,7 @@ class _JSTSParser:
         self.bindings: dict[str, str] = {}
         self.framework_import_modules: set[str] = set()
 
-    def parse(self) -> dict[str, list[dict[str, Any]] | set[str]]:
+    def parse(self) -> dict[str, Any]:
         constructors: list[dict[str, Any]] = []
         calls: list[dict[str, Any]] = []
 
@@ -229,27 +279,57 @@ class _JSTSParser:
         for match in assign_re.finditer(self.text):
             self.bindings[match.group(1)] = self._resolve_symbol(match.group(2))
 
+        # Config-dataflow tracking: string constants and env-with-default
+        # patterns (e.g. `const M = "gpt-4o"` or `process.env.M || "gpt-4o"`).
+        string_bindings: dict[str, tuple[str, str]] = {}
+        env_default_re = re.compile(
+            r"(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*"
+            r"process\.env\.[A-Za-z_$][\w$]*\s*(?:\?\?|\|\|)\s*[\"']([^\"']+)[\"']"
+        )
+        for match in env_default_re.finditer(self.text):
+            string_bindings[match.group(1)] = (match.group(2), "observed:environ-default")
+        literal_re = re.compile(
+            r"(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*[\"']([^\"']+)[\"']"
+        )
+        for match in literal_re.finditer(self.text):
+            string_bindings.setdefault(match.group(1), (match.group(2), "observed:string-literal"))
+
+        # Wrapper/factory detection: functions whose body constructs a model.
+        spans = self._function_spans()
+        factories: dict[str, str] = {}
+        for match in _NEW_RE.finditer(self.text):
+            token = match.group(1)
+            resolved = self._resolve_with_origin(token)[0]
+            if _resolved_model_type(token, resolved):
+                factory = _innermost_function(match.start(), spans)
+                if factory:
+                    factories.setdefault(factory, _resolved_model_type(token, resolved))
+
         for match in _NEW_RE.finditer(self.text):
             start = match.start()
             token = match.group(1)
-            resolved = self._resolve_symbol(token)
+            resolved, via_bindings = self._resolve_with_origin(token)
             constructors.append(
                 {
                     "token": token,
                     "resolved": resolved,
+                    "via_bindings": via_bindings,
                     "line": self._line_at(start),
                     "args": match.group(2),
                     "imported": self._is_imported(resolved),
+                    "factory": _innermost_function(start, spans) or "",
                 }
             )
 
         for match in _CALL_RE.finditer(self.text):
             start = match.start()
             token = match.group(1)
-            resolved = self._resolve_symbol(token)
+            resolved = self._resolve_with_origin(token)[0]
             calls.append(
                 {
+                    "token": token,
                     "resolved": resolved,
+                    "offset": start,
                     "line": self._line_at(start),
                     "args": match.group(2),
                     "imported": self._is_imported(resolved),
@@ -257,20 +337,75 @@ class _JSTSParser:
                 }
             )
 
+        factory_calls: list[dict[str, Any]] = []
+        for call in calls:
+            root = call["token"].split(".")[0]
+            # Skip the factory's own definition header (`function f(`
+            # also matches the call pattern).
+            if any(
+                name == root and header_start <= call["offset"] < header_end
+                for name, header_start, header_end, _ in spans
+            ):
+                continue
+            if root in factories and not call["token"].startswith("new "):
+                model_name, _ = _extract_model_name_with_dataflow(
+                    call["args"], string_bindings
+                )
+                factory_calls.append(
+                    {
+                        "name": root,
+                        "model": model_name,
+                        "model_type": factories[root],
+                        "line": call["line"],
+                    }
+                )
+
         return {
             "constructors": constructors,
             "calls": calls,
             "framework_import_modules": self.framework_import_modules,
+            "string_bindings": string_bindings,
+            "factory_calls": factory_calls,
         }
 
-    def _resolve_symbol(self, symbol: str) -> str:
+    def _function_spans(self) -> list[tuple[str, int, int, int]]:
+        """Approximate (name, header start, header end, body end) function spans."""
+        spans: list[tuple[str, int, int, int]] = []
+        header_re = re.compile(
+            r"function\s+([A-Za-z_$][\w$]*)\s*\(|"
+            r"(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>"
+        )
+        for match in header_re.finditer(self.text):
+            name = match.group(1) or match.group(2)
+            brace = self.text.find("{", match.end())
+            if brace < 0:
+                continue
+            depth = 0
+            end = brace
+            for idx in range(brace, len(self.text)):
+                char = self.text[idx]
+                if char == "{":
+                    depth += 1
+                elif char == "}":
+                    depth -= 1
+                    if depth == 0:
+                        end = idx
+                        break
+            spans.append((name, match.start(), match.end(), end))
+        return spans
+
+    def _resolve_with_origin(self, symbol: str) -> tuple[str, bool]:
         parts = symbol.split(".")
         root = parts[0]
         if root in self.bindings:
-            return ".".join(self.bindings[root].split(".") + parts[1:])
+            return ".".join(self.bindings[root].split(".") + parts[1:]), True
         if root in self.import_aliases:
-            return ".".join(self.import_aliases[root].split(".") + parts[1:])
-        return symbol
+            return ".".join(self.import_aliases[root].split(".") + parts[1:]), False
+        return symbol, False
+
+    def _resolve_symbol(self, symbol: str) -> str:
+        resolved, _ = self._resolve_with_origin(symbol)
+        return resolved
 
     def _is_imported(self, symbol: str) -> bool:
         root = symbol.split(".")[0]
@@ -298,6 +433,56 @@ def _extract_model_name(args_text: str) -> str:
     return match.group(1) if match else "unknown"
 
 
+def _extract_model_name_with_dataflow(
+    args_text: str, string_bindings: dict[str, tuple[str, str]]
+) -> tuple[str, str | None]:
+    """Resolve the model name, following variable/config indirection.
+
+    Returns ``(model_name, dataflow_method)``; ``dataflow_method`` is ``None``
+    for direct literals and an ``inferred:`` method string otherwise.
+    """
+    literal = re.search(r"\bmodel\s*:\s*[\"']([^\"']+)[\"']", args_text)
+    if literal:
+        return literal.group(1), None
+    ident = re.search(r"\bmodel\s*:\s*([A-Za-z_$][\w$]*)", args_text)
+    if ident:
+        name = ident.group(1)
+        if name in string_bindings:
+            value, method = string_bindings[name]
+            return value, f"inferred:config-dataflow:{name}:{method}"
+        return "unknown", f"inferred:unresolved-variable:{name}"
+    return "unknown", None
+
+
+def _resolved_model_type(token: str, resolved: str) -> str:
+    """Mirror the scan() constructor classification for factory pre-passes."""
+    leaf = resolved.split(".")[-1]
+    token_leaf = token.split(".")[-1]
+    if token_leaf in MODEL_CONSTRUCTORS:
+        return token_leaf
+    if leaf in MODEL_CONSTRUCTORS:
+        return leaf
+    if resolved.startswith("openai."):
+        return "OpenAI"
+    if "ChatOpenAI" in resolved:
+        return "ChatOpenAI"
+    if "ChatAnthropic" in resolved:
+        return "ChatAnthropic"
+    if resolved.startswith("@anthropic-ai/sdk"):
+        return "Anthropic"
+    return ""
+
+
+def _innermost_function(offset: int, spans: list[tuple[str, int, int, int]]) -> str:
+    innermost = ""
+    innermost_start = -1
+    for name, start, _header_end, end in spans:
+        if start <= offset <= end and start > innermost_start:
+            innermost = name
+            innermost_start = start
+    return innermost
+
+
 def _extract_prompt_template(args_text: str) -> str:
     match = re.search(r"[\"']([^\"']{4,})[\"']", args_text)
     return match.group(1) if match else "redacted"
@@ -322,8 +507,10 @@ def _finding(
     severity: str,
     confidence: str,
     evidence: str,
+    evidence_class: str = "observed_call",
+    detection_method: str = "",
 ) -> dict[str, str]:
-    return {
+    finding: dict[str, str] = {
         "id": finding_id,
         "category": category,
         "source_type": source_type,
@@ -332,19 +519,10 @@ def _finding(
         "confidence": confidence,
         "evidence": evidence,
     }
+    if evidence_class != "observed_call":
+        finding["evidence_class"] = evidence_class
+    if detection_method:
+        finding["detection_method"] = detection_method
+    return finding
 
 
-def _provenance(
-    provider_endpoint: str = PROVENANCE_UNKNOWN,
-    registry_uri: str = PROVENANCE_UNKNOWN,
-    immutable_version: str = PROVENANCE_UNKNOWN,
-    environment: str = PROVENANCE_UNKNOWN,
-    region: str = PROVENANCE_UNKNOWN,
-) -> dict[str, str]:
-    return {
-        "provider_endpoint": provider_endpoint,
-        "registry_uri": registry_uri,
-        "immutable_version": immutable_version,
-        "environment": environment,
-        "region": region,
-    }

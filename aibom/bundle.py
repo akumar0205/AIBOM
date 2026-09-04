@@ -15,18 +15,132 @@ from aibom.exporters import export_spdx
 from aibom.storage import load_json
 from aibom.utils import (
     environment_capture,
+    git_worktree_status,
     sha256_bytes,
     stable_json,
+    utc_now_iso,
     validate_safe_path,
 )
+
+EVIDENCE_CLASSIFICATIONS = {
+    "AIBOM.json": "canonical-inventory",
+    "SPDX.json": "interoperability-view",
+    "DIFF.json": "drift-evidence",
+    "ENVIRONMENT.json": "collection-context",
+    "COLLECTION.json": "collection-context",
+    "COMPLIANCE_MAPPING.md": "compliance-reference",
+    "MANIFEST.json": "integrity-manifest",
+}
+
+LOCKFILE_NAMES = {
+    "requirements.lock",
+    "poetry.lock",
+    "uv.lock",
+    "pdm.lock",
+    "Pipfile.lock",
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+}
 
 
 def build_manifest(files: dict[str, bytes]) -> dict[str, str]:
     return {name: sha256_bytes(content) for name, content in sorted(files.items())}
 
 
+def _lockfile_hashes(target_dir: Path | None) -> dict[str, str]:
+    if target_dir is None:
+        return {}
+    hashes: dict[str, str] = {}
+    try:
+        resolved = target_dir.resolve()
+    except OSError:
+        return {}
+    if not resolved.is_dir():
+        return {}
+    for lockfile in sorted(resolved.rglob("*")):
+        if lockfile.is_file() and lockfile.name in LOCKFILE_NAMES:
+            try:
+                hashes[str(lockfile.relative_to(resolved))] = sha256_bytes(
+                    lockfile.read_bytes()
+                )
+            except OSError:
+                continue
+    return hashes
+
+
+def build_collection_context(
+    aibom: dict[str, Any],
+    target_dir: Path | None = None,
+    cli_args: list[str] | None = None,
+    collection_warnings: list[str] | None = None,
+) -> dict[str, Any]:
+    """Build reproducible collection context for evidence bundles."""
+    from aibom import __version__ as aibom_version
+
+    detectors = aibom.get("coverage_summary", {}).get("detectors", [])
+    files_seen = sum(int(d.get("artifacts_seen", 0)) for d in detectors)
+    files_scanned = sum(int(d.get("artifacts_scanned", 0)) for d in detectors)
+    parse_failures = sum(int(d.get("artifacts_failed", 0)) for d in detectors)
+    unsupported = aibom.get("unsupported_artifacts", [])
+    unsupported_by_type: dict[str, int] = {}
+    for item in unsupported:
+        artifact_type = str(item.get("artifact_type", "unknown"))
+        unsupported_by_type[artifact_type] = unsupported_by_type.get(artifact_type, 0) + 1
+    context: dict[str, Any] = {
+        "tool": {
+            "name": "aibom",
+            "version": aibom_version,
+            "schema_version": aibom.get("schema_version", "1.0"),
+        },
+        "collected_at": utc_now_iso(),
+        "cli_args": list(cli_args or []),
+        "source": {
+            "git_sha": aibom.get("metadata", {}).get("git_sha"),
+            "worktree": git_worktree_status(target_dir) if target_dir else None,
+        },
+        "detectors": [
+            {
+                "source_type": d.get("source_type"),
+                "version": aibom_version,
+                "artifacts_seen": d.get("artifacts_seen", 0),
+                "artifacts_scanned": d.get("artifacts_scanned", 0),
+                "artifacts_failed": d.get("artifacts_failed", 0),
+                "default_confidence": d.get("default_confidence"),
+            }
+            for d in detectors
+        ],
+        "scan_statistics": {
+            "files_seen": files_seen,
+            "files_scanned": files_scanned,
+            "files_skipped": files_seen - files_scanned,
+            "parse_failures": parse_failures,
+            "unsupported_total": len(unsupported),
+            "unsupported_by_type": unsupported_by_type,
+            "counts": {
+                "models": len(aibom.get("models", [])),
+                "tools": len(aibom.get("tools", [])),
+                "datasets": len(aibom.get("datasets", [])),
+                "frameworks": len(aibom.get("frameworks", [])),
+                "prompts": len(aibom.get("prompts", [])),
+                "scan_findings": len(aibom.get("scan_findings", [])),
+                "risk_findings": len(aibom.get("risk_findings", [])),
+            },
+        },
+        "dependency_lock_hashes": _lockfile_hashes(target_dir),
+        "collection_warnings": list(collection_warnings or []),
+    }
+    return context
+
+
 def create_bundle(
-    aibom_path: Path, out_zip: Path, baseline_path: Path | None = None, compliance_md: str = ""
+    aibom_path: Path,
+    out_zip: Path,
+    baseline_path: Path | None = None,
+    compliance_md: str = "",
+    target_dir: Path | None = None,
+    cli_args: list[str] | None = None,
+    collection_warnings: list[str] | None = None,
 ) -> Path:
     aibom = load_json(aibom_path)
     files: dict[str, bytes] = {}
@@ -37,6 +151,22 @@ def create_bundle(
         files["DIFF.json"] = stable_json(diff_aibom(baseline, aibom)).encode("utf-8")
     files["ENVIRONMENT.json"] = stable_json(environment_capture()).encode("utf-8")
     files["COMPLIANCE_MAPPING.md"] = compliance_md.encode("utf-8")
+    collection = build_collection_context(
+        aibom,
+        target_dir=target_dir,
+        cli_args=cli_args,
+        collection_warnings=collection_warnings,
+    )
+    manifest = build_manifest(files)
+    collection["files"] = [
+        {
+            "name": name,
+            "sha256": digest,
+            "classification": EVIDENCE_CLASSIFICATIONS.get(name, "evidence"),
+        }
+        for name, digest in sorted(manifest.items())
+    ]
+    files["COLLECTION.json"] = stable_json(collection).encode("utf-8")
     manifest = build_manifest(files)
     files["MANIFEST.json"] = stable_json(manifest).encode("utf-8")
 
@@ -105,7 +235,10 @@ def _verify_chain(
     safe_signing_cert = validate_safe_path(signing_cert, must_exist=True, must_be_file=True)
 
     if not ca_bundle and not trusted_roots:
-        return
+        raise ValueError(
+            "Chain validation requires at least one trust anchor "
+            "(ca_bundle or trusted_roots)."
+        )
 
     args = ["verify"]
     if ca_bundle:
@@ -145,17 +278,29 @@ def _enforce_validity_window(signing_cert: Path) -> None:
         raise ValueError("Signing certificate is outside its validity window")
 
 
+def _normalize_dn(value: str) -> str:
+    """Normalize a Distinguished Name for comparison.
+
+    OpenSSL DN rendering varies (``CN=aibom-leaf`` vs ``CN = aibom-leaf``)
+    across versions and configs; normalize whitespace around ``=`` and
+    separators so allowlist matching is deterministic.
+    """
+    normalized = re.sub(r"\s*=\s*", "=", value.strip())
+    normalized = re.sub(r"\s*/\s*", "/", normalized)
+    return re.sub(r"\s+", " ", normalized)
+
+
 def _match_allowlist(signing_cert: Path, allowlist_policy: dict[str, Any] | None) -> dict[str, Any]:
     cert = _cert_metadata(signing_cert)
     cert_fingerprint = cert.get("sha256_fingerprint", "")
-    cert_subject = cert.get("subject", "")
+    cert_subject = _normalize_dn(cert.get("subject", ""))
     cert_sans = _certificate_sans(signing_cert)
 
     if not allowlist_policy:
         return {"status": "skipped", "reason": "no allowlist policy provided"}
 
     fingerprints = set(allowlist_policy.get("sha256_fingerprints") or [])
-    subjects = set(allowlist_policy.get("subjects") or [])
+    subjects = {_normalize_dn(str(item)) for item in (allowlist_policy.get("subjects") or [])}
     san_dns = set(allowlist_policy.get("san_dns") or [])
 
     matches = {
@@ -184,21 +329,24 @@ def _evaluate_revocation(
     revocation_hook: Callable[[Path], tuple[bool, str] | bool] | None = None,
 ) -> dict[str, Any]:
     if revocation_policy == "none":
-        return {"status": "skipped", "reason": "revocation policy disabled"}
+        return {"status": "skipped", "reason": "revocation policy disabled", "mechanism": "none"}
     if revocation_policy == "crl":
         return {"status": "passed", "mechanism": "crl"}
     if revocation_policy == "ocsp":
-        if revocation_hook:
-            hook_result = revocation_hook(signing_cert)
-            if isinstance(hook_result, tuple):
-                allowed, detail = hook_result
-            else:
-                allowed, detail = bool(hook_result), "hook returned boolean"
-            if not allowed:
-                raise ValueError(f"Revocation hook rejected certificate: {detail}")
-            return {"status": "passed", "mechanism": "ocsp", "detail": detail}
-        return {"status": "skipped", "reason": "ocsp policy selected without hook"}
-    return {"status": "skipped", "reason": "unknown revocation policy"}
+        if revocation_hook is None:
+            raise ValueError(
+                "OCSP revocation policy requires a revocation hook or responder "
+                "integration; refusing to silently skip revocation checking"
+            )
+        hook_result = revocation_hook(signing_cert)
+        if isinstance(hook_result, tuple):
+            allowed, detail = hook_result
+        else:
+            allowed, detail = bool(hook_result), "hook returned boolean"
+        if not allowed:
+            raise ValueError(f"Revocation hook rejected certificate: {detail}")
+        return {"status": "passed", "mechanism": "ocsp", "detail": detail}
+    raise ValueError(f"Unknown revocation policy: {revocation_policy!r}")
 
 
 def sign_bundle(
@@ -277,6 +425,11 @@ def verify_bundle_signature(
     safe_trusted_roots: list[Path] | None = None
     safe_provenance_path: Path | None = None
 
+    if ca_bundle is None and not trusted_roots:
+        raise ValueError(
+            "Verification requires at least one trust anchor: provide --ca-bundle "
+            "or --trusted-root. Verification without trust anchors is disallowed."
+        )
     if ca_bundle is not None:
         safe_ca_bundle = validate_safe_path(ca_bundle, must_exist=True, must_be_file=True)
     if crl_file is not None:
@@ -298,9 +451,9 @@ def verify_bundle_signature(
     policy_checks: dict[str, Any] = {
         "certificate_validity": {"status": "passed"},
         "certificate_chain": {
-            "status": "passed" if (safe_ca_bundle or safe_trusted_roots) else "skipped",
-            "reason": (
-                "no trust anchors provided" if not (safe_ca_bundle or safe_trusted_roots) else None
+            "status": "passed",
+            "trust_anchor": (
+                "ca_bundle" if safe_ca_bundle else "trusted_roots"
             ),
         },
     }

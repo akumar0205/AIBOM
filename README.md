@@ -72,6 +72,39 @@ Output layout:
 - `aibom attest`
 - `aibom risk`
 
+## SOC-grade assurance hardening
+
+Evidence-graded, fail-closed defaults for auditor-facing use:
+
+- **Fail-closed attestation**: `attest --verify` requires `--ca-bundle` or
+  `--trusted-root`; OCSP revocation without a responder integration errors
+  instead of silently skipping.
+- **Evidence-graded provenance**: missing provenance is `null` with
+  `{status: observed|inferred|missing, method}` evidence — never `"unknown"`
+  placeholders (rejected by the schema).
+- **Semantic detectors**: Python/JS-TS resolve aliases, factory wrappers, and
+  config/env dataflow into model constructors; dynamic imports are flagged
+  `suspected_usage`. Every model/finding carries `evidence_class`
+  (`observed_call`/`inferred_dependency`/`suspected_usage`) and
+  `detection_method`, with confidence calibrated to evidence class.
+- **10-rule control pack**: `third-party-provider`, `exfil-surface`,
+  `prompt-injection-surface`, `secret-exposure`, `internet-egress`,
+  `retrieval-augmentation`, `tool-execution`, `prompt-logging`,
+  `model-version-drift`, `unsupported-provider-use`. Findings carry
+  `finding_kind`, `control_objective`, and `remediation`.
+- **Reproducible evidence bundles**: `COLLECTION.json` records tool version,
+  CLI args, detector versions, git SHA plus dirty state, lockfile hashes,
+  scan statistics, and classified manifest entries.
+- **Reproducible GitHub scans**: `--commit` pinning, per-record
+  `repo_origin`/`resolved_commit`/`branch`/`scanned_at`,
+  `--allow-tokenized-clone` opt-in, and `--local-mirrors-dir` mode.
+- **Hardened schema**: stable `$id`, `date-time`/enum/format constraints, and
+  `additionalProperties: false` on core entities.
+- **Adversarial coverage**: `tests/fixtures/adversarial/` plus a recall-gated
+  benchmark (`tests/fixtures/benchmark/cases.json`), and export conformance
+  tests for SPDX/CycloneDX/SARIF/VEX shapes with namespaced `aibom:`
+  extensions.
+
 ## Compatibility and migration notes
 
 - `generate`, `validate`, `export`, `diff`, `bundle`, `attest`, and `risk` remain functional and backward compatible.
@@ -85,6 +118,7 @@ Output layout:
 - [For auditors](docs/FOR_AUDITORS.md)
 - [SOC deployment guide](docs/SOC_DEPLOYMENT_GUIDE.md)
 - [Compliance mapping](docs/COMPLIANCE_MAPPING.md)
+- [Risk policy format](docs/RISK_POLICY_FORMAT.md)
 
 ## Examples
 

@@ -109,8 +109,12 @@ def test_config_and_runtime_detectors_populate_provenance_when_observable() -> N
         if m["type"] == "ConfigModelHint" and m["source_file"] == "settings.yaml"
     )
 
-    assert config_model["provenance"]["provider_endpoint"] == "unknown"
+    assert config_model["provenance"]["provider_endpoint"] is None
+    assert config_model["provenance"]["evidence"]["provider_endpoint"]["status"] == "missing"
     assert doc["runtime_context"]["immutable_version"] == "python:3.11-slim"
+    assert (
+        doc["runtime_context"]["evidence"]["immutable_version"]["status"] == "observed"
+    )
 
 
 def test_runtime_manifest_detector_extracts_lineage_context(tmp_path: Path) -> None:
@@ -314,7 +318,43 @@ def test_validation_fails_for_missing_required_field() -> None:
 def test_golden_fixture_validates_against_schema() -> None:
     golden = json.loads((Path(__file__).parent / "fixtures" / "golden_aibom.json").read_text())
     golden["metadata"]["artifact_sha256"] = "0" * 64
+    golden["metadata"]["generated_at"] = "2026-01-02T03:04:05Z"
+    golden["metadata"]["git_sha"] = "unknown"
     validate_aibom(golden)
+
+
+def test_schema_rejects_placeholder_provenance_and_bad_metadata() -> None:
+    doc = generate_aibom(_fixture_project())
+    doc["models"][0]["provenance"]["provider_endpoint"] = "unknown"
+    with pytest.raises(AIBOMValidationException):
+        validate_aibom(doc)
+    # Provenance values must be nullable with evidence grades, never placeholders.
+    doc = generate_aibom(_fixture_project())
+    for model in doc["models"]:
+        prov = model["provenance"]
+        assert set(prov["evidence"]) >= {
+            "provider_endpoint",
+            "registry_uri",
+            "immutable_version",
+            "environment",
+            "region",
+        }
+        for field, entry in prov["evidence"].items():
+            assert entry["status"] in {"observed", "inferred", "missing"}
+            assert entry["method"]
+            if entry["status"] == "missing":
+                assert prov[field] is None
+            else:
+                assert prov[field]
+    assert doc["metadata"]["generated_at"].endswith("Z")
+    assert "T" in doc["metadata"]["generated_at"]
+
+
+def test_schema_version_migration_rejects_unknown_versions() -> None:
+    doc = generate_aibom(_fixture_project())
+    doc["schema_version"] = "2.0"
+    with pytest.raises(AIBOMValidationException):
+        validate_aibom(doc)
 
 
 def test_validation_fixtures_cover_valid_and_invalid_cases() -> None:
@@ -718,12 +758,86 @@ def test_bundle_sign_and_attest_verify(tmp_path: Path) -> None:
             "--signing-cert",
             str(cert),
             "--verify",
+            "--trusted-root",
+            str(cert),
         ],
         capture_output=True,
         text=True,
         check=False,
     )
     assert verify_cmd.returncode == 0
+
+
+def test_attest_verify_requires_trust_anchors(tmp_path: Path) -> None:
+    doc = generate_aibom(_fixture_project())
+    aibom_path = tmp_path / "aibom.json"
+    aibom_path.write_text(json.dumps(doc), encoding="utf-8")
+    bundle_path = tmp_path / "evidence.zip"
+    create_bundle(aibom_path, bundle_path, compliance_md="# map")
+    key, cert = _create_signing_material(tmp_path)
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "attest",
+            "--bundle",
+            str(bundle_path),
+            "--signing-key",
+            str(key),
+            "--signing-cert",
+            str(cert),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    sig = tmp_path / "evidence.zip.sig"
+    provenance = tmp_path / "provenance.json"
+
+    # CLI fails closed without trust anchors.
+    no_anchor = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "attest",
+            "--bundle",
+            str(bundle_path),
+            "--signature",
+            str(sig),
+            "--provenance",
+            str(provenance),
+            "--signing-cert",
+            str(cert),
+            "--verify",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert no_anchor.returncode != 0
+
+    # Library fails closed without trust anchors.
+    with pytest.raises(ValueError, match="trust anchor"):
+        verify_bundle_signature(bundle_path, sig, cert, provenance)
+
+    # OCSP without a hook fails closed instead of silently skipping.
+    with pytest.raises(ValueError, match="OCSP"):
+        verify_bundle_signature(
+            bundle_path, sig, cert, provenance, trusted_roots=[cert], revocation_policy="ocsp"
+        )
+
+
+def test_attest_verify_ocsp_with_hook_records_mechanism(tmp_path: Path) -> None:
+    from aibom.bundle import _evaluate_revocation
+
+    _, cert = _create_signing_material(tmp_path)
+    result = _evaluate_revocation(cert, "ocsp", revocation_hook=lambda _p: (True, "responder-ok"))
+    assert result == {"status": "passed", "mechanism": "ocsp", "detail": "responder-ok"}
+    with pytest.raises(ValueError, match="OCSP"):
+        _evaluate_revocation(cert, "ocsp")
 
 
 def test_attest_writes_adjacent_artifacts(tmp_path: Path) -> None:
@@ -755,7 +869,7 @@ def test_attest_writes_adjacent_artifacts(tmp_path: Path) -> None:
 
     sig = tmp_path / "evidence.zip.sig"
     provenance = tmp_path / "provenance.json"
-    verify_bundle_signature(bundle_path, sig, cert, provenance)
+    verify_bundle_signature(bundle_path, sig, cert, provenance, trusted_roots=[cert])
     with zipfile.ZipFile(bundle_path) as zf:
         assert "MANIFEST.json" in zf.namelist()
 
@@ -864,6 +978,8 @@ def test_attest_verify_rejects_unauthorized_signer(tmp_path: Path) -> None:
             "--signing-cert",
             str(cert),
             "--verify",
+            "--trusted-root",
+            str(cert),
             "--allow-subject",
             "subject=CN=does-not-match",
         ],
@@ -873,6 +989,112 @@ def test_attest_verify_rejects_unauthorized_signer(tmp_path: Path) -> None:
     )
     assert verify_cmd.returncode != 0
     assert "not authorized" in verify_cmd.stderr
+
+
+def test_attest_verify_rejects_tampered_bundle_and_mismatched_provenance(
+    tmp_path: Path,
+) -> None:
+    doc = generate_aibom(_fixture_project())
+    aibom_path = tmp_path / "aibom.json"
+    aibom_path.write_text(json.dumps(doc), encoding="utf-8")
+    bundle_path = tmp_path / "evidence.zip"
+    create_bundle(aibom_path, bundle_path, compliance_md="# map")
+    key, cert = _create_signing_material(tmp_path)
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "attest",
+            "--bundle",
+            str(bundle_path),
+            "--signing-key",
+            str(key),
+            "--signing-cert",
+            str(cert),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    sig = tmp_path / "evidence.zip.sig"
+    provenance = tmp_path / "provenance.json"
+
+    # Tamper with the bundle after signing: signature must not verify.
+    with zipfile.ZipFile(bundle_path, "a") as zf:
+        zf.writestr("TAMPERED.txt", b"tampered")
+    with pytest.raises((ValueError, subprocess.CalledProcessError)):
+        verify_bundle_signature(bundle_path, sig, cert, provenance, trusted_roots=[cert])
+
+    # Mismatched provenance fingerprint must fail closed: sign a fresh bundle,
+    # then verify it against the stale provenance of the tampered bundle.
+    fresh_bundle = tmp_path / "fresh.zip"
+    create_bundle(aibom_path, fresh_bundle, compliance_md="# map")
+    fresh_provenance = tmp_path / "fresh_provenance.json"
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "aibom.cli",
+            "attest",
+            "--bundle",
+            str(fresh_bundle),
+            "--signing-key",
+            str(key),
+            "--signing-cert",
+            str(cert),
+            "--provenance",
+            str(fresh_provenance),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    fresh_sig = tmp_path / "fresh.zip.sig"
+    with pytest.raises(ValueError, match="[Pp]rovenance"):
+        verify_bundle_signature(
+            fresh_bundle, fresh_sig, cert, provenance, trusted_roots=[cert]
+        )
+
+
+def test_bundle_collection_context_is_reproducible(tmp_path: Path) -> None:
+    doc = generate_aibom(_fixture_project(), include_runtime_manifests=True)
+    aibom_path = tmp_path / "aibom.json"
+    aibom_path.write_text(json.dumps(doc), encoding="utf-8")
+    bundle_path = tmp_path / "evidence.zip"
+    create_bundle(
+        aibom_path,
+        bundle_path,
+        compliance_md="# map",
+        target_dir=_fixture_project(),
+        cli_args=["aibom", "generate", ".", "--audit-mode"],
+    )
+    with zipfile.ZipFile(bundle_path) as zf:
+        names = set(zf.namelist())
+        assert "COLLECTION.json" in names
+        collection = json.loads(zf.read("COLLECTION.json").decode("utf-8"))
+    assert collection["tool"]["name"] == "aibom"
+    assert collection["cli_args"] == ["aibom", "generate", ".", "--audit-mode"]
+    assert collection["source"]["git_sha"] == doc["metadata"]["git_sha"]
+    assert collection["source"]["worktree"]["dirty"] in {True, False, None}
+    assert collection["detectors"]
+    assert all(det["version"] for det in collection["detectors"])
+    stats = collection["scan_statistics"]
+    assert stats["files_seen"] >= stats["files_scanned"]
+    assert stats["files_skipped"] == stats["files_seen"] - stats["files_scanned"]
+    assert "parse_failures" in stats
+    assert stats["unsupported_total"] == len(doc["unsupported_artifacts"])
+    assert {entry["name"] for entry in collection["files"]} >= {
+        "AIBOM.json",
+        "SPDX.json",
+        "ENVIRONMENT.json",
+        "COMPLIANCE_MAPPING.md",
+    }
+    assert {entry["classification"] for entry in collection["files"]} >= {
+        "canonical-inventory",
+        "collection-context",
+    }
 
 
 def test_risk_policy_default_provenance_present() -> None:

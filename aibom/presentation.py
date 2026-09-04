@@ -57,7 +57,8 @@ def build_ai_bom_like_profile(aibom: dict[str, Any]) -> dict[str, Any]:
                         "type": item.get("type", "unknown"),
                         "model": item.get("model", "unknown"),
                         "source_file": item.get("source_file", "unknown"),
-                        "provider": item.get("provenance", {}).get("provider_endpoint", "unknown"),
+                        "provider": item.get("provenance", {}).get("provider_endpoint")
+                        or "not-observed",
                     }
                     for item in aibom.get("models", [])
                 ],

@@ -1,5 +1,36 @@
 from __future__ import annotations
 
+"""Interoperability views over the canonical AIBOM document.
+
+Native mappings (conform to the target spec where practical):
+
+- SPDX 2.3: ``spdxVersion``, ``dataLicense``, ``SPDXID``, ``name``,
+  ``documentNamespace``, ``creationInfo``, ``packages`` (with
+  ``SPDXID``/``name``/``versionInfo``/``downloadLocation``/``filesAnalyzed``/
+  ``licenseConcluded``/``licenseDeclared``/``supplier``), ``relationships``
+  (``DESCRIBES``), ``documentDescribes``.
+- CycloneDX 1.5: ``bomFormat``, ``specVersion``, ``serialNumber``,
+  ``version``, ``metadata`` (timestamp/tools), ``components``
+  (``type``/``name``/``version``/``bom-ref``), ``dependencies``,
+  ``vulnerabilities`` (``id``/``source``/``ratings``/``description``/
+  ``analysis``/``affects``).
+- SARIF 2.1.0: ``$schema``, ``version``, ``runs[].tool.driver``,
+  ``runs[].results[]`` with ``ruleId``/``level``/``message``/``locations``.
+- OpenVEX 0.2.0: ``@context``, ``@id``, ``author``, ``timestamp``,
+  ``version``, ``statements[]`` with ``vulnerability``/``products``/
+  ``status`` (``affected``/``under_investigation``/``not_affected``).
+
+AIBOM-specific extensions (all ``aibom:``-namespaced, never bare native fields):
+
+- ``aibom:provenance:<field>`` / ``aibom:lineage:<field>`` value properties.
+- ``aibom:provenance:evidence:<field>`` / ``aibom:lineage:evidence:<field>``
+  properties carrying ``<status>:<method>`` evidence grades.
+- ``aibom:detector:*``, ``aibom:confidence``, ``aibom:severity``,
+  ``aibom:source_file``, ``aibom:finding_id``, ``aibom:rule_id``,
+  ``aibom:base_rule_id``, ``aibom:category`` properties and
+  ``aibom-evidence-source`` / ``aibom-risk:`` external references.
+"""
+
 import hashlib
 import json
 import re
@@ -32,10 +63,18 @@ def _spdx_safe_id(prefix: str, *parts: str) -> str:
 def _normalize_timestamp(aibom: dict[str, Any]) -> str:
     raw = str(aibom.get("metadata", {}).get("generated_at", "")).strip()
     if raw and raw != "DYNAMIC":
-        for fmt in ("%Y%m%dT%H%M%SZ", "%Y-%m-%dT%H:%M:%SZ"):
+        for fmt in (
+            "%Y-%m-%dT%H:%M:%S.%fZ",
+            "%Y-%m-%dT%H:%M:%SZ",
+            "%Y-%m-%dT%H:%M:%S.%f%z",
+            "%Y-%m-%dT%H:%M:%S%z",
+            "%Y%m%dT%H%M%SZ",
+        ):
             try:
-                parsed = datetime.strptime(raw, fmt).replace(tzinfo=timezone.utc)
-                return parsed.strftime("%Y-%m-%dT%H:%M:%SZ")
+                parsed = datetime.strptime(raw, fmt)
+                if parsed.tzinfo is None:
+                    parsed = parsed.replace(tzinfo=timezone.utc)
+                return parsed.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
             except ValueError:
                 continue
     return "1970-01-01T00:00:00Z"
@@ -51,6 +90,34 @@ def _component_evidence(source_file: str | None) -> dict[str, str] | None:
     }
 
 
+def _is_present_provenance_value(value: Any) -> bool:
+    return value is not None and value != "" and value != "unknown"
+
+
+def _evidence_properties(
+    evidence: Any, prefix: str, fields: tuple[str, ...]
+) -> list[dict[str, str]]:
+    """Carry provenance confidence (observed/inferred/missing) and collection method.
+
+    Emitted as ``aibom:provenance:evidence:<field>`` properties so exported
+    interoperability views preserve the canonical evidence grade instead of
+    collapsing it to a bare value.
+    """
+    if not isinstance(evidence, dict):
+        return []
+    props: list[dict[str, str]] = []
+    for key in fields:
+        entry = evidence.get(key)
+        if not isinstance(entry, dict):
+            continue
+        status = str(entry.get("status", "missing"))
+        method = str(entry.get("method", "not-observed"))
+        if status not in {"observed", "inferred", "missing"}:
+            continue
+        props.append({"name": f"{prefix}:evidence:{key}", "value": f"{status}:{method}"})
+    return props
+
+
 def _provenance_properties(provenance: dict[str, Any] | None) -> list[dict[str, str]]:
     if not isinstance(provenance, dict):
         return []
@@ -58,8 +125,15 @@ def _provenance_properties(provenance: dict[str, Any] | None) -> list[dict[str, 
     props: list[dict[str, str]] = []
     for key in ("provider_endpoint", "registry_uri", "immutable_version", "environment", "region"):
         value = provenance.get(key)
-        if value:
+        if _is_present_provenance_value(value):
             props.append({"name": f"aibom:provenance:{key}", "value": str(value)})
+    props.extend(
+        _evidence_properties(
+            provenance.get("evidence"),
+            "aibom:provenance",
+            ("provider_endpoint", "registry_uri", "immutable_version", "environment", "region"),
+        )
+    )
 
     lineage = provenance.get("lineage")
     if isinstance(lineage, dict):
@@ -70,8 +144,20 @@ def _provenance_properties(provenance: dict[str, Any] | None) -> list[dict[str, 
             "owning_system",
         ):
             value = lineage.get(key)
-            if value:
+            if _is_present_provenance_value(value):
                 props.append({"name": f"aibom:lineage:{key}", "value": str(value)})
+        props.extend(
+            _evidence_properties(
+                lineage.get("evidence"),
+                "aibom:lineage",
+                (
+                    "model_artifact_digest",
+                    "deployment_id",
+                    "service_account_identity",
+                    "owning_system",
+                ),
+            )
+        )
     return props
 
 

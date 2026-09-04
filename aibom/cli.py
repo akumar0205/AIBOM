@@ -108,6 +108,8 @@ def cmd_generate(args: argparse.Namespace) -> int:
                 Path(args.bundle_out).resolve(),
                 baseline if baseline.exists() else None,
                 COMPLIANCE_STARTER,
+                target_dir=target,
+                cli_args=sys.argv,
             )
     return 0
 
@@ -205,18 +207,29 @@ def cmd_attest(args: argparse.Namespace) -> int:
         if not args.signature:
             print("ERROR: attest --verify requires --signature", file=sys.stderr)
             return 2
+        if not args.ca_bundle and not args.trusted_root:
+            print(
+                "ERROR: attest --verify requires a trust anchor: provide --ca-bundle "
+                "or --trusted-root. Verification without trust anchors is disallowed.",
+                file=sys.stderr,
+            )
+            return 2
         trusted_roots = [Path(root) for root in (args.trusted_root or [])]
-        verify_bundle_signature(
-            bundle,
-            Path(args.signature),
-            cert,
-            Path(args.provenance) if args.provenance else None,
-            ca_bundle=Path(args.ca_bundle) if args.ca_bundle else None,
-            trusted_roots=trusted_roots,
-            revocation_policy=args.revocation_policy,
-            crl_file=Path(args.crl_file) if args.crl_file else None,
-            allowlist_policy=_parse_allowlist(args),
-        )
+        try:
+            verify_bundle_signature(
+                bundle,
+                Path(args.signature),
+                cert,
+                Path(args.provenance) if args.provenance else None,
+                ca_bundle=Path(args.ca_bundle) if args.ca_bundle else None,
+                trusted_roots=trusted_roots,
+                revocation_policy=args.revocation_policy,
+                crl_file=Path(args.crl_file) if args.crl_file else None,
+                allowlist_policy=_parse_allowlist(args),
+            )
+        except ValueError as exc:
+            print(f"ERROR: attestation verification failed: {exc}", file=sys.stderr)
+            return 2
         return 0
 
     if not args.signing_key:
@@ -306,6 +319,11 @@ def cmd_scan_github(args: argparse.Namespace) -> int:
         max_high_risk=args.max_high_risk,
         max_unsupported=args.max_unsupported,
         baseline_file=Path(args.baseline) if args.baseline else None,
+        commit=args.commit,
+        allow_tokenized_clone=args.allow_tokenized_clone,
+        local_mirrors_dir=Path(args.local_mirrors_dir).resolve()
+        if args.local_mirrors_dir
+        else None,
     )
 
     payload = {"records": [record.__dict__ for record in records], "exit_code": exit_code}
@@ -376,8 +394,24 @@ def build_parser() -> argparse.ArgumentParser:
     gh.add_argument("--repos-file", help="File containing owner/name repos, one per line.")
     gh.add_argument("--output-dir", default="github_scan_out")
     gh.add_argument("--branch")
+    gh.add_argument(
+        "--commit",
+        help="Pin every repo scan to this commit SHA for reproducible results.",
+    )
+    gh.add_argument(
+        "--local-mirrors-dir",
+        help="Preferred mode: scan already-checked-out local mirrors from this "
+        "directory (each repo at <dir>/<owner__name>) instead of cloning.",
+    )
     gh.add_argument("--depth", type=int, default=1)
     gh.add_argument("--token-env", default="GITHUB_TOKEN")
+    gh.add_argument(
+        "--allow-tokenized-clone",
+        action="store_true",
+        help="Explicit opt-in to embed the token-env credential in clone URLs. "
+        "Without this flag, a set token aborts the scan instead of leaking "
+        "credentials into logs or process tables.",
+    )
     gh.add_argument("--max-repos", type=int)
     gh.add_argument("--timeout-sec", type=int, default=180)
     gh.add_argument("--profile", choices=["canonical", "ai-bom-like"], default="canonical")
@@ -463,9 +497,20 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--signing-key")
     a.add_argument("--signature")
     a.add_argument("--provenance")
-    a.add_argument("--verify", action="store_true")
-    a.add_argument("--ca-bundle")
-    a.add_argument("--trusted-root", action="append")
+    a.add_argument(
+        "--verify",
+        action="store_true",
+        help="Verify bundle signature. Fail-closed: requires --ca-bundle or --trusted-root.",
+    )
+    a.add_argument(
+        "--ca-bundle",
+        help="CA bundle PEM for chain validation (required for --verify unless --trusted-root is given).",
+    )
+    a.add_argument(
+        "--trusted-root",
+        action="append",
+        help="Trusted root certificate PEM (repeatable; satisfies --verify trust requirement).",
+    )
     a.add_argument("--revocation-policy", choices=["none", "crl", "ocsp"], default="none")
     a.add_argument("--crl-file")
     a.add_argument("--allow-subject", action="append")

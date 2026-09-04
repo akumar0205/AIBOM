@@ -19,6 +19,8 @@ class ExfilSurfaceRule(RiskRule):
         control_mappings=("OWASP-LLM-06", "SOC2-CC6.1"),
         default_confidence=0.75,
         default_exposure=0.85,
+        control_objective="Block unmediated exfiltration paths from AI tooling.",
+        remediation="Restrict file and network tools to least privilege, review tool scopes, and alert on anomalous reads.",
     )
 
     def evaluate(self, entities: dict[str, list]) -> list[RuleMatch]:

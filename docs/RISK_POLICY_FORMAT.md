@@ -60,6 +60,15 @@ AIBOM supports organization-defined risk rule overrides via optional policy file
   - `third-party-provider`
   - `exfil-surface`
   - `prompt-injection-surface`
+  - `secret-exposure`
+  - `internet-egress`
+  - `retrieval-augmentation`
+  - `tool-execution`
+  - `prompt-logging`
+  - `model-version-drift`
+  - `unsupported-provider-use`
+- Every finding carries `finding_kind` (`risk` vs inventory `asset`), a
+  `control_objective`, and a `remediation` hint for SOC triage.
 - `enabled`: Optional boolean to disable/enable a rule.
 - `rule_id`: Organization-defined rule ID emitted into findings.
 - `severity`: Optional fixed severity override. If omitted, AIBOM uses weighted severity bands.

@@ -1,0 +1,6 @@
+# Adversarial fixture: keys that LOOK model-related but are not model config.
+# A naive substring matcher would flag these; exact-key matching must not.
+model_trainer: pytest
+modeling_approach: statistical-baseline
+amodal_setting: none
+provider_notes: internal-runbook

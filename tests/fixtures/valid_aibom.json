@@ -1,8 +1,8 @@
 {
   "schema_version": "1.0",
   "metadata": {
-    "generated_at": "DYNAMIC",
-    "git_sha": "DYNAMIC",
+    "generated_at": "2026-01-02T03:04:05Z",
+    "git_sha": "0123456789abcdef0123456789abcdef01234567",
     "artifact_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
   },
   "models": [
@@ -13,11 +13,33 @@
       "source_type": "config",
       "confidence": "medium",
       "provenance": {
-        "provider_endpoint": "unknown",
-        "registry_uri": "unknown",
-        "immutable_version": "unknown",
-        "environment": "unknown",
-        "region": "unknown"
+        "provider_endpoint": null,
+        "registry_uri": null,
+        "immutable_version": null,
+        "environment": null,
+        "region": null,
+        "evidence": {
+          "provider_endpoint": {
+            "status": "missing",
+            "method": "not-observed"
+          },
+          "registry_uri": {
+            "status": "missing",
+            "method": "not-observed"
+          },
+          "immutable_version": {
+            "status": "missing",
+            "method": "not-observed"
+          },
+          "environment": {
+            "status": "missing",
+            "method": "not-observed"
+          },
+          "region": {
+            "status": "missing",
+            "method": "not-observed"
+          }
+        }
       }
     },
     {
@@ -26,10 +48,32 @@
       "source_file": "app.py",
       "provenance": {
         "provider_endpoint": "https://api.openai.com",
-        "registry_uri": "unknown",
-        "immutable_version": "unknown",
-        "environment": "unknown",
-        "region": "unknown"
+        "registry_uri": null,
+        "immutable_version": null,
+        "environment": null,
+        "region": null,
+        "evidence": {
+          "provider_endpoint": {
+            "status": "observed",
+            "method": "observed:static-fixture"
+          },
+          "registry_uri": {
+            "status": "missing",
+            "method": "not-observed"
+          },
+          "immutable_version": {
+            "status": "missing",
+            "method": "not-observed"
+          },
+          "environment": {
+            "status": "missing",
+            "method": "not-observed"
+          },
+          "region": {
+            "status": "missing",
+            "method": "not-observed"
+          }
+        }
       }
     },
     {
@@ -38,10 +82,32 @@
       "source_file": "demo.ipynb#cell-0",
       "provenance": {
         "provider_endpoint": "https://api.openai.com",
-        "registry_uri": "unknown",
-        "immutable_version": "unknown",
-        "environment": "unknown",
-        "region": "unknown"
+        "registry_uri": null,
+        "immutable_version": null,
+        "environment": null,
+        "region": null,
+        "evidence": {
+          "provider_endpoint": {
+            "status": "observed",
+            "method": "observed:static-fixture"
+          },
+          "registry_uri": {
+            "status": "missing",
+            "method": "not-observed"
+          },
+          "immutable_version": {
+            "status": "missing",
+            "method": "not-observed"
+          },
+          "environment": {
+            "status": "missing",
+            "method": "not-observed"
+          },
+          "region": {
+            "status": "missing",
+            "method": "not-observed"
+          }
+        }
       }
     }
   ],
@@ -197,11 +263,33 @@
     }
   ],
   "runtime_context": {
-    "provider_endpoint": "unknown",
-    "registry_uri": "unknown",
-    "immutable_version": "unknown",
-    "environment": "unknown",
-    "region": "unknown"
+    "provider_endpoint": null,
+    "registry_uri": null,
+    "immutable_version": null,
+    "environment": null,
+    "region": null,
+    "evidence": {
+      "provider_endpoint": {
+        "status": "missing",
+        "method": "not-observed"
+      },
+      "registry_uri": {
+        "status": "missing",
+        "method": "not-observed"
+      },
+      "immutable_version": {
+        "status": "missing",
+        "method": "not-observed"
+      },
+      "environment": {
+        "status": "missing",
+        "method": "not-observed"
+      },
+      "region": {
+        "status": "missing",
+        "method": "not-observed"
+      }
+    }
   },
   "risk_findings": [
     {
