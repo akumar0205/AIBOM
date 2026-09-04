@@ -780,6 +780,7 @@
           <ul class="nav-items">
             <li class="nav-item"><a href="#what-is-aibom">What is AIBOM?</a></li>
             <li class="nav-item"><a href="#risk-analysis">Risk Analysis</a></li>
+            <li class="nav-item"><a href="#assurance">SOC-Grade Assurance</a></li>
           </ul>
         </div>
         
@@ -1108,7 +1109,7 @@ aibom generate . --risk-policy policy.json</code></pre>
 
         <h3 id="bundle">bundle</h3>
         
-        <p>Create an evidence bundle with AIBOM, SPDX, and optional diff.</p>
+        <p>Create an evidence bundle with AIBOM, SPDX, and optional diff. Bundles also include <code>COLLECTION.json</code> with tool and detector versions, CLI args, git SHA plus dirty worktree state, lockfile hashes, scan statistics, and classified manifest entries for reproducible audits.</p>
         
         <div class="code-block">
           <div class="code-block-header">
@@ -1142,9 +1143,16 @@ aibom generate . --risk-policy policy.json</code></pre>
           <pre><code># Sign a bundle
 aibom attest --bundle evidence.zip --signing-key key.pem --signing-cert cert.pem
 
-# Verify a bundle
-aibom attest --bundle evidence.zip --signature evidence.zip.sig --signing-cert cert.pem --verify</code></pre>
+# Verify a bundle (fail-closed: requires a trust anchor)
+aibom attest --bundle evidence.zip --signature evidence.zip.sig --signing-cert cert.pem --verify --ca-bundle ca.pem</code></pre>
         </div>
+
+        <p>
+          Verification is fail-closed: <code>--verify</code> exits non-zero unless
+          <code>--ca-bundle</code> or <code>--trusted-root</code> is supplied, and
+          OCSP revocation checking without a responder integration errors instead of
+          silently skipping.
+        </p>
 
         <h3 id="risk">risk</h3>
         
@@ -1231,7 +1239,17 @@ aibom scan-github --repo owner/repo --baseline baseline.json --fail-on new-model
           <li><code>--max-unsupported</code> - Fail when unsupported artifacts exceed this number</li>
           <li><code>--baseline</code> - Optional baseline AIBOM for drift checks</li>
           <li><code>--fail-on</code> - Comma-separated drift gates</li>
+          <li><code>--commit</code> - Pin every repo scan to this commit SHA for reproducible results</li>
+          <li><code>--allow-tokenized-clone</code> - Explicit opt-in to embed the token-env credential in clone URLs (a set token otherwise aborts the scan)</li>
+          <li><code>--local-mirrors-dir</code> - Scan already-checked-out local mirrors instead of cloning (preferred, no network)</li>
         </ul>
+
+        <p>
+          Every scan record captures <code>repo_origin</code>, the exact
+          <code>resolved_commit</code>, <code>branch</code>, and
+          <code>scanned_at</code> timestamp in <code>summary.json</code>, so repeated
+          scans against the same commit are deterministic.
+        </p>
 
         <h3 id="summarize">summarize</h3>
         
@@ -1320,7 +1338,20 @@ aibom scan-github --repo owner/repo --profile ai-bom-like --output-dir out</code
           <li><strong>Third-Party Provider</strong> (LLM07) - Detects external model providers like OpenAI, Anthropic</li>
           <li><strong>Exfiltration Surface</strong> (LLM06) - Identifies tools that may leak sensitive data</li>
           <li><strong>Prompt Injection Surface</strong> (LLM01) - Flags prompt templates that may be vulnerable</li>
+          <li><strong>Secret Exposure</strong> (LLM06) - Flags provider credentials found in scanned configuration</li>
+          <li><strong>Internet Egress</strong> (LLM06) - Flags network-capable tools that may carry data off-boundary</li>
+          <li><strong>Retrieval Augmentation</strong> (LLM03) - Flags vector-store usage exposed to poisoning or staleness</li>
+          <li><strong>Tool Execution</strong> (LLM08) - Flags agentic tool surfaces with side effects</li>
+          <li><strong>Prompt Logging</strong> (LLM02) - Flags prompt templates that may be logged without redaction</li>
+          <li><strong>Model Version Drift</strong> (LLM05) - Flags unpinned model references that can change silently</li>
+          <li><strong>Unsupported Provider Use</strong> (LLM05) - Flags providers or wrappers outside the assessed inventory</li>
         </ul>
+
+        <p>
+          Every finding carries a <code>finding_kind</code> (<code>risk</code> vs
+          inventory <code>asset</code>), a <code>control_objective</code>, and a
+          <code>remediation</code> hint for SOC triage.
+        </p>
 
         <h3>Custom Risk Policies</h3>
         
@@ -1356,6 +1387,21 @@ aibom scan-github --repo owner/repo --profile ai-bom-like --output-dir out</code
   }
 }</code></pre>
         </div>
+
+        <h2 id="assurance">SOC-Grade Assurance</h2>
+
+        <p>
+          AIBOM defaults are evidence-graded and fail-closed for auditor-facing use:
+        </p>
+
+        <ul>
+          <li><strong>Evidence-graded provenance</strong> - Missing provenance is <code>null</code> with <code>{status, method}</code> evidence (<code>observed</code>, <code>inferred</code>, or <code>missing</code>) instead of <code>"unknown"</code> placeholders, which the schema rejects.</li>
+          <li><strong>Semantic detectors</strong> - Python and JS/TS detectors resolve import aliases, factory wrappers, and config/environment dataflow into model constructors; dynamic imports are flagged <code>suspected_usage</code>. Every model and finding carries <code>evidence_class</code> and <code>detection_method</code>, with confidence calibrated to the evidence class.</li>
+          <li><strong>Fail-closed attestation</strong> - Bundle verification requires a trust anchor (<code>--ca-bundle</code> or <code>--trusted-root</code>), and OCSP revocation without a responder integration errors instead of silently skipping.</li>
+          <li><strong>Reproducible evidence</strong> - Bundles ship <code>COLLECTION.json</code>; GitHub scans pin commits and record origin, resolved commit, branch, and timestamp per repo.</li>
+          <li><strong>Hardened schema</strong> - Stable schema ID, timestamp/format/enum constraints, and no extra properties on core entities.</li>
+          <li><strong>Adversarial coverage</strong> - Wrapper, env-driven, dynamic-import, and misleading-config fixtures under <code>tests/fixtures/adversarial/</code> with a recall-gated benchmark, plus export conformance tests for SPDX, CycloneDX, SARIF, and VEX outputs.</li>
+        </ul>
 
         <h2 id="ci-cd">CI/CD Integration</h2>
         
