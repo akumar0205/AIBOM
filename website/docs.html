@@ -9,52 +9,55 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   
   <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
   
   <style>
     /* ==========================================================================
-       CSS Variables - AIBOM Earth Tone Palette
+       CSS Variables - Lithograph Docs Palette
        ========================================================================== */
     :root {
-      --color-bg: #0f0d0b;
-      --color-surface: #181613;
-      --color-surface-elevated: #1f1c18;
-      --color-surface-hover: #24201c;
-      
-      --color-border: rgba(196, 165, 116, 0.12);
-      --color-border-hover: rgba(196, 165, 116, 0.2);
-      --color-border-strong: rgba(196, 165, 116, 0.25);
-      
-      --color-accent: #c4a574;
-      --color-accent-hover: #d4b584;
-      --color-accent-dim: rgba(196, 165, 116, 0.08);
-      --color-accent-dim-hover: rgba(196, 165, 116, 0.15);
-      
-      --color-text: #f5f2ed;
-      --color-text-secondary: rgba(245, 242, 237, 0.7);
-      --color-text-tertiary: rgba(245, 242, 237, 0.45);
-      
-      --color-success: #7d9a6e;
-      --color-warning: #b8a66a;
-      --color-info: #8fa8c8;
-      
-      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --font-mono: 'JetBrains Mono', 'SF Mono', Monaco, 'Cascadia Code', monospace;
-      
       --nav-height: 64px;
       --sidebar-width: 280px;
       --toc-width: 240px;
-      --max-content-width: 800px;
+      --max-content-width: 880px;
       
       --radius-sm: 6px;
-      --radius-md: 8px;
-      --radius-lg: 12px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
       
       --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
       --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .docs-lithograph {
+      --color-bg: #f4ecdb;
+      --color-surface: #eadfc9;
+      --color-surface-elevated: #f8f2e6;
+      --color-surface-hover: #f7f0df;
+      --color-border: rgba(23, 19, 15, 0.16);
+      --color-border-hover: rgba(23, 19, 15, 0.28);
+      --color-border-strong: rgba(23, 19, 15, 0.42);
+      --color-accent: #8d3f2f;
+      --color-accent-hover: #6f2f23;
+      --color-accent-dim: rgba(141, 63, 47, 0.08);
+      --color-accent-dim-hover: rgba(141, 63, 47, 0.14);
+      --color-text: #17130f;
+      --color-text-secondary: rgba(23, 19, 15, 0.72);
+      --color-text-tertiary: rgba(23, 19, 15, 0.48);
+      --color-success: #5e6842;
+      --color-warning: #98733b;
+      --color-info: #6a7a92;
+      --font-sans: 'Cormorant Garamond', Georgia, serif;
+      --font-mono: 'IBM Plex Mono', 'SF Mono', Monaco, monospace;
+      min-height: 100vh;
+      color: var(--color-text);
+      background:
+        radial-gradient(circle at top left, rgba(141, 63, 47, 0.08), transparent 26%),
+        radial-gradient(circle at 82% 18%, rgba(94, 104, 66, 0.06), transparent 24%),
+        linear-gradient(180deg, #f8f2e6 0%, #f4ecdb 100%);
     }
 
     /* ==========================================================================
@@ -78,6 +81,10 @@
       line-height: 1.6;
       color: var(--color-text);
       background-color: var(--color-bg);
+      background:
+        radial-gradient(circle at top left, rgba(141, 63, 47, 0.08), transparent 26%),
+        radial-gradient(circle at 82% 18%, rgba(94, 104, 66, 0.06), transparent 24%),
+        linear-gradient(180deg, #f8f2e6 0%, #f4ecdb 100%);
     }
 
     a {
@@ -127,7 +134,8 @@
       color: var(--color-text);
       font-weight: 600;
       font-size: 18px;
-      letter-spacing: -0.02em;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
 
     .logo:hover {
@@ -148,7 +156,7 @@
     .search-input {
       width: 100%;
       padding: 10px 16px 10px 40px;
-      background: var(--color-surface);
+      background: rgba(248, 242, 230, 0.9);
       border: 1px solid var(--color-border);
       border-radius: var(--radius-md);
       color: var(--color-text);
@@ -207,8 +215,8 @@
       align-items: center;
       gap: 8px;
       padding: 8px 16px;
-      background: var(--color-accent);
-      color: var(--color-bg) !important;
+      background: var(--color-text);
+      color: #f8f2e6 !important;
       border-radius: var(--radius-md);
       font-weight: 500;
       font-size: 14px;
@@ -216,7 +224,7 @@
     }
 
     .github-link:hover {
-      background: var(--color-accent-hover);
+      background: var(--color-accent);
       transform: translateY(-1px);
     }
 
@@ -238,7 +246,7 @@
       top: var(--nav-height);
       width: var(--sidebar-width);
       height: calc(100vh - var(--nav-height));
-      background: var(--color-bg);
+      background: rgba(248, 242, 230, 0.55);
       border-right: 1px solid var(--color-border);
       overflow-y: auto;
       padding: 24px 0;
@@ -297,27 +305,39 @@
       flex: 1;
       margin-left: var(--sidebar-width);
       margin-right: var(--toc-width);
-      padding: 48px 64px;
+      padding: 52px 64px 72px;
       max-width: calc(100% - var(--sidebar-width) - var(--toc-width));
     }
 
     .content-wrapper {
       max-width: var(--max-content-width);
+      position: relative;
+      padding-top: 6px;
+    }
+
+    .content-wrapper::before {
+      content: "";
+      display: block;
+      width: 180px;
+      height: 2px;
+      background: var(--color-accent);
+      margin-bottom: 24px;
     }
 
     /* Typography */
     .content-wrapper h1 {
-      font-size: 40px;
+      font-size: clamp(3rem, 5vw, 4.5rem);
       font-weight: 600;
-      letter-spacing: -0.03em;
+      letter-spacing: -0.05em;
       margin-bottom: 24px;
-      line-height: 1.2;
+      line-height: 0.95;
+      max-width: 10ch;
     }
 
     .content-wrapper h2 {
-      font-size: 28px;
+      font-size: 30px;
       font-weight: 600;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.04em;
       margin-top: 48px;
       margin-bottom: 20px;
       padding-bottom: 12px;
@@ -343,6 +363,7 @@
       margin-bottom: 16px;
       color: var(--color-text-secondary);
       line-height: 1.7;
+      font-size: 1.08rem;
     }
 
     .content-wrapper p strong {
@@ -369,9 +390,9 @@
 
     /* Code blocks */
     .code-block {
-      background: var(--color-surface);
+      background: rgba(248, 242, 230, 0.82);
       border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
+      border-radius: 18px 14px 18px 14px;
       margin: 20px 0;
       overflow: hidden;
     }
@@ -381,7 +402,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 12px 16px;
-      background: var(--color-surface-elevated);
+      background: rgba(23, 19, 15, 0.04);
       border-bottom: 1px solid var(--color-border);
     }
 
@@ -428,7 +449,7 @@
 
     /* Inline code */
     .content-wrapper code:not(pre code) {
-      background: var(--color-surface);
+      background: rgba(248, 242, 230, 0.92);
       padding: 3px 8px;
       border-radius: 4px;
       font-size: 13px;
@@ -451,9 +472,9 @@
     }
 
     .card {
-      background: var(--color-surface);
+      background: rgba(248, 242, 230, 0.82);
       border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
+      border-radius: 22px 16px 18px 14px;
       padding: 24px;
       transition: all var(--transition-base);
     }
@@ -461,7 +482,7 @@
     .card:hover {
       border-color: var(--color-accent);
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      box-shadow: none;
     }
 
     .card-icon {
@@ -496,6 +517,10 @@
       border-radius: var(--radius-md);
       border-left: 3px solid;
       margin: 24px 0;
+      background: rgba(248, 242, 230, 0.72);
+      border-top: 1px solid var(--color-border);
+      border-right: 1px solid var(--color-border);
+      border-bottom: 1px solid var(--color-border);
     }
 
     .callout-info {
@@ -536,6 +561,7 @@
       height: calc(100vh - var(--nav-height));
       padding: 32px 24px;
       border-left: 1px solid var(--color-border);
+      background: rgba(248, 242, 230, 0.45);
     }
 
     .toc-title {
@@ -701,12 +727,69 @@
       z-index: 80;
     }
 
+    .docs-lithograph .top-nav,
+    .docs-lithograph .sidebar,
+    .docs-lithograph .toc-sidebar {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .docs-lithograph .top-nav {
+      background: rgba(248, 242, 230, 0.92);
+      border-bottom: 1px solid var(--color-border-strong);
+    }
+
+    .docs-lithograph .nav-link:hover {
+      background: rgba(23, 19, 15, 0.04);
+    }
+
+    .docs-lithograph .nav-item a,
+    .docs-lithograph .toc-item a {
+      font-family: var(--font-mono);
+      letter-spacing: 0.01em;
+    }
+
+    .docs-lithograph .nav-item.active a,
+    .docs-lithograph .toc-item.active a {
+      background: var(--color-accent-dim);
+      color: var(--color-accent);
+    }
+
+    .docs-lithograph .content-wrapper > p:first-of-type {
+      max-width: 44rem;
+      font-size: 1.18rem;
+      margin-bottom: 28px;
+    }
+
+    .docs-lithograph .card-grid {
+      margin: 32px 0 40px;
+      gap: 18px;
+    }
+
+    .docs-lithograph .content-wrapper h3,
+    .docs-lithograph .content-wrapper h4 {
+      letter-spacing: -0.03em;
+    }
+
+    .docs-lithograph .content-wrapper ul li {
+      max-width: 56rem;
+    }
+
+    .docs-lithograph .page-nav-link {
+      max-width: 320px;
+    }
+
+    .docs-lithograph .page-nav-title {
+      font-family: var(--font-sans);
+      font-size: 1.05rem;
+    }
+
     .sidebar-overlay.show {
       display: block;
     }
   </style>
 </head>
-<body>
+<body class="docs-lithograph">
   <!-- Top Navigation -->
   <nav class="top-nav">
     <div class="top-nav-left">
@@ -719,20 +802,11 @@
       </button>
       <a href="index.html" class="logo">
         <svg class="logo-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="logoBg" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style="stop-color:#181613"/>
-              <stop offset="100%" style="stop-color:#0f0d0b"/>
-            </linearGradient>
-          </defs>
-          <rect width="32" height="32" rx="6" fill="url(#logoBg)"/>
-          <rect x="8" y="7" width="16" height="12" rx="3" fill="#1f1c18" stroke="#c4a574" stroke-width="1.5"/>
-          <circle cx="13" cy="13" r="2" fill="#c4a574"/>
-          <circle cx="19" cy="13" r="2" fill="#c4a574"/>
-          <circle cx="13" cy="13" r="1" fill="#0f0d0b"/>
-          <circle cx="19" cy="13" r="1" fill="#0f0d0b"/>
-          <rect x="7" y="20" width="18" height="6" rx="2" fill="#7d9a6e"/>
-          <path d="M10 23h5" stroke="#0f0d0b" stroke-width="1.5" stroke-linecap="round"/>
+          <rect x="2.5" y="2.5" width="27" height="27" rx="8" fill="#f7f0df" stroke="#17130f" stroke-width="2"/>
+          <path d="M10 22C12.4 14.4 17.6 10 24 10" stroke="#17130f" stroke-width="2" stroke-linecap="round"/>
+          <path d="M18 9.5C21.4 10.3 23.7 12 25 15" stroke="#17130f" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="13.5" cy="14" r="2.2" fill="#17130f"/>
+          <path d="M12 24.5C14.2 22.8 16.7 22 19.6 22C21.9 22 24 22.5 26 23.6" stroke="#8d3f2f" stroke-width="2" stroke-linecap="round"/>
         </svg>
         AIBOM
       </a>
@@ -834,7 +908,7 @@
 
         <div class="card-grid">
           <a href="https://github.com/akumar0205/AIBOM/blob/main/docs/GITHUB_SCANNER_GUIDE.md" class="card" target="_blank" style="border-color: var(--color-accent);">
-            <div class="card-icon" style="background: var(--color-accent); color: var(--color-bg);">
+            <div class="card-icon" style="background: var(--color-accent); color: #f8f2e6;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
               </svg>

@@ -1,49 +1,29 @@
 <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background gradient using earth tones -->
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#181613"/>
-      <stop offset="100%" style="stop-color:#0f0d0b"/>
-    </linearGradient>
+    <filter id="grain" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="8" result="noise"/>
+      <feColorMatrix in="noise" type="saturate" values="0" result="mono"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.08"/>
+      </feComponentTransfer>
+    </filter>
   </defs>
-  
-  <!-- Main rounded square background -->
-  <rect width="128" height="128" rx="20" fill="url(#bgGrad)"/>
-  
-  <!-- Circuit pattern decorations using accent color -->
-  <circle cx="20" cy="24" r="2" fill="#c4a574"/>
-  <circle cx="108" cy="104" r="2" fill="#c4a574"/>
-  <path d="M20 28v8" stroke="#c4a574" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-  <path d="M108 92v-8" stroke="#c4a574" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-  <path d="M24 24h8" stroke="#c4a574" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-  <path d="M96 104h8" stroke="#c4a574" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
-  
-  <!-- Robot/AI Face outline -->
-  <rect x="34" y="28" width="60" height="48" rx="12" fill="#1f1c18" stroke="#c4a574" stroke-width="2.5"/>
-  
-  <!-- Robot eyes - glowing with accent color -->
-  <circle cx="50" cy="52" r="8" fill="#c4a574"/>
-  <circle cx="78" cy="52" r="8" fill="#c4a574"/>
-  <circle cx="50" cy="52" r="4" fill="#0f0d0b"/>
-  <circle cx="78" cy="52" r="4" fill="#0f0d0b"/>
-  
-  <!-- Scanner/investigation beam effect -->
-  <path d="M34 76l12 12h36l12-12" fill="none" stroke="#c4a574" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
-  <path d="M44 76v-4M64 76v-4M84 76v-4" stroke="#c4a574" stroke-width="1.5" opacity="0.4"/>
-  
-  <!-- Document/BOM element at bottom - using surface elevated color -->
-  <rect x="28" y="82" width="72" height="24" rx="4" fill="#7d9a6e" opacity="0.9"/>
-  
-  <!-- Document lines (representing BOM items) -->
-  <path d="M36 90h20" stroke="#0f0d0b" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M36 96h56" stroke="#0f0d0b" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>
-  
-  <!-- Magnifying glass / scanning circle overlay -->
-  <circle cx="64" cy="64" r="42" fill="none" stroke="#c4a574" stroke-width="1" stroke-dasharray="4 4" opacity="0.3"/>
-  
-  <!-- Small accent nodes -->
-  <circle cx="42" cy="38" r="1.5" fill="#b8a66a"/>
-  <circle cx="86" cy="38" r="1.5" fill="#b8a66a"/>
-  <circle cx="42" cy="66" r="1.5" fill="#b8a66a"/>
-  <circle cx="86" cy="66" r="1.5" fill="#b8a66a"/>
+
+  <rect x="8" y="8" width="112" height="112" rx="26" fill="#f7f0df" stroke="#17130f" stroke-width="4"/>
+  <rect x="16" y="16" width="96" height="96" rx="20" fill="none" stroke="#17130f" stroke-opacity="0.18" stroke-width="1.5" stroke-dasharray="4 6"/>
+  <rect x="16" y="16" width="96" height="96" rx="20" filter="url(#grain)" opacity="0.55"/>
+
+  <path d="M35 81C42 55.5 57.3 40 79 36" stroke="#17130f" stroke-width="7" stroke-linecap="round"/>
+  <path d="M43 52C49 45 57 41 66 39" stroke="#17130f" stroke-width="5" stroke-linecap="round"/>
+  <path d="M58 44C66.5 45.5 73.5 50 79 57" stroke="#17130f" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="54" cy="56" r="7.5" fill="#17130f"/>
+  <circle cx="55.5" cy="54.5" r="2.3" fill="#f7f0df"/>
+
+  <path d="M44 91C54.5 84 65.3 80.8 77 81.2C86.8 81.5 94.8 84.1 101 88.5" stroke="#8d3f2f" stroke-width="6" stroke-linecap="round"/>
+  <path d="M43 94C53.8 88.3 65.1 85.8 78 86.2C87.2 86.5 94.5 88.4 100.5 91.8" stroke="#8d3f2f" stroke-width="2.2" stroke-linecap="round" stroke-opacity="0.55"/>
+
+  <path d="M32 92L45 79" stroke="#17130f" stroke-width="2" stroke-linecap="round" stroke-opacity="0.55"/>
+  <path d="M83 33L96 46" stroke="#17130f" stroke-width="2" stroke-linecap="round" stroke-opacity="0.4"/>
+  <circle cx="31" cy="35" r="2" fill="#17130f" opacity="0.85"/>
+  <circle cx="100" cy="93" r="2" fill="#17130f" opacity="0.85"/>
 </svg>
